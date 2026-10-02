@@ -43,6 +43,9 @@ my %not_loglan = map { $_ => 1 } qw(hindi versa);
 
 # ---- Institute PRIMS: word -> { affix, gloss, notes, line } ----
 my (%prims, @prims_order);
+# Set members from ethnic.added and animals.added are put into prims below,
+# like the members formed by rule, so they are not read back as prims either.
+my %set_member_added = map { (split /\t/)[0] => 1 } read_added('ethnic'), read_added('animals');
 {
     open my $fh, '<', $prims_file or die "open $prims_file: $!";
     my @lines = <$fh>;
@@ -54,6 +57,7 @@ my (%prims, @prims_order);
         my $w = $f[0];
         $_ = defined $_ ? s/^\s+|\s+$//gr : '' for @f;
         next if $f[3] && $f[3] =~ /\(formed by rule\)\z/;   # ours, added below
+        next if $set_member_added{$w};                       # likewise
         $prims{$w} = { affix => $f[1], gloss => $f[2], notes => $f[3] // '', line => $_ };
         push @prims_order, $w;
     }
@@ -268,6 +272,30 @@ sub dict_ethnic_row ($st, $v) {
     return join "\t", $w, $dict{$w}{affix}, dedup_gloss(@alt), dict_note($w);
 }
 
+# ---- Your own additions ----
+# <list>.added beside a list holds entries of your own, in the list's own
+# layout; blank lines and lines starting with '#' are skipped.  When the list
+# is written, an added entry replaces the built one for the same word, and the
+# rest are appended.  Nothing here ever writes to a .added file.
+sub read_added ($name) {
+    my $file = "$dir/$name.added";
+    return () unless -f $file;
+    open my $fh, '<', $file or die "open $file: $!";
+    my @rows = grep { /\S/ && !/^\s*#/ } map { s/\r?\n\z//r } <$fh>;
+    close $fh;
+    return @rows;
+}
+
+sub merge_added ($name, $rows) {
+    my @add = read_added($name) or return $rows;
+    my %add = map { (split /\t/)[0] => $_ } @add;
+    my %done;
+    my @out = map { my $w = (split /\t/)[0];
+                    $add{$w} ? do { $done{$w} = 1; $add{$w} } : $_ } @$rows;
+    push @out, grep { !$done{ (split /\t/)[0] } } @add;
+    return \@out;
+}
+
 # ---- Animal declension ----
 my %animal_stem;
 for my $w (keys %prims) {
@@ -300,6 +328,18 @@ for my $w (sort keys %dict) {
     $animal_stem{$st} //= 1;
 }
 
+# An animal the dictionary lacks altogether starts with its -u word in
+# animals.added (hamsteru, kavhiu); the rest of its set is formed by rule.
+my %added_animal;
+for my $line (read_added('animals')) {
+    my @f = split /\t/, $line;
+    next unless @f >= 3 && $f[0] =~ /^(\w{2,})u$/;
+    my $st = $1;
+    next if $dict{ $f[0] };
+    $animal_stem{$st} //= 1;
+    $added_animal{ $f[0] } = { affix => $f[1], gloss => $f[2], notes => $f[3] // '', line => $line };
+}
+
 # What the endings mean, for the glosses built below.
 my %animal_ending = (a => 'female', o => 'male', i => 'baby');
 
@@ -314,7 +354,7 @@ my %animal_label = (
     hath => 'Asian-elephant',      temb     => 'African-elephant',
 );
 for my $st (sort keys %animal_stem) {
-    next if $prims{"${st}u"} || $animal_label{$st};
+    next if $prims{"${st}u"} || $animal_label{$st} || $added_animal{"${st}u"};
     die "no English name for animal stem $st\n" unless @{ $dict{"${st}u"}{kw} };
 }
 
@@ -362,8 +402,9 @@ my %animal_word;
 for my $st (sort keys %animal_stem) {
     for my $v (qw(u a o i e)) {
         my $w = "$st$v";
-        $animal_word{$w} = $dict{$w}  ? dict_animal_word($st, $v)
-                         : $prims{$w} ? $prims{$w}
+        $animal_word{$w} = $dict{$w}         ? dict_animal_word($st, $v)
+                         : $added_animal{$w} ? $added_animal{$w}
+                         : $prims{$w}        ? $prims{$w}
                          : undef;
     }
 }
@@ -396,12 +437,15 @@ sub out_file ($name) {
     return $file;
 }
 
+# Writes the list with its .added entries merged in, and returns what it wrote.
 sub write_drill ($name, $rows) {
-    my $file = out_file($name) // return;
+    $rows = merge_added($name, $rows);
+    my $file = out_file($name) // return $rows;
     open my $fh, '>', $file or die "open $file: $!";
     print $fh "$_\n" for @$rows;
     close $fh;
     say "$name: ", scalar(@$rows), " items";
+    return $rows;
 }
 
 my @ethnic_rows;
@@ -415,20 +459,23 @@ for my $st (sort keys %ethnic_stem) {
         else               { push @ethnic_rows, rule_ethnic_row($st, $v) }
     }
 }
-write_drill('ethnic', \@ethnic_rows);
+@ethnic_rows = @{ write_drill('ethnic', \@ethnic_rows) };
 
 my @animal_rows;
 for my $st (sort keys %animal_stem) {
     push @animal_rows, map { $animal_word{"$st$_"} ? $animal_word{"$st$_"}{line}
                                                    : rule_animal_row($st, $_) } qw(u a o i e);
 }
-write_drill('animals', \@animal_rows);
+@animal_rows = @{ write_drill('animals', \@animal_rows) };
 
-# The members formed by rule are primitives like the rest of their sets, so
-# they go into prims and affsets as well (affs takes only words with affixes).
-# loglan-fetch builds those two from the dictionary alone; adding only what is
-# missing keeps a second run from changing anything.
-my @by_rule = grep { /\(formed by rule\)\z/ } @ethnic_rows, @animal_rows;
+# The members formed by rule, and those from ethnic.added and animals.added,
+# are primitives like the rest of their sets, so they go into prims and
+# affsets as well (affs takes only words with affixes).  loglan-fetch builds
+# those two from the dictionary alone; adding only what is missing keeps a
+# second run from changing anything.
+my %set_added = map { (split /\t/)[0] => 1 } read_added('ethnic'), read_added('animals');
+my @by_rule = grep { /\(formed by rule\)\z/ || $set_added{ (split /\t/)[0] } }
+              @ethnic_rows, @animal_rows;
 for my $name (qw(prims affsets)) {
     my $file = "$dir/$name";
     next unless -f $file;
@@ -442,7 +489,7 @@ for my $name (qw(prims affsets)) {
     open my $fh, '>', $out or die "open $out: $!";
     print $fh "$_\n" for sort @rows, @add;
     close $fh;
-    say "$name: added ", scalar(@add), " formed by rule";
+    say "$name: added ", scalar(@add), " set members (formed by rule or from .added)";
 }
 
 # A member of a set that none of the sources has is still a word -- the
@@ -460,7 +507,8 @@ sub rule_ethnic_row ($st, $v) {
 sub rule_animal_row ($st, $v) {
     my @name = map { s/^\s+|\s+$//gr }
                split m{/}, $animal_label{$st} // join '/', @{ $dict{"${st}u"}{kw} // [] };
-    @name = split m{/}, $prims{"${st}u"}{gloss} if !@name && $prims{"${st}u"};
+    @name = split m{/}, ($added_animal{"${st}u"} // $prims{"${st}u"})->{gloss}
+        if !@name && ($added_animal{"${st}u"} || $prims{"${st}u"});
     my @alt  = $v eq 'u' ? @name
              : $v eq 'e' ? map { "$_-like" } @name
              :             map { "$animal_ending{$v}-$_" } @name;

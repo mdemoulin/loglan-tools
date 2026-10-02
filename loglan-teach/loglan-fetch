@@ -136,8 +136,27 @@ for my $w (@order) {
     push @prims, $rec if $is_prim;
     push @affs,  $rec if $aff ne '-';
 }
+
+# <list>.added holds entries of your own, in the list's layout (blank lines
+# and '#' lines skipped): each replaces the built entry for the same word, or
+# is added.  Nothing here writes to a .added file.
+sub merge_added ($name, $rows) {
+    my $file = "$dir/$name.added";
+    return $rows unless -f $file;
+    open my $fh, '<:encoding(UTF-8)', $file or die "open $file: $!";
+    my @add = grep { /\S/ && !/^\s*#/ } map { s/\r?\n\z//r } <$fh>;
+    close $fh;
+    my %add = map { (split /\t/)[0] => $_ } @add;
+    my @out = grep { !$add{ (split /\t/)[0] } } @$rows;
+    return [ @out, @add ];
+}
+# affsets is the other two together, so their additions go into it as well
+# (an affsets.added entry having the last word).
 my %seen;
-my @affsets = grep { !$seen{$_}++ } @affs, @prims;
+my @affsets = grep { !$seen{ (split /\t/)[0] }++ } @affs, @prims;
+@affsets = @{ merge_added($_, \@affsets) } for qw(affs prims affsets);
+@prims   = @{ merge_added('prims', \@prims) };
+@affs    = @{ merge_added('affs',  \@affs) };
 
 write_list('prims',   \@prims);
 write_list('affs',    \@affs);
