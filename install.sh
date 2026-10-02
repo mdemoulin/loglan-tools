@@ -50,6 +50,55 @@ case ":$PATH:" in
        echo "    export PATH=\"$dest:\$PATH\"" ;;
 esac
 
-echo
-echo "Next: loglan-fetch, then mk-utility, then e.g. 'loglan-teach prims'."
-echo "Lists and progress are kept in \${LOGLAN_STATE_DIR:-~/.loglan}."
+data=${LOGLAN_STATE_DIR:-$HOME/.loglan}
+
+# The word lists are built, not shipped: offer to build them now.  Asked only
+# when the installer was asked where to install, i.e. run by hand.
+built=
+if [ $# -eq 0 ]; then
+    echo
+    echo "The word lists come from Randall Holmes's Loglan dictionary and Loglan 1,"
+    echo "downloaded from randall-holmes.github.io (about 5 MB) into $data/src."
+    read -r -p "Download them and build the lists now? [Y/n] " yn
+    case ${yn:-y} in
+        [Yy]*) "$dest/loglan-fetch" && "$dest/mk-utility" && built=1 ;;
+    esac
+fi
+
+cat <<EOF
+
+Getting started
+---------------
+EOF
+if [ -z "$built" ]; then
+    cat <<EOF
+1. Build the word lists (needs the network the first time):
+
+       loglan-fetch      # downloads the dictionary and Loglan 1, builds
+                         #   prims, affs and affsets
+       mk-utility        # builds ethnic, animals, l1prims, derivs and
+                         #   cheatsheet.html
+
+EOF
+fi
+cat <<EOF
+Drill a list:
+
+       loglan-teach prims          # Loglan word shown; type the English
+       loglan-teach --recall prims # English shown; type the Loglan word
+       loglan-teach --tables       # every list, its size, and your progress
+
+   In a drill, type your answer and press Enter.  A blank line shows the
+   answer (and counts as a miss); :s shows your progress; :q saves and quits.
+   Any one of a gloss's alternatives ("box/crate/carton") counts as right.
+   A word climbs a rung each time you get it right and drops into the error
+   box when you miss; progress is saved for next time.
+
+Lists: prims (all primitives), affs (words with affixes; try --field affix),
+affsets, animals, ethnic, l1prims (the primitives used in Loglan 1).
+
+Everything is kept in $data: the lists, your progress
+(<list>.state.json), the downloaded sources, and cheatsheet.html -- open
+that in a browser.  To add words of your own, see "Adding your own entries"
+in README.md.
+EOF

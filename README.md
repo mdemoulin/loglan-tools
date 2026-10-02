@@ -15,6 +15,12 @@ way out of when you miss.
     mk-utility            # build the cheat sheet and the other drill lists
     loglan-teach prims    # drill
 
+`install.sh` offers to run `loglan-fetch` and `mk-utility` for you.  In a
+drill, type your answer and press Enter; a blank line shows the answer (and
+counts as a miss), `:s` shows your progress, and `:q` saves and quits.  Any
+one of a gloss's alternatives ("box/crate/carton") counts as right.  Open
+`~/.loglan/cheatsheet.html` in a browser for the declension tables.
+
 | Command | What it does |
 |---|---|
 | `loglan-fetch` | Downloads Randall Holmes's current Loglan-to-English dictionary and the HTML edition of *Loglan 1*, and builds the `prims`, `affs` and `affsets` lists from the dictionary |
