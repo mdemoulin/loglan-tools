@@ -44,6 +44,22 @@ them is accepted as an answer; the notes are the rest of the definition,
 with the word's own place as `-` and the others as `..`.  Any file of
 `loglan<TAB>english` lines can be drilled too.
 
+### Adding your own entries
+
+A file named `<list>.added` beside a list -- `prims.added`,
+`animals.added`, and so on -- holds entries of your own, in the list's
+layout; blank lines and lines starting with `#` are skipped.  Whenever
+`loglan-fetch` or `mk-utility` rebuilds the list, an added entry replaces
+the built one for the same word, and the rest are added; nothing ever
+writes to a `.added` file.  Additions to `prims` and `affs` also go into
+`affsets`.
+
+An animal the dictionary lacks can be started from its generic *-u* word
+in `animals.added`: `mk-utility` forms the rest of the set (*-a*, *-o*,
+*-i*, *-e*) by rule, and puts the whole set into `prims` and `affsets`.
+
+    hamsteru	-	hamster	is any -, a rodent of the subfamily Cricetinae, of region/range..
+
 ## Sources and licensing
 
 The code here is Copyright (C) 2026 Michael A. Demoulin, licensed under the
