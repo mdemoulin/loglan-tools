@@ -411,16 +411,41 @@ for my $st (sort keys %ethnic_stem) {
         if ($dict{$w})     { push @ethnic_rows, dict_ethnic_row($st, $v) }
         elsif ($prims{$w}) { push @ethnic_rows, $prims{$w}{line} }
         elsif ($l1{$w})    { push @ethnic_rows, join "\t", $w, $l1{$w}[1], $orphan_gloss{$w}, $l1{$w}[2] }
+        else               { push @ethnic_rows, rule_ethnic_row($st, $v) }
     }
 }
 write_drill('ethnic', \@ethnic_rows);
 
 my @animal_rows;
 for my $st (sort keys %animal_stem) {
-    push @animal_rows, map  { $animal_word{"$st$_"}{line} }
-                       grep { $animal_word{"$st$_"} } qw(u a o i e);
+    push @animal_rows, map { $animal_word{"$st$_"} ? $animal_word{"$st$_"}{line}
+                                                   : rule_animal_row($st, $_) } qw(u a o i e);
 }
 write_drill('animals', \@animal_rows);
+
+# A member of a set that none of the sources has is still a word -- the
+# declension forms it -- so the drill gets it too, glossed and noted by the
+# rule the cheat sheet gives for its ending.
+sub rule_ethnic_row ($st, $v) {
+    my @label = map { s/^\s+|\s+$//gr } split m{/}, $ethnic_label{$st};
+    my @alt   = ("$label[0]-$ethnic_gloss_sense{$v}");
+    push @alt, "$label[0]-territory" if $v eq 'e';
+    my %note  = (a => 'is part of the - language', e => 'is a place where -s live',
+                 i => 'is a - person',             o => 'is part of - culture');
+    return join "\t", "$st$v", '-', dedup_gloss(@alt, @label), "$note{$v} (formed by rule)";
+}
+
+sub rule_animal_row ($st, $v) {
+    my @name = map { s/^\s+|\s+$//gr }
+               split m{/}, $animal_label{$st} // join '/', @{ $dict{"${st}u"}{kw} // [] };
+    @name = split m{/}, $prims{"${st}u"}{gloss} if !@name && $prims{"${st}u"};
+    my @alt  = $v eq 'u' ? @name
+             : $v eq 'e' ? map { "$_-like" } @name
+             :             map { "$animal_ending{$v}-$_" } @name;
+    my %note = (u => 'is any -', a => 'is a female -', o => 'is a male -',
+                i => 'is an infant -', e => 'is more - like than..');
+    return join "\t", "$st$v", '-', dedup_gloss(@alt), "$note{$v} (formed by rule)";
+}
 
 # Current affix and gloss from PRIMS where the word survives; book definition as notes.
 my @l1_rows = map {
