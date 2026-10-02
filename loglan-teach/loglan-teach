@@ -35,13 +35,14 @@ GetOptions(
     'no-derivs' => sub { $opt{noderivs} = 1 },
     'reset',
     'status',
+    'tables',
     'help|h',
 ) or die "Try --help\n";
 
 # Nothing the user types is matched case-sensitively, option values included.
 $opt{field} = lc $opt{field};
 
-usage() if $opt{help} or !@ARGV;
+usage() if $opt{help} or (!@ARGV and !$opt{tables});
 
 # Where the lists and progress are kept: LOGLAN_STATE_DIR, else ~/.loglan,
 # which is where loglan-fetch and mk-utility put the lists.  Every table's
@@ -50,6 +51,8 @@ usage() if $opt{help} or !@ARGV;
 # directory the state file sits beside the data file.  --state always wins.
 my $state_dir = $ENV{LOGLAN_STATE_DIR} // "$ENV{HOME}/.loglan";
 undef $state_dir unless -d $state_dir;
+
+show_tables($state_dir), exit 0 if $opt{tables};
 
 # A bare list name -- "prims", "animals" -- is one of the lists there, unless
 # a file by that name is right here.
@@ -97,6 +100,32 @@ say "";
 drill_loop($state, \@records);
 
 # ---- I/O ----
+
+# What lists there are, how big, and which have progress saved.  The lists
+# loglan-fetch and mk-utility build (and the Institute's utts and m1-test, if
+# they are there) come first, in the order one learns them; then any other
+# list that has progress filed in the directory -- one of your own, kept
+# wherever it is.
+sub show_tables ($dir) {
+    die "No list directory: set LOGLAN_STATE_DIR or run loglan-fetch\n" unless defined $dir;
+    my @known = qw(prims affs affsets utts animals ethnic l1prims m1-test);
+    my %known = map { $_ => 1 } @known;
+    opendir my $dh, $dir or die "opendir $dir: $!";
+    my @own = sort grep { !$known{$_} } map { /^(.+)\.state\.json\z/ ? $1 : () } readdir $dh;
+    closedir $dh;
+    for my $t (@known, @own) {
+        my $file  = "$dir/$t";
+        my $saved = -f "$file.state.json" ? '   (progress saved)' : '';
+        if (-f $file) {
+            open my $fh, '<', $file or die "open $file: $!";
+            my $n = 0;
+            $n++ while <$fh>;
+            printf "%-10s %6d entries%s\n", $t, $n, $saved;
+        } elsif ($saved) {
+            printf "%-10s %6s        %s\n", $t, '', $saved =~ s/^\s+//r;
+        }
+    }
+}
 
 sub load_records ($file, $field) {
     open my $fh, '<:encoding(UTF-8)', $file or die "open $file: $!";
@@ -446,6 +475,8 @@ State:
                      /<data-file>.state.json]
   --reset          wipe progress for this data file
   --status         print progress histogram and exit
+  --tables         list the lists in \$LOGLAN_STATE_DIR, their sizes, and
+                     which have progress saved (no data-file needed)
 
 In-drill commands:
   <answer>+Enter   grade your answer

@@ -19,7 +19,7 @@ way out of when you miss.
 |---|---|
 | `loglan-fetch` | Downloads Randall Holmes's current Loglan-to-English dictionary and the HTML edition of *Loglan 1*, and builds the `prims`, `affs` and `affsets` lists from the dictionary |
 | `mk-utility` | Builds `cheatsheet.html` (the ethnic and animal declensions, and every primitive used in *Loglan 1*) and the `ethnic`, `animals`, `l1prims` and `derivs` lists |
-| `loglan-teach LIST` | Drills a list: `--recognition` (Loglan to English, the default), `--recall`, or `--both`; `--status` shows how far along you are |
+| `loglan-teach LIST` | Drills a list: `--recognition` (Loglan to English, the default), `--recall`, or `--both`; `--status` shows how far along you are, and `loglan-teach --tables` lists every list with its size and whether progress is saved |
 
 Everything lives in `~/.loglan` (or `$LOGLAN_STATE_DIR`): the downloaded
 sources under `src/`, the lists, and a `<list>.state.json` with your
