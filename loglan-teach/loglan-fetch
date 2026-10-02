@@ -1,0 +1,189 @@
+#!/usr/bin/env perl
+use v5.36;
+use utf8;
+use open ':std', ':encoding(UTF-8)';
+
+use Getopt::Long qw(:config bundling no_ignore_case);
+use File::Path   qw(make_path);
+use File::Temp   qw(tempfile);
+use HTTP::Tiny;
+
+# Downloads the sources loglan-teach and mk-utility work from -- Randall
+# Holmes's current Loglan-to-English dictionary and the HTML edition of
+# Loglan 1 -- and builds the vocabulary drill lists from the dictionary:
+#
+#   prims     every primitive (C-, D-, S-, I-, N-, L- and O-Prims)
+#   affs      every primitive or little word that has affixes
+#   affsets   the two together
+#
+# Each line is <loglan>\t<affixes or ->\t<gloss>\t<notes>, the layout of the
+# Institute's MacTeach files.  The gloss is the run of keywords in the word's
+# first definition; the notes are the rest of that definition, with the gloss
+# as '-' and the remaining places as '..'.
+#
+# The sources are not redistributed here: they are free for private interest,
+# and anything else needs the Loglan Institute's permission, so every user
+# fetches their own copy.
+
+my $BASE = 'https://randall-holmes.github.io/Loglan';
+my @SOURCES = (
+    'Dictionary/L-to-E-TDR.html',
+    (map { "Loglan1/chap$_.html" } 1 .. 7),
+    'Loglan1/app-b.html',
+);
+
+my %opt;
+GetOptions(\%opt, 'dir=s', 'refresh', 'replace-links', 'help|h') or die "Try --help\n";
+usage() if $opt{help};
+
+my $dir = $opt{dir} // $ENV{LOGLAN_STATE_DIR} // "$ENV{HOME}/.loglan";
+my $src = "$dir/src";
+make_path($src);
+
+# ---- Download ----
+for my $path (@SOURCES) {
+    my $file = "$src/$path";
+    next if -s $file && !$opt{refresh};
+    (my $sub = $file) =~ s{/[^/]+\z}{};
+    make_path($sub);
+    fetch("$BASE/$path", $file);
+    say "fetched $path";
+}
+
+# ---- Build the lists ----
+my $dict = "$src/Dictionary/L-to-E-TDR.html";
+open my $fh, '<:encoding(UTF-8)', $dict or die "open $dict: $!";
+my $html = do { local $/; <$fh> };
+close $fh;
+
+my %entity = (nbsp => ' ', mdash => '-', ndash => '-', lt => '<', gt => '>',
+              amp => '&', quot => '"', zwj => '');
+sub text ($s) {
+    $s =~ s/<[^>]+>//g;
+    $s =~ s/&(\w+);/$entity{$1} \/\/ ''/ge;
+    $s =~ s/&#(\d+);/chr $1/ge;
+    $s =~ s/\s+/ /g;
+    return $s =~ s/^ | $//gr;
+}
+
+# An entry is
+#   <b><a name="bakso">bakso</a></b>, <br>
+#   <em class="origin">bao</em> <em class="origin">&lt;4/4E box; ...&gt;</em>&nbsp;42% C-Prim L4 1975 2.3<br>
+#   &nbsp;&nbsp;&nbsp;(2n) D is a <em class="key">box</em>/<em class="key">crate</em> of/containing B. [D-B]<br>
+#   ...</p>
+my (@order, %e);
+while ($html =~ m{<b><a name="([^"]+)">[^<]*</a></b>,\s*<br>\s*(.*?)</p>}sg) {
+    my ($word, $body) = ($1, $2);
+    next if $e{$word};
+    my ($head, @lines) = split /<br>/, $body;
+    my ($type) = $head =~ /\b([CDSINLO]-Prim|Afx|[123]-Cpx|Cpd|Bor\.|LW|Name)(?!\w)/ or next;
+    my ($aff)  = $head =~ m{^\s*<em class="origin">([a-z ]+)</em>};
+    my ($from) = $head =~ m{<em class="origin">&lt;([a-z()]+)&gt;</em>};
+    # The first numbered sense, "(2n)", "(1a)", "(1)"; failing that, the first
+    # sense of any kind, "(l)", "(af)".
+    my ($sense) = grep { /^\s*(?:&nbsp;)*\s*\(\d[a-z]*\)/ } @lines;
+    ($sense)    = grep { /^\s*(?:&nbsp;)*\s*\([a-z]+\)/ } @lines unless defined $sense;
+    push @order, $word;
+    $e{$word} = { type => $type, aff => $aff, from => $from, sense => $sense };
+}
+die "dictionary parse failed: $dict\n" unless @order > 5000;
+
+# A little word's affixes are listed only under the affixes themselves:
+# "fer, <fe> Afx: a combining form of fe".
+for my $w (@order) {
+    my $x = $e{$w};
+    next unless $x->{type} eq 'Afx' and defined $x->{from};
+    (my $base = $x->{from}) =~ tr/()//d;
+    my $b = $e{$base} or next;
+    my @have = split ' ', $b->{aff} // '';
+    push @have, $w unless grep { $_ eq $w } @have;
+    $b->{aff} = join ' ', @have;
+}
+
+my $PREP = qr/(?:of|to|for|from|in|at|on|by|with|about|than|under|into|over|between|among|containing)\b/;
+
+sub gloss_notes ($sense) {
+    return ('-', '') unless defined $sense;
+    my $s = $sense;
+    $s =~ s/^\s*(?:&nbsp;)*\s*\(\w+\)\s*//;         # "(2n)"
+    $s =~ s/\s*\[[^\]]*\]\s*$//;                     # "[D-B]"
+    my @keys;
+    if ($s =~ m{((?:<em class="key">[^<]*</em>)(?:/<em class="key">[^<]*</em>)*)}) {
+        my $run = $1;
+        @keys = map { text($_) =~ s/ /-/gr } $run =~ m{<em class="key">([^<]*)</em>}g;
+        $s =~ s/\Q$run\E/ - /;
+    }
+    my $t = text($s);
+    $t =~ s/\s*\.\s*$//;                    # the closing period
+    $t =~ s/^[A-Z]\d?\b\s*//;               # the first place is the word itself
+    $t =~ s/\b[A-Z]\d?\b/../g;              # the other places
+    $t =~ s/ +\.\./../g;
+    $t =~ s/ +/ /g;
+    $t =~ s/ ,/,/g;
+    # "is a - of/containing.." -> "of/containing..", as the MacTeach lists have
+    # it -- but "is a - place/territory" keeps its noun.
+    $t =~ s{^(?:is|are|is/are)(?: (?:a|an|the|a/the|some))? - (?=$PREP|\.\.)}{};
+    return (@keys ? join('/', @keys) : '-', $t);
+}
+
+my (@prims, @affs);
+for my $w (@order) {
+    my $x = $e{$w};
+    my $is_prim = $x->{type} =~ /-Prim\z/;
+    my $aff = $x->{aff} // '-';
+    next unless $is_prim or ($x->{type} eq 'LW' and $aff ne '-');
+    my $rec = join "\t", $w, $aff, gloss_notes($x->{sense});
+    push @prims, $rec if $is_prim;
+    push @affs,  $rec if $aff ne '-';
+}
+my %seen;
+my @affsets = grep { !$seen{$_}++ } @affs, @prims;
+
+write_list('prims',   \@prims);
+write_list('affs',    \@affs);
+write_list('affsets', \@affsets);
+
+# ---- Helpers ----
+
+sub fetch ($url, $file) {
+    my $tmp = "$file.part";
+    if (HTTP::Tiny->can_ssl) {
+        my $r = HTTP::Tiny->new(agent => 'loglan-fetch/1')->mirror($url, $tmp);
+        die "$url: $r->{status} $r->{reason}\n" unless $r->{success};
+    } else {
+        system('curl', '-fsSL', '-o', $tmp, $url) == 0 or die "$url: curl failed\n";
+    }
+    rename $tmp, $file or die "rename $tmp: $!";
+}
+
+# Written beside the target and renamed into place, so a half-written list is
+# never left behind.  A symlink in the way is somebody's own list, so it is
+# replaced only on request.
+sub write_list ($name, $rows) {
+    my $file = "$dir/$name";
+    if (-l $file && !$opt{'replace-links'}) {
+        warn "$file is a symlink (to ${\ readlink $file}); left alone -- use --replace-links\n";
+        return;
+    }
+    my ($out, $tmp) = tempfile("$name.XXXX", DIR => $dir);
+    binmode $out, ':encoding(UTF-8)';
+    print $out "$_\n" for sort @$rows;
+    close $out or die "write $tmp: $!";
+    chmod 0666 & ~umask, $tmp;              # tempfile makes it 0600
+    rename $tmp, $file or die "rename $tmp: $!";
+    say "$name: ", scalar @$rows, " words";
+}
+
+sub usage {
+    print <<"END";
+Usage: loglan-fetch [--dir DIR] [--refresh] [--replace-links]
+
+Downloads Randall Holmes's Loglan-to-English dictionary and Loglan 1 into
+DIR/src, and builds the prims, affs and affsets drill lists in DIR.
+
+  --dir DIR         where the lists go (default \$LOGLAN_STATE_DIR, else ~/.loglan)
+  --refresh         download the sources again even if they are already there
+  --replace-links   replace a list that is a symlink instead of skipping it
+END
+    exit 0;
+}

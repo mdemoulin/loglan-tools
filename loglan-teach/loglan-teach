@@ -1,0 +1,458 @@
+#!/usr/bin/env perl
+use v5.36;
+use utf8;
+
+use open ':std', ':encoding(UTF-8)';
+use Getopt::Long qw(:config bundling no_ignore_case);
+use JSON::PP     qw(encode_json decode_json);
+use File::Basename qw(basename dirname);
+use List::Util   qw(sum0);
+
+# Loglan flashcard drill in the MacTeach mould.
+# Reads tab-separated data files (PRIMS / AFFS / AFFSETS: <loglan>\t<affix>\t
+# <gloss>\t<notes>; UTTS or any other: <loglan>\t<answer>) and drills them
+# with a ladder + error-box spaced-repetition system.  If a 'derivs' table
+# sits beside the data file, each answer is followed by where the word came
+# from (see mk-utility).
+
+my %opt = (
+    rungs  => 5,
+    escape => 2,
+    field  => 'gloss',
+    dir    => 'recognition',
+);
+
+GetOptions(
+    \%opt,
+    'recall'     => sub { $opt{dir} = 'recall' },
+    'recognition'=> sub { $opt{dir} = 'recognition' },
+    'both'       => sub { $opt{dir} = 'both' },
+    'rungs=i',
+    'escape=i',
+    'field=s',
+    'state=s',
+    'derivs=s',
+    'no-derivs' => sub { $opt{noderivs} = 1 },
+    'reset',
+    'status',
+    'help|h',
+) or die "Try --help\n";
+
+# Nothing the user types is matched case-sensitively, option values included.
+$opt{field} = lc $opt{field};
+
+usage() if $opt{help} or !@ARGV;
+
+# Where the lists and progress are kept: LOGLAN_STATE_DIR, else ~/.loglan,
+# which is where loglan-fetch and mk-utility put the lists.  Every table's
+# state is collected there under the data file's own name, so drilling a list
+# from anywhere still leaves its progress in the one place.  Without such a
+# directory the state file sits beside the data file.  --state always wins.
+my $state_dir = $ENV{LOGLAN_STATE_DIR} // "$ENV{HOME}/.loglan";
+undef $state_dir unless -d $state_dir;
+
+# A bare list name -- "prims", "animals" -- is one of the lists there, unless
+# a file by that name is right here.
+my $data_file = shift @ARGV;
+$data_file = "$state_dir/$data_file"
+    if !-e $data_file && defined $state_dir && $data_file !~ m{/} && -f "$state_dir/$data_file";
+die "No such file: $data_file\n" unless -f $data_file;
+
+my $state_file = $opt{state}
+              // (defined $state_dir
+                    ? "$state_dir/" . basename($data_file) . '.state.json'
+                    : "$data_file.state.json");
+
+# The derivs table normally sits beside the data file; fall back to the state
+# directory so a list of one's own still gets derivations.
+my $derivs_file = $opt{derivs} // do {
+    my $beside = dirname($data_file) . '/derivs';
+    (!-e $beside && defined $state_dir && -e "$state_dir/derivs")
+        ? "$state_dir/derivs" : $beside;
+    };
+my %deriv = load_derivs($derivs_file);
+
+my @records   = load_records($data_file, $opt{field});
+die "No usable records in $data_file\n" unless @records;
+my %by_word = map { $_->{loglan} => $_ } @records;
+add_sibling_bases(\%by_word);
+
+my $state = load_state($state_file, $data_file);
+if ($opt{reset}) {
+    $state->{items} = {};
+    save_state($state_file, $state);
+    say "State reset.";
+    exit 0;
+}
+
+show_status($state, \@records) if $opt{status};
+exit 0 if $opt{status};
+
+say "Loglan drill: ", basename($data_file),
+    "  (", scalar(@records), " items, ",
+    "$opt{rungs} rungs, escape=$opt{escape}, dir=$opt{dir})";
+say "Type the answer and press Enter.  Blank line = show answer.  :q = quit.  :s = status.";
+say "";
+
+drill_loop($state, \@records);
+
+# ---- I/O ----
+
+sub load_records ($file, $field) {
+    open my $fh, '<:encoding(UTF-8)', $file or die "open $file: $!";
+    my @lines = <$fh>;
+    close $fh;
+    s/\r?\n\z// for @lines;
+    return parse_words(\@lines, $field);
+}
+
+sub parse_words ($lines, $field) {
+    # Row layout: <loglan> \t <affix> \t <gloss> \t <place-notes>
+    # or, for utterance files, just <loglan> \t <english>.
+    my @out;
+    for my $line (@$lines) {
+        next unless length $line;
+        my @f = split /\t/, $line;
+        my ($loglan, $affix, $gloss) = @f >= 3 ? @f[0, 1, 2] : ($f[0], undef, $f[1]);
+        for ($loglan, $affix, $gloss) { s/^\s+|\s+$//g if defined $_ }
+        next unless length $loglan;
+        next if $loglan =~ /^\d+$/;
+        my $answer = $field eq 'affix' ? $affix : $gloss;
+        next unless defined $answer && length $answer && $answer ne '-';
+        push @out, { loglan => $loglan, answer => $answer };
+    }
+    return @out;
+}
+
+# Every card of an animal set but the generic names the animal: kasna is
+# "cow/female-cow", kasni "baby-cow", kasne "cowlike".  The generic need not --
+# kasnu is glossed "cattle/kine" -- so take the wording its siblings are built
+# on and accept that for the generic too.  Only sets the data file actually
+# carries are looked at, and a base the gloss already covers is left alone.
+sub add_sibling_bases ($by_word) {
+    state $qualifier = qr/(?:female|male|baby|infant|young|immature|juvenile)/i;
+    for my $r (values %$by_word) {
+        my ($stem) = $r->{loglan} =~ /^(.{2,})u\z/ or next;
+        my %vote;
+        for my $v (qw(a o i e)) {
+            my $sib = $by_word->{"$stem$v"} or next;
+            for my $alt (split m{[/|]}, $sib->{answer}) {
+                my $n = normalize($alt);
+                my ($base) = $v eq 'e' ? $n =~ /^(.+?) ?like\z/i
+                                       : $n =~ /^$qualifier (.+)\z/;
+                $vote{ lc $base }++ if defined $base;
+            }
+        }
+        next unless %vote;
+        # What the set agrees on; alphabetical breaks a tie the same way twice.
+        my ($base) = sort { $vote{$b} <=> $vote{$a} || $a cmp $b } keys %vote;
+        my $k = match_key($base);
+        next if grep { $k eq match_key($_) } accepted_answers($r->{answer}, $r->{loglan});
+        $r->{answer} .= "/$base";
+    }
+}
+
+# <word> \t <the word it came from, or '-'> \t <the natural-language words
+# that one was built from, or '-'>, as written by mk-utility.  A missing
+# table just means no derivations are shown.
+sub load_derivs ($file) {
+    return () if $opt{noderivs} || !-f $file;
+    open my $fh, '<:encoding(UTF-8)', $file or die "open $file: $!";
+    my %d;
+    while (my $line = <$fh>) {
+        $line =~ s/\r?\n\z//;
+        my ($word, $base, $from) = split /\t/, $line;
+        next unless length($word // '') && defined $from;
+        $d{$word} = [ $base, $from ];
+    }
+    close $fh;
+    return %d;
+}
+
+sub load_state ($file, $data_file) {
+    return { version => 1, data_file => basename($data_file), items => {} }
+        unless -f $file;
+    open my $fh, '<:encoding(UTF-8)', $file or die "open $file: $!";
+    local $/;
+    my $json = <$fh>;
+    close $fh;
+    my $s = eval { decode_json($json) } // {};
+    $s->{items} //= {};
+    $s->{version} //= 1;
+    return $s;
+}
+
+sub save_state ($file, $state) {
+    my $tmp = "$file.tmp";
+    open my $fh, '>:encoding(UTF-8)', $tmp or die "open $tmp: $!";
+    print $fh JSON::PP->new->canonical->pretty->encode($state);
+    close $fh;
+    rename $tmp, $file or die "rename $tmp $file: $!";
+}
+
+# ---- Drill ----
+
+sub item_state ($state, $prompt) {
+    return $state->{items}{$prompt} //= {
+        rung => 1, in_error => 0, streak => 0, seen => 0, correct => 0,
+    };
+}
+
+sub pick_record ($state, $records) {
+    my @weights;
+    for my $r (@$records) {
+        my $s      = $state->{items}{ $r->{loglan} };   # read without autoviv
+        my $rung   = $s ? $s->{rung}     : 1;
+        my $in_err = $s ? $s->{in_error} : 0;
+        # Error-box items get top weight; ladder items weighted toward
+        # low rungs. Rung > $opt{rungs} means graduated (weight 0).
+        my $w = $in_err                ? $opt{rungs} + 2
+              : $rung > $opt{rungs}    ? 0
+              :                          $opt{rungs} - $rung + 2;
+        push @weights, $w;
+    }
+    my $total = sum0 @weights;
+    if ($total == 0) {
+        # Everything graduated. Re-open the top rung for lifetime review.
+        @weights = (1) x @$records;
+        $total   = scalar @$records;
+    }
+    my $roll = rand() * $total;
+    my $acc  = 0;
+    for my $i (0 .. $#$records) {
+        $acc += $weights[$i];
+        return $records->[$i] if $roll < $acc;
+    }
+    return $records->[-1];
+}
+
+sub choose_direction () {
+    return $opt{dir} eq 'both'
+        ? (rand() < 0.5 ? 'recognition' : 'recall')
+        : $opt{dir};
+}
+
+sub drill_loop ($state, $records) {
+    my $asked = 0;
+    local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
+
+    while (1) {
+        my $r         = pick_record($state, $records);
+        my $direction = choose_direction();
+        my ($prompt, $expected) =
+            $direction eq 'recognition'
+            ? ($r->{loglan}, $r->{answer})
+            : ($r->{answer}, $r->{loglan});
+
+        # ':s' is a look, not an answer: show the histogram and then ask the
+        # same card again instead of moving on to the next one.
+        my $reply;
+        while (1) {
+            say "";
+            say "  $prompt";
+            print "  > ";
+            $reply = <STDIN>;
+            last unless defined $reply;
+            chomp $reply;
+            $reply =~ s/^\s+|\s+$//g;
+            # ':q' and ':s' are taken however they are capitalised.
+            $reply = lc $reply if $reply =~ /\A:/;
+            last unless $reply eq ':s';
+            show_status($state, $records);
+        }
+        last unless defined $reply;
+
+        if ($reply eq ':q') { last }
+
+        my $s = item_state($state, $r->{loglan});
+        $s->{seen}++;
+        $asked++;
+
+        # The gloss is the prompt in the recall direction, so only the other
+        # way round is there a Loglan word to read the -e adjectives off.
+        my $glossed = $direction eq 'recognition' ? $r->{loglan} : undef;
+
+        if ($reply eq '') {
+            demote($s);
+        }
+        elsif (match_answer($reply, $expected, $glossed)) {
+            say "     ok" . ($s->{in_error} ? "  [error-box ${\ ($s->{streak}+1) }/$opt{escape}]" : "  [rung ${\ ($s->{rung}) }->${\ ($s->{rung}+1) }]");
+            $s->{correct}++;
+            promote($s);
+        }
+        else {
+            say "     no";
+            demote($s);
+        }
+        say "     ", join ' / ', accepted_answers($expected, $glossed);
+        show_derivation($r->{loglan});
+
+        save_state($state_file, $state) if $asked % 5 == 0;
+    }
+    save_state($state_file, $state);
+    say "\nSaved.";
+}
+
+# "ladza", "ladze", "ladzi" and "ladzu" were all coined from "ladzo", so the
+# ethnic and animal declensions show the derivation of the word that came
+# first.  Words that stand on their own show their own.
+sub show_derivation ($loglan) {
+    my $d = $deriv{$loglan} or return;
+    my ($base, $from) = @$d;
+    my $line = $base eq '-' ? '' : $base;
+    $line .= (length $line ? "  [$from]" : $from) unless $from eq '-';
+    say "     from: $line" if length $line;
+}
+
+sub promote ($s) {
+    if ($s->{in_error}) {
+        $s->{streak}++;
+        if ($s->{streak} >= $opt{escape}) {
+            $s->{in_error} = 0;
+            $s->{streak}   = 0;
+            $s->{rung}     = 1;
+        }
+    }
+    else {
+        $s->{rung}++;
+    }
+}
+
+sub demote ($s) {
+    $s->{in_error} = 1;
+    $s->{streak}   = 0;
+    $s->{rung}     = 0;
+}
+
+# Every spelling the drill will take for $expected, which is also what it
+# lists back after each card.  $loglan (the word being glossed, if known)
+# lets the -e prim forms accept the plain English adjective alongside the
+# "X-like" the gloss spells out: "sheepish", "fishy", "lousy", "horsy".
+sub accepted_answers ($expected, $loglan = undef) {
+    my $ish = defined $loglan && $loglan =~ /e\z/i;
+    my (@gloss, @derived, %seen);
+    for my $a (split m{[/|]}, $expected) {
+        $a =~ s/^\s+|\s+$//g;
+        next unless length $a;
+        for my $v (expand_optionals($a)) {
+            my $n = normalize($v);
+            next unless length $n;
+            # "sheep like", "sheeplike" and "sheep-like" are one answer.
+            push @gloss, $n unless $seen{ match_key($n) }++;
+            next unless $ish && $n =~ /^(.+?) ?like\z/i;
+            my $stem = $1;
+            # No stem ending in e takes -ish, but plenty take -y, and the
+            # silent e drops first: louse/lousy, snake/snaky.
+            my @adj = ("${stem}y");
+            unshift @adj, "${stem}ish"                 unless $stem =~ /e\z/i;
+            push    @adj, $stem =~ s/e\z//ir . 'y'     if     $stem =~ /e\z/i;
+            push @derived, grep { !$seen{ match_key($_) }++ } @adj;
+        }
+    }
+    return (@gloss, @derived);   # what the gloss says first, then the -e forms
+}
+
+sub match_answer ($reply, $expected, $loglan = undef) {
+    my $k = match_key(normalize($reply));
+    return scalar grep { $k eq match_key($_) } accepted_answers($expected, $loglan);
+}
+
+# Neither case nor spacing counts, so a gloss written one way ("fish-like")
+# takes a reply written the other ("Fishlike").
+sub match_key ($s) { return lc($s) =~ s/ //gr }
+
+# Hyphens, underscores and runs of whitespace all count as one word break,
+# so "lion cub" matches "lion-cub" and "lion like" matches "lion_like".
+sub normalize ($s) {
+    $s =~ s/[-_\s]+/ /g;
+    $s =~ s/^ | $//g;
+    return $s;
+}
+
+# "vapo(u)r" -> ("vapor", "vapour"): parenthesised letters are optional.
+# A dash left dangling at either end after removal (e.g. "Loglan-(language)"
+# -> "Loglan-", "(house)-fly" -> "-fly") is dropped too.
+sub expand_optionals ($s) {
+    my @out = ($s);
+    while (1) {
+        my $changed = 0;
+        @out = map {
+            if (/^(.*?)\(([^()]*)\)(.*)$/s) {
+                $changed = 1;
+                my ($pre, $in, $post) = ($1, $2, $3);
+                my $without = $pre . $post;
+                $without =~ s/-\z// if $post eq '';
+                $without =~ s/\A-// if $pre  eq '';
+                ($without, "$pre$in$post");
+            }
+            else { $_ }
+        } @out;
+        last unless $changed;
+    }
+    return @out;
+}
+
+sub show_status ($state, $records) {
+    my %hist;
+    my $err = 0;
+    my $grad = 0;
+    for my $r (@$records) {
+        my $s = $state->{items}{$r->{loglan}};
+        if (!$s)                 { $hist{new}++; next }
+        if ($s->{in_error})      { $err++;  next }
+        if ($s->{rung} > $opt{rungs}) { $grad++; next }
+        $hist{ $s->{rung} }++;
+    }
+    say "";
+    say "  status:";
+    say sprintf("    new       %5d", $hist{new} // 0);
+    say sprintf("    error-box %5d", $err);
+    for my $r (1 .. $opt{rungs}) {
+        say sprintf("    rung %d    %5d", $r, $hist{$r} // 0);
+    }
+    say sprintf("    graduated %5d", $grad);
+    say sprintf("    total     %5d", scalar @$records);
+}
+
+sub usage {
+    my $me = basename($0);
+    print <<"USAGE";
+Usage: $me [options] <data-file>
+
+  Ladder + error-box drill for Loglan vocabulary and utterances.  Reads
+  tab-separated files: <loglan>\t<affix>\t<gloss>\t<notes> (prims, affs,
+  affsets, ethnic, animals, l1prims) or <loglan>\t<answer> (utts or your own
+  lists).  A bare name such as 'prims' is looked for in \$LOGLAN_STATE_DIR
+  (default ~/.loglan), where loglan-fetch and mk-utility put the lists.
+
+Direction:
+  --recognition    prompt Loglan, expect gloss   [default]
+  --recall         prompt gloss, expect Loglan
+  --both           alternate randomly
+
+Ladder:
+  --rungs N        rungs on the ladder            [default 5]
+  --escape K       correct answers to leave the   [default 2]
+                     error box and re-enter rung 1
+  --field FIELD    for AFFS/AFFSETS: 'gloss' or 'affix'  [default gloss]
+
+Derivations:
+  --derivs FILE    word-origin table shown after each answer
+                     [default 'derivs' beside the data file]
+  --no-derivs      do not show derivations
+
+State:
+  --state FILE     path to state file  [default \$LOGLAN_STATE_DIR (or ~/.loglan)
+                     /<data-file>.state.json]
+  --reset          wipe progress for this data file
+  --status         print progress histogram and exit
+
+In-drill commands:
+  <answer>+Enter   grade your answer
+  Enter alone      give up on this card (counts as a miss)
+  :s               status
+  :q               quit and save
+
+USAGE
+    exit 0;
+}
