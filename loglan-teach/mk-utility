@@ -53,6 +53,7 @@ my (%prims, @prims_order);
         next unless @f >= 3;
         my $w = $f[0];
         $_ = defined $_ ? s/^\s+|\s+$//gr : '' for @f;
+        next if $f[3] && $f[3] =~ /\(formed by rule\)\z/;   # ours, added below
         $prims{$w} = { affix => $f[1], gloss => $f[2], notes => $f[3] // '', line => $_ };
         push @prims_order, $w;
     }
@@ -422,6 +423,27 @@ for my $st (sort keys %animal_stem) {
                                                    : rule_animal_row($st, $_) } qw(u a o i e);
 }
 write_drill('animals', \@animal_rows);
+
+# The members formed by rule are primitives like the rest of their sets, so
+# they go into prims and affsets as well (affs takes only words with affixes).
+# loglan-fetch builds those two from the dictionary alone; adding only what is
+# missing keeps a second run from changing anything.
+my @by_rule = grep { /\(formed by rule\)\z/ } @ethnic_rows, @animal_rows;
+for my $name (qw(prims affsets)) {
+    my $file = "$dir/$name";
+    next unless -f $file;
+    open my $in, '<', $file or die "open $file: $!";
+    chomp(my @rows = <$in>);
+    close $in;
+    my %have = map { (split /\t/)[0] => 1 } @rows;
+    my @add  = grep { !$have{ (split /\t/)[0] } } @by_rule;
+    next unless @add;
+    my $out = out_file($name) // next;
+    open my $fh, '>', $out or die "open $out: $!";
+    print $fh "$_\n" for sort @rows, @add;
+    close $fh;
+    say "$name: added ", scalar(@add), " formed by rule";
+}
 
 # A member of a set that none of the sources has is still a word -- the
 # declension forms it -- so the drill gets it too, glossed and noted by the

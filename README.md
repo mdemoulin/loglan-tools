@@ -30,9 +30,9 @@ directory; a list of your own can be given by path.
 
 | List | Contents |
 |---|---|
-| `prims` | every primitive in the dictionary |
+| `prims` | every primitive in the dictionary, plus the members of the ethnic and animal sets that only the declension rule forms (added by `mk-utility`) |
 | `affs` | every primitive or little word with affixes; drill with `--field affix` |
-| `affsets` | `prims` and `affs` together |
+| `affsets` | `prims` and `affs` together, likewise |
 | `ethnic` | the ethnic declension: *-a* language, *-e* territory, *-i* person, *-o* culture |
 | `animals` | the animal declension: *-u* generic, *-a* female, *-o* male, *-i* young, *-e* -like |
 | `l1prims` | the primitives used in chapters 1-7 of *Loglan 1*, with the book's definitions |
