@@ -50,6 +50,28 @@ them is accepted as an answer; the notes are the rest of the definition,
 with the word's own place as `-` and the others as `..`.  Any file of
 `loglan<TAB>english` lines can be drilled too.
 
+### Sentence files
+
+A two-column file -- `loglan<TAB>english` -- is drilled as sentences, written
+in the notation of the Institute's MacTeach program, so one line can accept
+many wordings:
+
+| Notation | Meaning |
+|---|---|
+| `a/b` | alternatives |
+| `+`, `&` | close a set of alternatives, with and without a space: `is/s+a/the+brother-of` is *(is \| 's) (a \| the) brother of* |
+| `=`, `:` | open one after fixed words, with and without a space: `there/to=X/it`, `grand:father/parent` |
+| `-` | joins words into one group: `brother-of` |
+| `(x)`, `(*x)` | optional; the starred kind is shown in the prompt |
+| `\c` | the character `c`, literally |
+| `\|note`, `[note]` | a note on the English, on the Loglan |
+
+Answers are compared without regard to case, spacing, hyphens or
+punctuation -- except Loglan commas, which are pauses and part of the
+grammar.  The prompt shows the main wording, without the alternatives.
+
+In any list, a line starting with `#` is skipped.
+
 ### Adding your own entries
 
 A file named `<list>.added` beside a list -- `prims.added`,

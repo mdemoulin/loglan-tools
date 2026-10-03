@@ -138,9 +138,11 @@ sub load_records ($file, $field) {
 sub parse_words ($lines, $field) {
     # Row layout: <loglan> \t <affix> \t <gloss> \t <place-notes>
     # or, for utterance files, just <loglan> \t <english>.
+    # A line starting with '#' is commented out.
     my @out;
     for my $line (@$lines) {
         next unless length $line;
+        next if $line =~ /^\s*#/;
         my @f = split /\t/, $line;
         my ($loglan, $affix, $gloss) = @f >= 3 ? @f[0, 1, 2] : ($f[0], undef, $f[1]);
         for ($loglan, $affix, $gloss) { s/^\s+|\s+$//g if defined $_ }
@@ -148,9 +150,126 @@ sub parse_words ($lines, $field) {
         next if $loglan =~ /^\d+$/;
         my $answer = $field eq 'affix' ? $affix : $gloss;
         next unless defined $answer && length $answer && $answer ne '-';
-        push @out, { loglan => $loglan, answer => $answer };
+        # Two-column rows are sentences, written in MacTeach's notation for
+        # alternatives (see the MacTeach section below).
+        push @out, { loglan => $loglan, answer => $answer, sentence => (@f < 3) };
     }
     return @out;
+}
+
+# ---- MacTeach sentence notation ----
+# The utterance files keep the notation of the Institute's MacTeach, whose
+# DataFile.txt and mainsent() define it:
+#
+#   space      ends a word group;  '-' joins words within one ("brother-of")
+#   a/b        alternatives
+#   + and &    close a set of alternatives, '+' with a space after it and '&'
+#              without:  "is/s+a/the+brother-of" is (is|'s) (a|the) brother of
+#   = and :    open one after fixed words, '=' with a space and ':' without:
+#              "there/to=X/it" is there | to (X|it), "grand:father/parent"
+#   (x)        optional;  (*x) optional, but shown in the sentence as displayed
+#   \c         c taken literally (MacTeach also used it to mark punctuation the
+#              answer must have; here Loglan commas always count, and all
+#              other punctuation never does)
+#   |note      the rest of an English line is a note;  [note] in the Loglan
+#
+# A sentence compiles to a pattern rather than a list of wordings, since
+# "Y/he(is)/she(is) is/s+older-than ..." alone has hundreds.  Answers are
+# compared with case, spaces, hyphens and punctuation ignored, Loglan commas
+# excepted.
+
+sub mt_split_note ($text) {
+    my ($body, $note) = ($text, '');
+    if ($body =~ s/\s*\[(.*?)\]\s*//) { $note = $1 }            # Loglan
+    elsif ($body =~ s/(?<!\\)\|(.*)\z//s) { $note = $1 }        # English
+    $note =~ s/\\(.)/$1/g;
+    return ($body, $note);
+}
+
+# Keep what an answer is compared on: letters and digits, and in Loglan the
+# pause commas that are part of its grammar.
+sub mt_fold ($s, $loglan) {
+    $s = lc $s;
+    return $loglan ? $s =~ s/[^a-z0-9,]//gr : $s =~ s/[^a-z0-9]//gr;
+}
+
+# Recursive descent over the sentence; each parser returns
+# [pattern, displayed text].
+sub mt_compile ($text, $loglan) {
+    my @c = split //, $text;
+    my $i = 0;
+    my ($alt, $seg, $group, $sentence);
+    my $peek = sub { $i < @c ? $c[$i] : '' };
+    $sentence = sub {               # groups separated by spaces
+        my ($re, $show) = $group->();
+        while ($peek->() eq ' ') {
+            $i++ while $peek->() eq ' ';
+            last if $peek->() eq '' || $peek->() eq ')';
+            my ($r, $s) = $group->();
+            $re .= $r;  $show .= " $s";
+        }
+        return ($re, $show);
+    };
+    $group = sub {                  # sets joined by + (space) and & (none)
+        my ($re, $show) = $seg->();
+        while ($peek->() eq '+' || $peek->() eq '&') {
+            my $sep = $c[$i++] eq '+' ? ' ' : '';
+            my ($r, $s) = $seg->();
+            $re .= $r;  $show .= "$sep$s";
+        }
+        return ($re, $show);
+    };
+    $seg = sub {                    # a set of alternatives
+        my @alts = ($alt->());
+        while ($peek->() eq '/') { $i++; push @alts, $alt->() }
+        return @alts == 1 ? @{ $alts[0] }
+             : ('(?:' . join('|', map { $_->[0] } @alts) . ')', $alts[0][1]);
+    };
+    $alt = sub {                    # fixed text, then perhaps = or : and a set
+        my ($re, $show) = ('', '');
+        while (1) {
+            my $ch = $peek->();
+            last if $ch eq '' || $ch =~ m{[ +&/)]};
+            if ($ch eq '=' || $ch eq ':') {
+                $i++;
+                my ($r, $s) = $seg->();
+                return [$re . $r, $show . ($ch eq '=' ? ' ' : '') . $s];
+            }
+            $i++;
+            if ($ch eq '(') {
+                my $star = $peek->() eq '*' ? ($i++, 1) : 0;
+                my ($r, $s) = $sentence->();
+                $i++ if $peek->() eq ')';
+                $re .= "(?:$r)?";
+                $show .= $s if $star;
+                next;
+            }
+            $ch = $c[$i++] // '' if $ch eq '\\';
+            $ch = ' ' if $ch eq '-';
+            $show .= $ch;
+            my $f = mt_fold($ch, $loglan);
+            $re .= quotemeta $f if length $f;
+        }
+        return [$re, $show];
+    };
+    my ($re, $show) = $sentence->();
+    $show =~ s/\s+/ /g;
+    $show =~ s/ ([,.!?;:])/$1/g;
+    $show =~ s/^ | $//g;
+    return (qr/\A$re\z/, $show);
+}
+
+my %mt_cache;
+sub mt ($text, $loglan) {
+    $mt_cache{"$loglan\0$text"} //= do {
+        my ($body, $note) = mt_split_note($text);
+        my ($re, $show) = mt_compile($body, $loglan);
+        { re => $re, show => $show, note => $note };
+    };
+}
+
+sub mt_match ($reply, $text, $loglan) {
+    return mt_fold($reply, $loglan) =~ mt($text, $loglan)->{re};
 }
 
 # Every card of an animal set but the generic names the animal: kasna is
@@ -272,6 +391,13 @@ sub drill_loop ($state, $records) {
             $direction eq 'recognition'
             ? ($r->{loglan}, $r->{answer})
             : ($r->{answer}, $r->{loglan});
+        # A sentence is shown as MacTeach showed it: the main wording, without
+        # the alternatives; a Loglan note goes with the prompt.
+        my $loglan_prompt = $direction eq 'recognition';
+        if ($r->{sentence}) {
+            my $p = mt($prompt, $loglan_prompt);
+            $prompt = $p->{show} . ($loglan_prompt && length $p->{note} ? "   [$p->{note}]" : '');
+        }
 
         # ':s' is a look, not an answer: show the histogram and then ask the
         # same card again instead of moving on to the next one.
@@ -301,10 +427,12 @@ sub drill_loop ($state, $records) {
         # way round is there a Loglan word to read the -e adjectives off.
         my $glossed = $direction eq 'recognition' ? $r->{loglan} : undef;
 
+        my $right = $r->{sentence} ? mt_match($reply, $expected, !$loglan_prompt)
+                                   : match_answer($reply, $expected, $glossed);
         if ($reply eq '') {
             demote($s);
         }
-        elsif (match_answer($reply, $expected, $glossed)) {
+        elsif ($right) {
             say "     ok" . ($s->{in_error} ? "  [error-box ${\ ($s->{streak}+1) }/$opt{escape}]" : "  [rung ${\ ($s->{rung}) }->${\ ($s->{rung}+1) }]");
             $s->{correct}++;
             promote($s);
@@ -313,8 +441,15 @@ sub drill_loop ($state, $records) {
             say "     no";
             demote($s);
         }
-        say "     ", join ' / ', accepted_answers($expected, $glossed);
-        show_derivation($r->{loglan});
+        if ($r->{sentence}) {
+            my $e = mt($expected, !$loglan_prompt);
+            say "     $e->{show}";
+            say "     ($e->{note})" if length $e->{note} && !$loglan_prompt;
+        }
+        else {
+            say "     ", join ' / ', accepted_answers($expected, $glossed);
+            show_derivation($r->{loglan});
+        }
 
         save_state($state_file, $state) if $asked % 5 == 0;
     }
