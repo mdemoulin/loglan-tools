@@ -329,7 +329,7 @@ for my $w (sort keys %dict) {
 }
 
 # An animal the dictionary lacks altogether starts with its -u word in
-# animals.added (hamsteru, kavhiu); the rest of its set is formed by rule.
+# animals.added (hamsteru, kavhu); the rest of its set is formed by rule.
 my %added_animal;
 for my $line (read_added('animals')) {
     my @f = split /\t/, $line;

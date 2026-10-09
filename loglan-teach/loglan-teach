@@ -495,6 +495,8 @@ sub demote ($s) {
 # lists back after each card.  $loglan (the word being glossed, if known)
 # lets the -e prim forms accept the plain English adjective alongside the
 # "X-like" the gloss spells out: "sheepish", "fishy", "lousy", "horsy".
+# Any "female X" or "male X" also takes the English "she-X" or "he-X":
+# lupsa "she-wolf", gotco "he-goat".
 sub accepted_answers ($expected, $loglan = undef) {
     my $ish = defined $loglan && $loglan =~ /e\z/i;
     my (@gloss, @derived, %seen);
@@ -506,6 +508,10 @@ sub accepted_answers ($expected, $loglan = undef) {
             next unless length $n;
             # "sheep like", "sheeplike" and "sheep-like" are one answer.
             push @gloss, $n unless $seen{ match_key($n) }++;
+            if ($n =~ /^(fe)?male (.+)\z/i) {
+                my $sex = ($1 ? 'she' : 'he') . " $2";
+                push @derived, $sex unless $seen{ match_key($sex) }++;
+            }
             next unless $ish && $n =~ /^(.+?) ?like\z/i;
             my $stem = $1;
             # No stem ending in e takes -ish, but plenty take -y, and the
