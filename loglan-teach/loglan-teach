@@ -118,8 +118,11 @@ sub show_tables ($dir) {
         my $saved = -f "$file.state.json" ? '   (progress saved)' : '';
         if (-f $file) {
             open my $fh, '<', $file or die "open $file: $!";
+            # Blank lines and '#' comments are not entries (see parse_words).
             my $n = 0;
-            $n++ while <$fh>;
+            while (my $line = <$fh>) {
+                $n++ unless $line =~ /^\s*(?:#|\z)/;
+            }
             printf "%-10s %6d entries%s\n", $t, $n, $saved;
         } elsif ($saved) {
             printf "%-10s %6s        %s\n", $t, '', $saved =~ s/^\s+//r;
