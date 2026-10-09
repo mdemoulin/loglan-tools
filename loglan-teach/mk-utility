@@ -7,7 +7,7 @@ use Getopt::Long qw(:config bundling no_ignore_case);
 
 # Builds a practice cheat-sheet (cheatsheet.html) plus four drill files for
 # loglan-teach -- ethnic, animals, l1prims, derivs -- from the prims list,
-# Loglan 1 and Randall Holmes's Loglan-to-English dictionary, all of which
+# Loglan 1 and Lavinia Randall Holmes's Loglan-to-English dictionary, all of which
 # loglan-fetch puts in the data directory.  l1prims is the set of primitives
 # actually used in the main text (chapters 1-7); Appendix B supplies their
 # book definitions.  derivs is the word-origin table loglan-teach shows after

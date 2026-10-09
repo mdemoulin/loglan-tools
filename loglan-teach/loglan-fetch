@@ -197,7 +197,7 @@ sub usage {
     print <<"END";
 Usage: loglan-fetch [--dir DIR] [--refresh] [--replace-links]
 
-Downloads Randall Holmes's Loglan-to-English dictionary and Loglan 1 into
+Downloads Lavinia Randall Holmes's Loglan-to-English dictionary and Loglan 1 into
 DIR/src, and builds the prims, affs and affsets drill lists in DIR.
 
   --dir DIR         where the lists go (default \$LOGLAN_STATE_DIR, else ~/.loglan)

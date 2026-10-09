@@ -52,12 +52,26 @@ esac
 
 data=${LOGLAN_STATE_DIR:-$HOME/.loglan}
 
+# The shipped lists (lists/, used with The Loglan Center's permission) go into
+# the state directory, but never over a list that is already there: it may be
+# the user's own copy, or a symlink to one.
+mkdir -p "$data"
+for f in "$here"/lists/*; do
+    name=$(basename "$f")
+    if [ -e "$data/$name" ] || [ -L "$data/$name" ]; then
+        echo "kept your $data/$name"
+    else
+        install -m 644 "$f" "$data/$name"
+        echo "installed $data/$name"
+    fi
+done
+
 # The word lists are built, not shipped: offer to build them now.  Asked only
 # when the installer was asked where to install, i.e. run by hand.
 built=
 if [ $# -eq 0 ]; then
     echo
-    echo "The word lists come from Randall Holmes's Loglan dictionary and Loglan 1,"
+    echo "The word lists come from Lavinia Randall Holmes's Loglan dictionary and Loglan 1,"
     echo "downloaded from randall-holmes.github.io (about 5 MB) into $data/src."
     read -r -p "Download them and build the lists now? [Y/n] " yn
     case ${yn:-y} in
@@ -95,7 +109,8 @@ Drill a list:
    box when you miss; progress is saved for next time.
 
 Lists: prims (all primitives), affs (words with affixes; try --field affix),
-affsets, animals, ethnic, l1prims (the primitives used in Loglan 1).
+affsets, animals, ethnic, l1prims (the primitives used in Loglan 1), and utts
+(whole sentences, installed with the tools: loglan-teach utts).
 
 Everything is kept in $data: the lists, your progress
 (<list>.state.json), the downloaded sources, and cheatsheet.html -- open

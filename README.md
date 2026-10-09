@@ -23,7 +23,7 @@ one of a gloss's alternatives ("box/crate/carton") counts as right.  Open
 
 | Command | What it does |
 |---|---|
-| `loglan-fetch` | Downloads Randall Holmes's current Loglan-to-English dictionary and the HTML edition of *Loglan 1*, and builds the `prims`, `affs` and `affsets` lists from the dictionary |
+| `loglan-fetch` | Downloads Lavinia Randall Holmes's current Loglan-to-English dictionary and the HTML edition of *Loglan 1*, and builds the `prims`, `affs` and `affsets` lists from the dictionary |
 | `mk-utility` | Builds `cheatsheet.html` (the ethnic and animal declensions, and every primitive used in *Loglan 1*) and the `ethnic`, `animals`, `l1prims` and `derivs` lists |
 | `loglan-teach LIST` | Drills a list: `--recognition` (Loglan to English, the default), `--recall`, or `--both`; `--status` shows how far along you are, and `loglan-teach --tables` lists every list with its size and whether progress is saved |
 
@@ -43,6 +43,7 @@ directory; a list of your own can be given by path.
 | `animals` | the animal declension: *-u* generic, *-a* female, *-o* male, *-i* young, *-e* -like |
 | `l1prims` | the primitives used in chapters 1-7 of *Loglan 1*, with the book's definitions |
 | `derivs` | not a drill: the word origins `loglan-teach` shows after each answer |
+| `utts` | 383 sentences from the Institute's LoglanTeach and MacTeach programs, corrected to current Loglan grammar; a sentence drill (see below).  Shipped in `lists/`, not built, and copied into `~/.loglan` by `install.sh` |
 
 Each line is tab-separated: `word`, `affixes` (or `-`), `gloss`, `notes`.
 The gloss is the keywords of the word's first definition, and any one of
@@ -94,11 +95,15 @@ The code here is Copyright (C) 2026 Michael A. Demoulin, licensed under the
 GNU General Public License, version 3 or (at your option) any later version;
 see [COPYING](COPYING).
 
-The word data is not included.  The dictionary and *Loglan 1* belong to The
-Loglan Institute; Randall Holmes publishes them at
-<https://randall-holmes.github.io/Loglan/cefli.html> for private study, and
-other uses need the Institute's permission.  `loglan-fetch` downloads your
-own copy.
+The dictionary and *Loglan 1* are not included.  Lavinia Randall Holmes
+publishes them at <https://randall-holmes.github.io/Loglan/cefli.html>, and
+`loglan-fetch` downloads your own copy and builds the word lists from it.
+
+The sentences in `lists/utts` are included with the permission of The Loglan
+Center (Lavinia Randall Holmes, October 2026).  **All rights to the Loglan
+material are reserved by The Loglan Center, Inc.** (the Idaho corporation
+which has superseded the Florida corporation).  That material is not covered
+by the GPL.
 
 ## Requirements
 
