@@ -405,7 +405,7 @@ def show_readings(lex, words):
     return '%s (or %s%s)' % (lead, stem, '/'.join(rest))
 
 
-def analyse(g, word):
+def analyze(g, word):
     """('complex'|'borrowing'|'primitive'|'little word'|'name'|None, pieces)."""
     if g.is_a('Cmapua', word):
         return 'little word', None
@@ -425,7 +425,7 @@ def check(g, lex, args):
     status = 0
     for word in args.targets:
         word = word.strip()
-        kind, parts = analyse(g, word)
+        kind, parts = analyze(g, word)
         print('\n' + word)
         if kind is None:
             print('    not a Loglan word: the parser takes it as nothing at all')

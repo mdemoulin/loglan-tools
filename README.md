@@ -5,7 +5,7 @@ James Cooke Brown began in 1955.
 
 ## loglan-teach
 
-A flashcard drill for Loglan vocabulary, in the mould of the Loglan
+A flashcard drill for Loglan vocabulary, in the mold of the Loglan
 Institute's old MacTeach and LoglanTeach programs: a ladder of rungs that a
 word climbs as you answer it correctly, and an error box it must answer its
 way out of when you miss.
@@ -25,6 +25,7 @@ one of a gloss's alternatives ("box/crate/carton") counts as right.  Open
 |---|---|
 | `loglan-update` | Brings the sources up to date -- from the copies shipped with the tools, and from the web when they have changed there -- and builds every list from them.  `loglan-teach` and `loglan-coin` run it in the background once a day |
 | `mk-utility` | Run by `loglan-update`: builds `cheatsheet.html` (the ethnic and animal declensions, and every primitive used in *Loglan 1*) and the `l1prims` and `derivs` lists |
+| `loglan-parse` | Randall Holmes's parser, `omnibus.py`, in its own interactive loop: type a Loglan utterance and see how it parses (`?` for its commands, `...` to leave).  It runs in `~/.loglan/parse`, where its scratch files and anything it saves land |
 | `loglan-teach LIST` | Drills a list: `--recognition` (Loglan to English, the default), `--recall`, or `--both`; `--status` shows how far along you are, and `loglan-teach --tables` lists every list with its size and whether progress is saved |
 
 Everything lives in `~/.loglan` (or `$LOGLAN_STATE_DIR`): the sources
@@ -196,6 +197,6 @@ by the GPL.
 ## Requirements
 
 - Perl 5.36 or later (core modules only)
-- Python 3.8 or later, for `loglan-coin` (standard library only)
+- Python 3.8 or later, for `loglan-coin` and `loglan-parse` (standard library only)
 - for the online check (optional: the tools work from the shipped sources
   without it), HTTPS: Perl's `IO::Socket::SSL`, or `curl`

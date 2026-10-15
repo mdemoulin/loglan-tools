@@ -10,7 +10,7 @@ use FindBin        qw($RealBin);
 use List::Util   qw(sum0);
 use POSIX          qw(setsid _exit);
 
-# Loglan flashcard drill in the MacTeach mould.
+# Loglan flashcard drill in the MacTeach mold.
 # Reads tab-separated data files (PRIMS / AFFS / AFFSETS: <loglan>\t<affix>\t
 # <gloss>\t<notes>; UTTS or any other: <loglan>\t<answer>) and drills them
 # with a ladder + error-box spaced-repetition system.  If a 'derivs' table

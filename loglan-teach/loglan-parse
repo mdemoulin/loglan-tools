@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# loglan-parse -- Randall Holmes's PEG parser for Loglan, omnibus.py, in its
+# own interactive loop: type a Loglan utterance and see how it parses.  See
+# the parser's own help (type ? at its prompt) for its commands; ... leaves.
+#
+#   loglan-parse              the interactive loop
+#   loglan-parse -i           the same, staying in Python afterwards
+#
+# The parser is the copy loglan-update keeps current in ~/.loglan/src.  It
+# writes scratch files (dummy, dummy2, dummylog) and anything its '>name'
+# command saves into the directory it runs in, so it runs in ~/.loglan/parse;
+# a file named on the command line that exists here is passed on by its full
+# path.
+
+dir=${LOGLAN_STATE_DIR:-$HOME/.loglan}
+parser=$dir/src/Sources/omnibus.py
+[ -f "$parser" ] || { echo "loglan-parse: no $parser -- run loglan-update first" >&2; exit 1; }
+py=()
+args=()
+for a in "$@"; do
+    case $a in
+        -i) py+=(-i) ;;
+        *)  if [ -e "$a" ]; then args+=("$(readlink -f -- "$a")"); else args+=("$a"); fi ;;
+    esac
+done
+mkdir -p "$dir/parse"
+cd "$dir/parse" && exec python3 "${py[@]}" "$parser" "${args[@]}"
