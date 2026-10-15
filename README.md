@@ -1,6 +1,6 @@
 # loglan-tools
 
-Tools for learning [Loglan](https://www.loglan.org/), the logical language
+Tools for learning and working with [Loglan](https://www.loglan.org/), the logical language
 James Cooke Brown began in 1955.
 
 > **Not everything here is under the GPL.**  The programs are free software
@@ -56,6 +56,7 @@ your own can be given by path.  `loglan-fetch`, the old name of
 | `ethnic` | auxiliary: the ethnic declension, *-a* language, *-e* territory, *-i* person, *-o* culture |
 | `animals` | auxiliary: the animal declension, *-u* generic, *-a* female, *-o* male, *-i* young, *-e* -like |
 | `coined` | your own words, from `~/.loglan/new-words.json` (see [Your own words](#your-own-words)); kept out of the other lists |
+| `m1-text` | not a drill: the commentary of the Institute's MacTeach 1 / LoglanTeach program, the 34 short lessons it showed between groups of the `utts` sentences -- to read alongside them.  Shipped in `lists/` and put into `~/.loglan` like `utts` |
 | `l1prims` | the primitives used in chapters 1-7 of *Loglan 1*, with the book's definitions |
 | `derivs` | not a drill: the word origins `loglan-teach` shows after each answer |
 | `utts` | 383 sentences from the Institute's LoglanTeach and MacTeach programs, corrected to current Loglan grammar; a sentence drill (see below).  Shipped in `lists/`, not built, and put into `~/.loglan` unless you already have one there |

@@ -15,6 +15,8 @@ This repository holds two kinds of file, under different terms.
                     Randall Holmes's PEG parser for Loglan
     lists/utts      the sentences of the Institute's LoglanTeach and MacTeach
                     programs, corrected to current Loglan grammar
+    lists/m1-text   the commentary (lessons) of the Institute's MacTeach 1 /
+                    LoglanTeach program
     lists/aux/ethnic
     lists/aux/animals
                     the ethnic and animal declension sets, drawn from the

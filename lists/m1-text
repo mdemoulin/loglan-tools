@@ -1,0 +1,368 @@
+# m1-text -- the commentary of the Institute's MacTeach 1 / LoglanTeach program: the lessons {1}..{34} it showed
+# between groups of the sentences in utts (whose original markers for them did not survive the conversion).
+# From the 2001 MS-DOS LoglanTeach, as edited when converting it.  A text to read, not a list to drill.
+# All rights reserved by The Loglan Center, Inc. (the Idaho corporation which has superseded the Florida corporation).
+# Included with the permission of The Loglan Center (Lavinia Randall Holmes, October 2026).
+# This file is not covered by the GPL that covers the code in this repository.
+{1}
+    To get the maximum benefit from this program, read every Loglan utterance
+out loud.  You should work in a place where this is possible.  When making
+Loglan responses, please speak them aloud as well.  Do this before or as you
+type them.  When making English responses, it is good to read the Loglan
+utterance aloud before you translate it.
+    To refresh your memory, the six vowel letters are pronounced in the
+following ways:
+
+    a	[ah] as in 'father'		o   [oh] as in 'note'
+    e	[eh] as in 'met'		u   [oo] as in 'lute'
+    i	[ee] as in 'machine'		y   [uh] as 'u' in 'up'
+
+Say 'farfu' [FAHR-foo], 'denli' [DEN-lee], 'dotra' [DOHT-rah], 'mekykiu' [MEH-
+kuh-kyoo], 'fumna' [FOOM-nah], and 'nirli' [NEER-lee].
+{2}
+    Some common vowel pairs are pronounced as follows:
+
+    ao	[ow] as in 'cow' or 'ouch'	ei  [ay] as in 'day' or 'sleigh'
+    ai	[igh] as in 'sigh' or 'kite'	oi  [oy] as in 'boy'
+
+Say 'kao' [kow], 'kai' [kigh], 'kei' [kay] and 'koi' [koy].  Speak 's' and 'n'
+before each of these same vowel pairs:	'sao' [sow], 'sai' [sigh], 'sei' [say],
+'soi' [soy]; 'nao' [now], 'nai' [nigh], 'nei' [nay], 'noi' [noy].
+    When initial in a vowel pair, 'i' and 'u' are pronounced as [y] and [w]. 
+For example,
+
+    'ia' is [yah], 'ie' [yeh], 'ii' [yee], 'io' [yoh] and 'iu' [yoo];
+    'ua' is [wah], 'ue' [weh], 'ui' [wee], 'uo' [woh] and 'uu' [woo].
+
+Please speak all these words aloud.
+{3}
+    All other vowel pairs are pronounced as two syllables.  Sometimes both
+syllables are unstressed, but usually one is stressed.	Here are all the ways
+these two-syllable pairs are pronounced.  Please say all of them aloud:
+
+    aa	[ah-AH] or [AH-ah]		eu  [eigh-oo eigh-OO EIGH-oo]
+    ae	[ah-eh ah-EH AH-eh]		oa  [oh-ah oh-AH AH-oh]
+    au	[ah-oo ah-OO AH-oo]		oe  [oh-eh oh-EH OH-eh]
+    ea	[eigh-ah eigh-AH EIGH-ah]	oo  [oh-OH OH-oh]
+    ee	[eigh-EH EIGH-eh]		ou  [oh-oo oh-OO OH-oo]
+    eo	[eigh-oh eigh-OH EIGH-oh]
+
+Notice that when 'e' is initial in a vowel-pair, it is pronounced as [eigh] in
+'eight'.  Speak the 'e'-initial pairs again.
+    The 'i'- and 'u'-initial pairs may also be pronounced as two syllables if
+this makes a new word easier for you to pronounce.  Thus [loo-ee] and [nee-oo]
+are alternative pronunciations of 'lui' and 'niu', although you may eventually
+come round to [lwee] and [nyoo].
+{4}
+    With the exception of 'c' and 'j', the consonant letters are pronounced as
+they typically are in English.	The exceptional letters are pronounced as
+follows:
+
+    c	[sh] as in 'sheep'	and in	    tc	 [ch] as in 'chew'
+    j	[zh] as 'z' in 'azure'	and in	    dj	 [j] as in 'joke' or
+						 [dg] as in 'badger'.
+
+Say 'hapci' [HAHP-shee], 'junti' [ZHOON-tee], 'ci' [shee], 'botci' [BOHT-chee],
+'ji' [zhee], 'djan' [JAHN], 'jue' [zhweh], 'cue' [shweh], 'tcena' [TCEH-nah].
+{5}
+    There are three classes of Loglan words:  LITTLE WORDS, PREDICATES, and
+NAMES.	LITTLE WORDS are short words that end in vowels and contain no adjacent
+consonants.  There are four basic forms of them:  'a'-form, 'ia'-form, 'da'-
+form and 'tai'-form words.  Combinations, such as 'anoi' and 'papa', also count
+as little words.  PREDICATES are words that are vowel-final and contain at
+least one consonant pair ('prano', 'stali', 'mrenu').  Some predicates are
+"borrowings" and imitate natural source words ('iglu', 'vertebrati').  All
+predicates are stressed on their next-to-last syllables:  [MREH-noo], [vehr-
+teh-BRAH-tee].	NAMES are always consonant-final ('Djan' = 'John'), have next-
+to-last-syllable stress unless marked, and are spelled as pronounced in the
+country of origin:  'Deutschland' => 'Doitclant'.  If the corresponding natural
+name ends in a vowel, add 's': 'Barbara' => 'Ba'rbrrys' [BAHR-brr-uhs].
+    Pronounce these little words:  'a', 'mi', 'to' [toh], 'toi' [toy] and 'toa'
+[TOH-ah].  These predicates:  'fumna', 'nirli', 'insulini' [een-soo-LEEN-nee]. 
+And these names:  'Djois' [joyss], 'Rrll' [RR-ll] ('Earl'), 'Lo,is' [LOH-ees],
+'Pari's' [pahr-REES], 'Ame'rikys' [ah-MEHR-ree-kuhss].
+{6}
+    We start our study of Loglan utterances with the simplest kind of
+utterances, the IMPERATIVES.  These are sentences whose predicates are without
+tenses or first arguments ("subjects").	 Often they consist of single
+predicates:  'Godzi' = 'Go!'  Or they may be predicates with one or more
+second-or-subsequent arguments ("objects"):  'Godzi ta' = 'Go to that place!'
+or 'Go there!'
+    Speakers often indicate their attitudes (hopes, desires, intentions,
+convictions) by using INDICATORS (little words like 'eo' 'ao' 'ai' 'ae') in
+front of imperatives: 'Eo godzi' = 'Please go.'
+    But indicators can be used in any kind of Loglan sentence, and anywhere in
+that sentence.
+{7}
+    When in initial positions, indicators like 'Ai' modify the rest of the
+utterance.  In the case of 'Ai no', this is the single word 'no'.  In non-
+initial positions, as in the expression 'No ai', which is coming next,
+indicators modify the single word they immediately follow.  In the case of 'No
+ai', this will still be the word 'no'.  So 'No ai' and 'Ai no' mean substan-
+tially the same thing.
+    The 'Ai no' word-order is the one most often used alone, or at the heads of
+sentences.  The 'No ai'-order is the one used in the interiors of sentences. 
+In interior positions 'ai' modifies not the whole sentence, but the word that
+just precedes it.  Thus 'No ai' has the sense of 'NO, certainly', which
+emphasizes the negation.  'Ai no' has the sense of 'I CERTAINLY won't...' or 'I
+INTEND that it not be the case that...', which emphasizes the strong intention.
+    These rules apply to all other attitude-indicating words.  All modify the
+immediately preceding word if there is one.  So when initial or alone they may
+be taken to modify the whole current or preceding utterance.
+{8}
+    When a sentence is negative, the word 'no' typically precedes the subject
+(called the "first argument" in Loglan grammar).  But if there is an indicator
+in the sentence, and its sense is to apply to the whole negative remark, it
+usually precedes the 'no'.
+{9}
+     To understand greeting words, and to show how names may be used with them
+as attention-callers--VOCATIVES in Loglan grammar--we introduce 'Hello' and
+'Goodbye' ('Loi' and 'Loa').  We'll also encounter a few more indicator words
+('ea' 'oi') in the next few items, as well as the words for 'Thanks' and
+'You're welcome' ('sia' 'siu').
+    Pausing before names used as vocatives is also obligatory in Loglan.  So in
+making written Loglan responses, you must remember to type in commas--later, 
+periods will also do this work--to represent the pauses that are required in
+the spoken language.  If you forget one of these obligatory commas, MacTeach
+will score your answer INCORRECT!  It will be up to you to figure out that a
+left-out comma was your error.
+{10}
+     The distinction between ADDRESSING and NAMING in Loglan is made with the
+name operator 'la'.  'La' is used before a name when it is used to talk about
+the thing named, i.e., to name it.  'La' is dropped when the name is used to
+call the attention of the named thing or person, i.e., as a vocative or to
+address a sentence for the attention of a particular listener.
+    Names used as addresses may appear anywhere in an utterance, but when they
+follow other names, they must be preceded by 'Hoi' to prevent their being
+absorbed into the preceding name.
+{11}
+    There are many Loglan words for English 'the'.  They are all called
+DESCRIPTORS since they produce descriptions.  The simplest descriptor is 'le'. 
+It designates a particular individual or set of individuals.  Another common
+descriptor is 'lo', which designates the mass of all instances having some
+predicated property, or any manifestation of such a mass.  The grammar of the
+MASS DESCRIPTOR 'lo' is exactly like that of 'le'.
+    When the subject of a predicate is a description, and the predicate is
+otherwise unmarked, then a special PUNCTUATOR, 'ga', is used to mark the
+boundary between the description and that predicate.  'Ga' may often be
+translated by either English 'is' or 'are'.
+{12}
+     We now need the little word 'he' [heh], the PREDICATE INTERROGATIVE.  A
+question formed with 'he' asks that 'he' itself be replaced with a predicate
+word as the answer.  In the answering utterances, the third person VARIABLE
+'da' ('it/he/she/they/them') is introduced.  'Da' can also be translated by the
+mathematician's 'X'.
+    Days of the weeks, months of the year, and the seasons are also introduced
+here.  For example, 'monday' = 'first-day' is made from 'ner-' + '-dei'.  These
+parts are in turn derived from 'ne' = 'one' and 'denli' = 'day'.  The
+predicates for the rest of the weekdays and the months of the year are made in
+the same way.
+{13}
+    The INTERROGATIVE ARGUMENT is 'hu', a word which means either 'who' or
+'what'.	 Another kind of question-word allows us to ask for the identity of
+something in an already identified set: 'ie' = 'which' or 'which one of...'.
+{14}
+    IDENTITY SENTENCES equate two designations that designate the same thing or
+person.	 They always involve one of the IDENTITY OPERATORS like 'bi' = 
+'is/equals' or 'is the same thing as'.
+    Words for mealtimes and foods are introduced in this section.
+{15}
+    When we need a second variable in addition to 'da' for 'X', we use 'de' for
+'Y'.  Both 'da' and 'de' are free of all implications of gender, number,
+person, and case.  We'll also need the DEMONSTRATIVE "proverbs" 'dui' and
+'dua'.	These have the same final vowels as the other demonstratives 'ti'
+and 'ta'.  'Dui' and 'dua' are used to replace the most recent predicate
+expression.  They may often be translated by English 'do' and 'does'.
+{16}
+    Next we take up the 'Yes/No' questions made with 'ei' [eigh-ee], and their
+answers 'ia' and 'no' or 'no ia'.  In addition, two new demonstratives, 'toi'
+and 'toa', are introduced.  These two pronouns designate whole utterances, the
+most recent one by 'toi' [toy], and any earlier one by 'toa' [toh-ah].	Like
+all demonstratives, they are temporary designations, and may be replaced by
+'da' and 'de' if discussion of their referents is to continue.	Note in this
+segment how the connective 'I' plays the role of the English full stop or
+period.
+{17}
+    In Loglan the simple past tense ('pa'), the simple present tense ('na'),
+and the simple future tense ('fa') may be formed for any predicate by putting
+one of these TENSE OPERATORS in front of that predicate.
+    Tense operators may also be used prepositionally and adverbially.  TIME
+INTERROGATIVES like 'nahu' and 'fahu' ('at what?' = 'when?' and 'after what?')
+may also be made with them.  The tense of the question is assumed in the
+answer.
+    The LINKING WORD, 'ji', is like a hyphen that binds two arguments into a
+single argument.
+    Tense words like 'pa' 'na' 'fa' may also be used as prepositions to make
+time phrases.  When the suffixes '-zi' 'za' and '-zu' are attached to time
+words, they mean short, medium and long duration.  Travel words are also
+introduced in this section.
+{18}
+     Space questions and answers are formed in the same way as time questions
+and answers by using the SPATIAL OPERATORS 'vi' ('here'), 'va' ('nearby'), and
+'vu' ('far away') in exactly the same ways as 'na' 'pa' and 'fa'.
+{19}
+    We now take up utterances that involve EXISTENTIAL and UNIVERSAL
+QUANTIFICATION.	 Phrases like 'some' and 'there are' are the existential
+quantifiers of English, and words like 'all', 'each' and 'every' are its
+universal quantifiers.	In Loglan, existential claims are formed with 'ba' 'be'
+'bo' and 'bu', and universal ones with compounds made from 'ra' ('all')
+followed by 'ba' 'be' 'bo' or 'bu'.  'Ba' (often represented by lower case 'x')
+is used when there is need for only one non-designating variable; 'be' ('y')
+when we need two, 'bo' ('w') for three, and 'bu' ('q') for four.
+{20}
+    The compound little words 'Ifeu' ('In fact') and 'Inusoa' ('Therefore') are
+introduced next.  They allow some inferences to be made from utterances with
+incomplete predicates.
+    Note that 'Inusoa', like all words that commence with 'I-', belongs to the
+word-group ("lexeme") whose members all function like the English full-stop. 
+The phrase 'nibe' ('zero somethings y') is introduced as a negative
+quantification.
+    Some words for body parts are also introduced here.
+{21}
+    This segment deals with the grammar of metaphor:  the pattern of
+modification within predicate strings.	The most common order of modification
+in Loglan is the "Adjective-Noun" word-order in which the modifier precedes its
+modificand (the word modified).	 Just as in English, in the absence of special
+marks, the first predicate (say 'very') in a string of predicates modifies the
+second (say 'strong'); the first two together modify the third ('very strong
+woman'); and so on.  In Loglan, the GROUPING OPERATOR 'ge' breaks up this
+pattern--it is the unmarked pattern in both English and Loglan--and causes
+whatever is on its left to modify whatever is on its right.  Thus, while 'mutce
+forli fumna' means 'is a very strong woman', 'mutce ge forli fumna' means 'is
+extreme for a strong woman'; for 'mutce' now modifies 'forli fumna'.
+     The normal "Adjective-Noun" modification order may also be INVERTED with
+'go'.  When a 'go' appears in a predicate string, the normally left-hand
+portion of the string appears on its right, the normally right-hand portion on
+its left.  Thus the punctuator 'go' marks the point at which the reordering
+occurs.	 Thus 'forli fumna go mutce' means 'is a strong woman who is extreme
+(for one)'.  It makes exactly the same claim as 'mutce ge forli fumna'.
+{22}
+    HYPHENATION and CONNECTION with 'ci' 'ce' 'ca' 'ke' 'ka' and 'ki'.
+    The linking word 'ci' also has a special role in Loglan.  It is used rather
+like an English hyphen between pairs of predicate units to make larger
+predicate units inside predicate strings.  Such hyphenated units function as
+single modifiers or modificands.
+    Predicate-word connectives, like 'ce' [sheh] ('and') and 'ca' [shah]
+('or'), are also introduced, as are "keks" like 'ka' and 'ke', which are used
+to make forethought connections.  Thus 'ka' announces that a connection is to
+be made and specifies its logical type; then the special infix 'ki' comes along
+to mark the boundary between the two connected elements.  Thus 'ka...ki...'
+means 'either...and/or...' and 'ke...ki...' means 'both...and...'.
+{23}
+     Other markers and connectives are 'cue' 'cui' 'canoi' and 'kanoi'. 'Cue'
+is an optional right parenthesis that occurs only inside predicate strings and
+is always matched with some 'ge' on its left.  Its effect is to shorten
+the rightward scope of that 'ge'.  'Cui' is an optional left parenthesis that
+also occurs only inside predicate strings.  'Cui' is always matched with some
+shek (predicate-word connective) on its right.	Its effect is to extend the
+leftward scope of that shek.
+    Two compound connectives are introduced.  These are 'canoi' and 'kanoi',
+both of which mean 'if'.  'Canoi' is used to join predicate words in an
+afterthought, left-grouped way, and 'kanoi..ki...' means 'if...then...', and,
+like all keks, may be used in a forethought way to connect any kind of element
+whatsoever.
+{24}
+     EVENT-STATE PREDICATES:  The most common abstracting operation in natural
+language is the one that turns an ordinary predicate into one that predicates
+an event or state-of-affairs:  'is an event of...'.  Gerunds (with '-ing') and
+infinitives (with 'to') do most of this work in English.  In Loglan, event/-
+state predicates are formed with 'po'.
+    'Pu' and 'zo' produce two more varieties of Loglan abstraction.  They have
+grammars identical to the Loglan grammar of events.  'Pu' forms the property
+abstraction ('is a quality of...'), and 'zo' forms the quantity one ('is an
+amount of...).
+.   'Di' ('Z') is added as the third replacing variable. 
+{25}
+     In English, nouns like 'water', 'mud' and 'milk' are MASS TERMS which
+designate the individuals formed by taking all the instances of their
+predicates ('is water', 'is mud', 'is milk) together as a lump.  In Loglan, one
+uses the mass descriptor 'lo' to form mass terms.  The EVENT DESCRIPTOR 'lepo'
+is formed out of 'le' + 'po', and the MASS EVENT DESCRIPTOR 'lopo' is formed
+out of 'lo' + 'po'.
+    'Gu' is used to terminate LEPO clauses in addition to its other duties.
+{26}
+     CONVERSION (the generalized passive) means shifting the meanings of the
+arguments of multiplace Loglan predicates around.  'Nu' exchanges the meanings
+of the 1st and 2nd places of such predicates, and 'fu' exchanges the meanings
+of 1st and 3rd places.
+    The Loglan superlative is formed by negating a converse: 'no nu'.  It
+always means "not betterable" on some dimension established by the following
+predicate.
+    The five 'u'-initial attitude indicators--'uo' = annoyance, 'ue' =
+surprise, 'ua' = satisfaction, 'uu' = sorrow, 'ui' = gladness)--are introduced
+here.
+{27}
+    In considering NUMERICAL operations, we will cover counting, then
+quantifying descriptions and then asking numerical questions.  The ten little
+words 'ni ne to te fo fe so se vo ve' are the digit words, that is, the words
+translated by 'zero one two three four five six seven eight nine'in English,
+or, alternatively, by the ten digit numerals: '0 1 2 3 4 5 6 7 8 9'.  These are
+used to form compound number words:  'neni' ('10') = 'ten', 'nene' ('11') =
+'eleven', etc.	Double zero is 'ma', so '100' is 'nema'.  Triple zero is 'mo',
+so 'nemo' = '1000'.
+    The QUANTIFIER INTERROGATIVE 'ho' asks 'How many?' or 'How many of?'.  It
+asks for a quantifier--numerical or non-numerical--as an answer.
+    We now complete the set of non-numerical quantifiers:  're' = 'most', 'ru'
+= 'enough', 'ri' = 'several/a few'.  In addition, 'sa' = 'approximately/nearly
+(all)', 'si' = 'at most (one of)', 'su' = 'at least (one of'), may be used
+either to form compounds with other numbers ('sanema' = 'around a hundred') or
+alone with certain default values understood.  For example, 'sa' alone means
+'almost all'.
+{28}
+    When 'ie' is the prefix to a number, it has the sense of 'Which..of..?' 
+    The special descriptor 'lio' ('the number...') designates numbers and
+measured quantities.
+    This segment also introduces counting and the words for many animals and
+articles of clothing.  Also new are expressions reporting age and time.
+{29}
+    Time is measured with a twenty-four hour clock in Loglan, and reported in
+four-digit numbers:  '1320' = '1:20pm'.	 The new day begins, by international
+convention, just after midnite of the previous day.  Thus midnight is 2400, but
+ is one minute into the new day.
+    Words for talking about the various aspects of clocktime are introduced,
+including the one for the time-of-day itself.  The time-of-day is of course is
+the clocktime that has elapsed since the preceding midnight.  This is 'jolkeo'
+in Loglan, a word derived from 'jokla ckemo' = 'clock-interval' or 'clock-
+time'.  Similarly, 'hour' is 'horto', 'minute' is 'minta', and 'second' is
+'sekmi', and these units may be abbreviated as 'hei' ('h'), 'mei' ('m') and
+'sei' ('s'), respectively, in talking about times.  The concepts of 'nea' and
+'niu' ('negative' and 'minus') and 'piu' ('plus') are introduced to talk about
+minutes "before" or "after" some whole hour.
+{30}
+    Typing commas after written names, and pausing after spoken ones, is said
+to be "obligatory" in Loglan.  That is, you will not always be understood
+unless you do pause or punctuate in this way.  This is especially likely to be
+true when your interlocutor is a machine.  You will need to remember this when
+typing Loglan sentences for THIS machine to read if they happen to contain
+names.
+{31}
+    Sometimes the mass descriptor 'lo' should be translated by English 'the',
+as in the next sentence.
+{32}
+    In that last sentence, English 'the' meant 'another manifestation of', and
+that is exactly what the Loglan 'lo', which it translates, also means in this
+context.  Thus 'lo bradei je la Linkyn' means 'the mass individual composed of
+all of Lincoln's birthdays', and that, of course, is what is being celebrated. 
+Notice that 'lo tormea', 'lo merki' and 'lo bradei' need to have matching
+descriptors in order to make sense out of this claim. 'Lo tormea', 'lo merki'
+and 'le bradei' wouldn't make much sense.
+{33}
+    Connectives of certain kinds, including the 'a e o u'-series and their
+compounds, are like vocatively-used names in that they are also preceded by
+pauses in speech and commas in text.  Watch for this in speaking and typing
+Loglan sentences with connected parts like the next one.
+{34}
+    In English we say 'What is THE time?' and 'THE time is 2:30' as if there
+were only one proper clocktime for each interval we measure with clocks.  But
+that is obviously not the case.	 There are many possible clocktimes for any
+given interval: accurate ones, inaccurate ones; approximate and precise ones;
+and so on.  Thus the Loglan predicate 'jolkeo' is most accurately translated
+'is a clocktime measuring the interval ending at...and starting at...'; and
+obviously there can be many of these.  Even so, since we are teaching English-
+speakers with this program, we must accommodate English speechways.  So we
+allow the rough equivalence of English expressions like 'is the time of' and
+the Loglan word 'jolkeo'.  Indeed, the program will now accept them as
+satisfactory translations.  But it is wise to keep in mind that the Loglan word
+'jolkeo', unlike most English time expressions, is a general term...even though
+it is one we will often have to translate into idiomatic English as an identity
+between singular terms.

@@ -135,13 +135,12 @@ drill_loop($state, \@records);
 # ---- I/O ----
 
 # What lists there are, how big, and which have progress saved.  The lists
-# loglan-update builds and installs (and the Institute's m1-test, if it is
-# there) come first, in the order one learns them; then any other auxiliary
+# loglan-update builds and installs come first, in the order one learns them; then any other auxiliary
 # list, and any other list that has progress filed in the directory -- one of
 # your own, kept wherever it is.
 sub show_tables ($dir) {
     die "No list directory: set LOGLAN_STATE_DIR or run loglan-update\n" unless defined $dir;
-    my @known = qw(core prims affs affsets utts animals ethnic coined l1prims m1-test);
+    my @known = qw(core prims affs affsets utts animals ethnic coined l1prims);
     my %known = map { $_ => 1 } @known;
     opendir my $dh, $dir or die "opendir $dir: $!";
     my @own = grep { !$known{$_} } map { /^(.+)\.state\.json\z/ ? $1 : () } readdir $dh;
