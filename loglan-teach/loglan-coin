@@ -122,10 +122,19 @@ class Grammar:
 
     @staticmethod
     def _run(code, path):
+        # omnibus.py opens scratch files (dummy, dummy2, dummylog) in the
+        # current directory as it loads, so it is loaded in the cache, where
+        # they do no harm, rather than wherever loglan-coin was run.
         module = types.ModuleType('omnibus')
         module.__file__ = path
-        with contextlib.redirect_stdout(io.StringIO()):
-            exec(compile(code, path, 'exec'), module.__dict__)
+        os.makedirs(CACHE, exist_ok=True)
+        here = os.getcwd()
+        try:
+            os.chdir(CACHE)
+            with contextlib.redirect_stdout(io.StringIO()):
+                exec(compile(code, path, 'exec'), module.__dict__)
+        finally:
+            os.chdir(here)
         return module
 
     def tree(self, rule, word):
