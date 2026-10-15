@@ -245,14 +245,15 @@ GNU General Public License, version 3 or (at your option) any later version;
 see [COPYING](COPYING).
 
 The dictionary, *Loglan 1* and the parser `omnibus.py` in `sources/`, the
-sentences in `lists/utts`, and the ethnic and animals lists in `lists/aux`
-(drawn from the dictionary) are Loglan material, included with the
-permission of The Loglan Center (Lavinia Randall Holmes, October 2026; see
-`sources/NOTICE`).  Lavinia Randall Holmes publishes the originals at
-<https://randall-holmes.github.io/Loglan/cefli.html>.  **All rights to the Loglan
-material are reserved by The Loglan Center, Inc.** (the Idaho corporation
-which has superseded the Florida corporation).  That material is not covered
-by the GPL.
+sentences in `lists/utts`, the ethnic and animals lists in `lists/aux`
+(drawn from the dictionary), and the page template inside
+`new-words-html.py` are Loglan material, included with the permission of
+The Loglan Center (Lavinia Randall Holmes, October 2026); [NOTICE](NOTICE)
+lists them and gives the permission in full.  Lavinia Randall Holmes
+publishes the originals at <https://randall-holmes.github.io/Loglan/cefli.html>.
+**All rights to the Loglan material are reserved by The Loglan Center,
+Inc.** (the Idaho corporation which has superseded the Florida
+corporation).  That material is not covered by the GPL.
 
 ## Requirements
 
