@@ -6,7 +6,9 @@ use open ':std', ':encoding(UTF-8)';
 use Getopt::Long qw(:config bundling no_ignore_case);
 use JSON::PP     qw(encode_json decode_json);
 use File::Basename qw(basename dirname);
+use FindBin        qw($RealBin);
 use List::Util   qw(sum0);
+use POSIX          qw(setsid _exit);
 
 # Loglan flashcard drill in the MacTeach mould.
 # Reads tab-separated data files (PRIMS / AFFS / AFFSETS: <loglan>\t<affix>\t
@@ -45,20 +47,28 @@ $opt{field} = lc $opt{field};
 usage() if $opt{help} or (!@ARGV and !$opt{tables});
 
 # Where the lists and progress are kept: LOGLAN_STATE_DIR, else ~/.loglan,
-# which is where loglan-fetch and mk-utility put the lists.  Every table's
+# which is where loglan-update puts the lists.  Every table's
 # state is collected there under the data file's own name, so drilling a list
 # from anywhere still leaves its progress in the one place.  Without such a
 # directory the state file sits beside the data file.  --state always wins.
 my $state_dir = $ENV{LOGLAN_STATE_DIR} // "$ENV{HOME}/.loglan";
 undef $state_dir unless -d $state_dir;
 
+if (defined $state_dir) {
+    show_update_note($state_dir);
+    start_update($state_dir);
+}
+
 show_tables($state_dir), exit 0 if $opt{tables};
 
-# A bare list name -- "prims", "animals" -- is one of the lists there, unless
-# a file by that name is right here.
+# A bare list name -- "prims", "animals" -- is one of the lists there (or
+# among the auxiliary lists, in aux/), unless a file by that name is right
+# here.
 my $data_file = shift @ARGV;
-$data_file = "$state_dir/$data_file"
-    if !-e $data_file && defined $state_dir && $data_file !~ m{/} && -f "$state_dir/$data_file";
+if (!-e $data_file && defined $state_dir && $data_file !~ m{/}) {
+    ($data_file) = grep { -f } "$state_dir/$data_file", "$state_dir/aux/$data_file"
+        or die "No such list: $data_file\n";
+}
 die "No such file: $data_file\n" unless -f $data_file;
 
 my $state_file = $opt{state}
@@ -102,20 +112,27 @@ drill_loop($state, \@records);
 # ---- I/O ----
 
 # What lists there are, how big, and which have progress saved.  The lists
-# loglan-fetch and mk-utility build (and the Institute's utts and m1-test, if
-# they are there) come first, in the order one learns them; then any other
-# list that has progress filed in the directory -- one of your own, kept
-# wherever it is.
+# loglan-update builds and installs (and the Institute's m1-test, if it is
+# there) come first, in the order one learns them; then any other auxiliary
+# list, and any other list that has progress filed in the directory -- one of
+# your own, kept wherever it is.
 sub show_tables ($dir) {
-    die "No list directory: set LOGLAN_STATE_DIR or run loglan-fetch\n" unless defined $dir;
-    my @known = qw(prims affs affsets utts animals ethnic l1prims m1-test);
+    die "No list directory: set LOGLAN_STATE_DIR or run loglan-update\n" unless defined $dir;
+    my @known = qw(core prims affs affsets utts animals ethnic l1prims m1-test);
     my %known = map { $_ => 1 } @known;
     opendir my $dh, $dir or die "opendir $dir: $!";
-    my @own = sort grep { !$known{$_} } map { /^(.+)\.state\.json\z/ ? $1 : () } readdir $dh;
+    my @own = grep { !$known{$_} } map { /^(.+)\.state\.json\z/ ? $1 : () } readdir $dh;
     closedir $dh;
+    if (opendir my $ah, "$dir/aux") {
+        push @own, grep { !$known{$_} && !/^\./ && !/\.old\z/ && -f "$dir/aux/$_" } readdir $ah;
+        closedir $ah;
+    }
+    my %once;
+    @own = grep { !$once{$_}++ } sort @own;
     for my $t (@known, @own) {
-        my $file  = "$dir/$t";
-        my $saved = -f "$file.state.json" ? '   (progress saved)' : '';
+        my ($file) = grep { -f } "$dir/$t", "$dir/aux/$t";
+        $file //= "$dir/$t";
+        my $saved = -f "$dir/$t.state.json" ? '   (progress saved)' : '';
         if (-f $file) {
             open my $fh, '<', $file or die "open $file: $!";
             # Blank lines and '#' comments are not entries (see parse_words).
@@ -128,6 +145,39 @@ sub show_tables ($dir) {
             printf "%-10s %6s        %s\n", $t, '', $saved =~ s/^\s+//r;
         }
     }
+}
+
+# Once a day, loglan-update looks online for changed sources -- in the
+# background, so the drill starts at once and a new dictionary is used from
+# the next run.  LOGLAN_NO_UPDATE=1 turns it off.
+sub start_update ($dir) {
+    return if $ENV{LOGLAN_NO_UPDATE};
+    my $stamp = "$dir/src/.last-check";
+    return if -e $stamp && time - (stat $stamp)[9] < 24 * 60 * 60;
+    my $up = -x "$RealBin/loglan-update" ? "$RealBin/loglan-update" : 'loglan-update';
+    # Forked twice, so it is nobody's child to wait for.
+    my $pid = fork // return;
+    if ($pid) {
+        waitpid $pid, 0;
+        return;
+    }
+    fork and _exit(0);
+    setsid();
+    open STDIN,  '<', '/dev/null';
+    open STDOUT, '>', '/dev/null';
+    open STDERR, '>', '/dev/null';
+    exec($up, '--auto', '--dir', $dir) or _exit(0);
+}
+
+# What the background update did since last time, said once.
+sub show_update_note ($dir) {
+    my $note = "$dir/UPDATED";
+    return unless -s $note;
+    open my $fh, '<', $note or return;
+    print "Note: $_" for <$fh>;
+    close $fh;
+    unlink $note;
+    print "\n";
 }
 
 sub load_records ($file, $field) {
@@ -593,10 +643,14 @@ sub usage {
 Usage: $me [options] <data-file>
 
   Ladder + error-box drill for Loglan vocabulary and utterances.  Reads
-  tab-separated files: <loglan>\t<affix>\t<gloss>\t<notes> (prims, affs,
+  tab-separated files: <loglan>\t<affix>\t<gloss>\t<notes> (core, prims, affs,
   affsets, ethnic, animals, l1prims) or <loglan>\t<answer> (utts or your own
   lists).  A bare name such as 'prims' is looked for in \$LOGLAN_STATE_DIR
-  (default ~/.loglan), where loglan-fetch and mk-utility put the lists.
+  (default ~/.loglan), where loglan-update puts the lists, and then among
+  the auxiliary lists in its aux/ (ethnic, animals, and any of your own).
+
+  Once a day it starts loglan-update in the background to look for new
+  Loglan sources online; LOGLAN_NO_UPDATE=1 stops it.
 
 Direction:
   --recognition    prompt Loglan, expect gloss   [default]

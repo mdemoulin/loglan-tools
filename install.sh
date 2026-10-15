@@ -4,16 +4,20 @@
 #   ./install.sh                  ask where
 #   ./install.sh DIR              install into DIR without asking
 #
-# Installs loglan-teach (the drill), loglan-fetch (downloads the dictionary,
-# Loglan 1 and the parser, and builds the word lists), mk-utility (the cheat
-# sheet and the ethnic, animals, l1prims and derivs lists) and loglan-coin
-# (checks new words and builds complexes).  Nothing is downloaded
-# until you run loglan-fetch.
+# Installs loglan-teach (the drill), loglan-update (keeps the Loglan sources
+# current and builds the lists), mk-utility (which loglan-update runs for the
+# cheat sheet and the l1prims and derivs lists), loglan-coin (checks new words
+# and builds complexes), and loglan-fetch (the old name of loglan-update).
+#
+# The sources -- the dictionary, Loglan 1, the parser -- and the shipped lists
+# (utts, and the auxiliary ethnic and animals) go into ~/.loglan/dist, and the
+# lists are built from them.  Run by hand, it then also looks online for newer
+# sources; given DIR, it does not touch the network.
 
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
-tools=(loglan-teach loglan-fetch mk-utility loglan-coin)
+tools=(loglan-teach loglan-update mk-utility loglan-coin loglan-fetch)
 
 if [ $# -gt 0 ]; then
     dest=$1
@@ -53,31 +57,23 @@ esac
 
 data=${LOGLAN_STATE_DIR:-$HOME/.loglan}
 
-# The shipped lists (lists/, used with The Loglan Center's permission) go into
-# the state directory, but never over a list that is already there: it may be
-# the user's own copy, or a symlink to one.
+# What ships with the tools -- the sources (used with The Loglan Center's
+# permission; see sources/NOTICE) and the lists -- is copied whole into
+# $data/dist, replacing the last install's copy; loglan-update works from it.
+# Your lists, progress and .added files are elsewhere in $data and untouched.
 mkdir -p "$data"
-for f in "$here"/lists/*; do
-    name=$(basename "$f")
-    if [ -e "$data/$name" ] || [ -L "$data/$name" ]; then
-        echo "kept your $data/$name"
-    else
-        install -m 644 "$f" "$data/$name"
-        echo "installed $data/$name"
-    fi
-done
+rm -rf "$data/dist.new"
+mkdir "$data/dist.new"
+cp -Rp "$here/sources" "$here/lists" "$data/dist.new/"
+rm -rf "$data/dist"
+mv "$data/dist.new" "$data/dist"
+echo "installed the sources and shipped lists in $data/dist"
 
-# The word lists are built, not shipped: offer to build them now.  Asked only
-# when the installer was asked where to install, i.e. run by hand.
-built=
+echo
 if [ $# -eq 0 ]; then
-    echo
-    echo "The word lists come from Lavinia Randall Holmes's Loglan dictionary and Loglan 1,"
-    echo "downloaded from randall-holmes.github.io (about 5 MB) into $data/src."
-    read -r -p "Download them and build the lists now? [Y/n] " yn
-    case ${yn:-y} in
-        [Yy]*) "$dest/loglan-fetch" && "$dest/mk-utility" && built=1 ;;
-    esac
+    "$dest/loglan-update" && built=1
+else
+    "$dest/loglan-update" --offline && built=1
 fi
 
 cat <<EOF
@@ -85,22 +81,19 @@ cat <<EOF
 Getting started
 ---------------
 EOF
-if [ -z "$built" ]; then
+if [ -z "${built:-}" ]; then
     cat <<EOF
-1. Build the word lists (needs the network the first time):
+1. Build the lists (the sources ship with the tools; no download needed):
 
-       loglan-fetch      # downloads the dictionary and Loglan 1, builds
-                         #   prims, affs and affsets
-       mk-utility        # builds ethnic, animals, l1prims, derivs and
-                         #   cheatsheet.html
+       loglan-update
 
 EOF
 fi
 cat <<EOF
 Drill a list:
 
-       loglan-teach prims          # Loglan word shown; type the English
-       loglan-teach --recall prims # English shown; type the Loglan word
+       loglan-teach core           # Loglan word shown; type the English
+       loglan-teach --recall core  # English shown; type the Loglan word
        loglan-teach --tables       # every list, its size, and your progress
 
    In a drill, type your answer and press Enter.  A blank line shows the
@@ -109,9 +102,14 @@ Drill a list:
    A word climbs a rung each time you get it right and drops into the error
    box when you miss; progress is saved for next time.
 
-Lists: prims (all primitives), affs (words with affixes; try --field affix),
-affsets, animals, ethnic, l1prims (the primitives used in Loglan 1), and utts
-(whole sentences, installed with the tools: loglan-teach utts).
+Lists: core (the everyday primitives: no native or scientific ones), prims
+(all primitives), affs (words with affixes; try --field affix),
+affsets, l1prims (the primitives used in Loglan 1), utts (whole sentences),
+and the auxiliary lists animals and ethnic, whose words are in prims too.
+
+Once a day loglan-teach and loglan-coin quietly look online for newer
+sources and rebuild the lists if there are any (LOGLAN_NO_UPDATE=1 stops
+it); loglan-update does the same on demand.
 
 Coin a word (needs Python 3):
 
@@ -119,7 +117,7 @@ Coin a word (needs Python 3):
        loglan-coin make kangu dzoru durzo # every complex from a metaphor
 
 Everything is kept in $data: the lists, your progress
-(<list>.state.json), the downloaded sources, and cheatsheet.html -- open
-that in a browser.  To add words of your own, see "Adding your own entries"
+(<list>.state.json), the sources, and cheatsheet.html -- open that in a
+browser.  To add words of your own, see "Adding your own entries"
 in README.md.
 EOF

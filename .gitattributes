@@ -1,0 +1,3 @@
+# The originals are kept byte for byte as published: no line-ending
+# conversion (omnibus.py is CRLF).
+sources/** -text

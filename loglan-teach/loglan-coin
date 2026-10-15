@@ -6,11 +6,11 @@
     loglan-coin make PIECE PIECE...     every complex the pieces can make,
                                         best first, each checked as above
 
-The word grammar is Randall Holmes's own: loglan-fetch downloads her PEG
-parser, omnibus.py, and this script asks its word classes whether a string
+The word grammar is Randall Holmes's own: her PEG parser, omnibus.py, ships
+with these tools and loglan-update keeps it current, and this script asks its word classes whether a string
 is a little word, a name, a borrowing or a complex, and how a complex
 splits into its parts.  What the parser cannot know -- the dictionary --
-comes from the Loglan-to-English dictionary loglan-fetch also downloads:
+comes from the Loglan-to-English dictionary, kept the same way:
 
   * clashes, Loglan 1 section 6.3: the same word as another; one differing
     only in its final vowel; or only by a pair of sibilants on adjacent
@@ -40,7 +40,10 @@ import json
 import os
 import pickle
 import re
+import shutil
+import subprocess
 import sys
+import time
 import types
 
 STATE = os.environ.get('LOGLAN_STATE_DIR') or os.path.expanduser('~/.loglan')
@@ -55,6 +58,26 @@ SIBILANT_SIDES = {'sc', 'cs', 'cj', 'jc', 'jz', 'zj', 'zs', 'sz'}
 def fail(msg):
     sys.exit('loglan-coin: ' + msg)
 
+
+def start_update():
+    """Once a day, loglan-update looks online for changed sources, in the
+    background; a new dictionary is used from the next run.  As in
+    loglan-teach, LOGLAN_NO_UPDATE=1 turns it off."""
+    if os.environ.get('LOGLAN_NO_UPDATE') or not os.path.isdir(STATE):
+        return
+    stamp = os.path.join(STATE, 'src', '.last-check')
+    if os.path.exists(stamp) and time.time() - os.path.getmtime(stamp) < 24 * 60 * 60:
+        return
+    here = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'loglan-update')
+    up = here if os.access(here, os.X_OK) else shutil.which('loglan-update')
+    if not up:
+        return
+    try:
+        subprocess.Popen([up, '--auto', '--dir', STATE], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    except OSError:
+        pass
 
 
 # ---- the parser ----------------------------------------------------------
@@ -72,7 +95,7 @@ class Grammar:
 
     def __init__(self, path):
         if not os.path.exists(path):
-            fail('no parser at %s -- run loglan-fetch first' % path)
+            fail('no parser at %s -- run loglan-update first' % path)
         with open(path, encoding='utf-8') as fh:
             src = fh.read()
         cut = src.find(self.FIRST_RULE)
@@ -190,7 +213,7 @@ def metaphor(origin):
 class Lexicon:
     def __init__(self, path):
         if not os.path.exists(path):
-            fail('no dictionary at %s -- run loglan-fetch first' % path)
+            fail('no dictionary at %s -- run loglan-update first' % path)
         with open(path, encoding='utf-8') as fh:
             src = fh.read()
         self.words = {}       # word -> {'type', 'affixes', 'origin', 'defs', 'from'}
@@ -603,6 +626,7 @@ def main():
                         '(default: %(default)s)')
 
     args = ap.parse_args()
+    start_update()
     lex = Lexicon(args.dictionary)
     for f in args.words:
         lex.add_file(f)

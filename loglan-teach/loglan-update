@@ -1,0 +1,561 @@
+#!/usr/bin/env perl
+use v5.36;
+use utf8;
+use open ':std', ':encoding(UTF-8)';
+
+use Digest::SHA    qw(sha256_hex);
+use Fcntl          qw(:flock);
+use File::Basename qw(dirname);
+use File::Copy     qw(copy);
+use File::Path     qw(make_path);
+use File::Temp     qw(tempfile);
+use FindBin        qw($RealBin);
+use Getopt::Long   qw(:config bundling no_ignore_case);
+use HTTP::Tiny;
+use POSIX          qw(strftime);
+use Time::Local    qw(timegm);
+
+# Keeps the Loglan sources in the data directory current and builds the
+# lists from them.
+#
+# The sources -- Lavinia Randall Holmes's Loglan-to-English dictionary, the
+# HTML edition of Loglan 1, and her parser omnibus.py -- ship with these
+# tools, as published, in sources/ (see sources/MANIFEST and sources/NOTICE);
+# install.sh copies them to DIR/dist.  loglan-update
+#
+#   1. keeps the newest original of each in DIR/src/.orig: the shipped copy,
+#      or one it has downloaded because the copy online has changed;
+#   2. puts each into DIR/src with the corrections in sources/FIXES made;
+#   3. installs the auxiliary lists (lists/aux: ethnic, animals) into DIR/aux,
+#      with your <list>.added entries;
+#   4. builds prims, core, affs and affsets from the dictionary, adds your .added
+#      entries and every word of the auxiliary lists that is not already
+#      there, and runs mk-utility for the rest (l1prims, derivs, the cheat
+#      sheet).
+#
+# Each line of prims, affs and affsets is <loglan>\t<affixes or ->\t<gloss>\t
+# <notes>, the layout of the Institute's MacTeach files.  The gloss is the run
+# of keywords in the word's first definition; the notes are the rest of that
+# definition, with the gloss as '-' and the remaining places as '..'.
+#
+# loglan-teach and loglan-coin run `loglan-update --auto` in the background:
+# at most once a day it looks online for changed sources and, only if it
+# finds one, rebuilds; it writes nothing to the terminal (DIR/update.log
+# has the details) and leaves a one-line note in DIR/UPDATED for the next
+# run of loglan-teach to show.
+
+my %opt;
+GetOptions(\%opt, 'dir=s', 'dist=s', 'auto', 'offline', 'replace-links',
+           'refresh-repo=s', 'help|h') or die "Try --help\n";
+usage() if $opt{help};
+
+my $dir  = $opt{dir} // $ENV{LOGLAN_STATE_DIR} // "$ENV{HOME}/.loglan";
+my $dist = $opt{dist} // (-f "$dir/dist/sources/MANIFEST" ? "$dir/dist"
+                        : -f "$RealBin/../sources/MANIFEST" ? "$RealBin/.."
+                        : die "no sources: run install.sh (or give --dist)\n");
+my $src  = "$dir/src";
+my $orig = "$src/.orig";
+my $DAY  = 24 * 60 * 60;
+make_path($orig);
+
+refresh_repo($opt{'refresh-repo'}), exit 0 if $opt{'refresh-repo'};
+
+# One update at a time; a background one finding another running just leaves.
+open my $lock, '>', "$dir/.update.lock" or die "open $dir/.update.lock: $!";
+unless (flock $lock, LOCK_EX | LOCK_NB) {
+    exit 0 if $opt{auto};
+    say 'waiting for another loglan-update to finish...';
+    flock $lock, LOCK_EX;
+}
+
+my $stamp = "$src/.last-check";
+if ($opt{auto}) {
+    exit 0 if -e $stamp && time - (stat $stamp)[9] < $DAY;
+    # Out of sight: everything said goes to the log, kept short.
+    my $log = "$dir/update.log";
+    unlink $log if -s $log && -s $log > 200_000;
+    open STDOUT, '>>', $log or exit 0;
+    open STDERR, '>&', \*STDOUT;
+    STDOUT->autoflush(1);
+    say "---- ", strftime('%Y-%m-%d %H:%M', localtime);
+}
+
+my @manifest = read_manifest("$dist/sources/MANIFEST");
+my %version  = read_versions();
+my @changed;
+
+# ---- 1. the newest original of each source ----
+for my $m (@manifest) {
+    my $have = $version{ $m->{path} };
+    my $file = "$orig/$m->{path}";
+    # The shipped copy is the newer one when the tools have been updated since
+    # the last download -- or when there is nothing here yet.
+    next if $have && -f $file && $have->{date} ge $m->{date};
+    next if $have && $have->{sha} eq $m->{sha} && -f $file;
+    make_path(dirname $file);
+    copy("$dist/sources/$m->{path}", "$file.tmp") or die "copy $m->{path}: $!";
+    # Dated as copied, so the first look online fetches anything newer.
+    my ($y, $mo, $d) = split /-/, $m->{date};
+    my $t = timegm(0, 0, 0, $d, $mo - 1, $y);
+    utime $t, $t, "$file.tmp";
+    rename "$file.tmp", $file or die "rename $file: $!";
+    $version{ $m->{path} } = { sha => $m->{sha}, date => $m->{date} };
+    push @changed, "$m->{path} (from the copy shipped with the tools)";
+}
+
+unless ($opt{offline}) {
+    my ($asked, $answered) = (0, 0);
+    for my $m (@manifest) {
+        my $file = "$orig/$m->{path}";
+        $asked++;
+        my ($got, $err, $mtime) = fetch_if_newer($m->{url}, $file);
+        if (defined $err) {
+            say "$m->{path}: $err";
+            next;
+        }
+        $answered++;
+        next unless defined $got;
+        my $sha = sha256_hex($got);
+        next if $sha eq $version{ $m->{path} }{sha};
+        # A page a fraction the size of the last is an error page or a cut-off
+        # download, not a new edition.
+        if (length $got < 0.5 * -s $file) {
+            say "$m->{path}: what came back is too small to be the real thing; kept the old one";
+            next;
+        }
+        write_bytes($file, $got, $mtime);
+        $version{ $m->{path} } = { sha => $sha, date => strftime('%Y-%m-%d', gmtime) };
+        push @changed, "$m->{path} (changed online)";
+    }
+    # Counted as a look only if one was had: offline, the next run tries again.
+    if ($answered) {
+        touch($stamp);
+    } elsif ($asked && !$opt{auto}) {
+        warn "could not reach $manifest[0]{url} -- working from the copies here\n";
+    }
+}
+write_versions(\%version);
+
+# ---- 2. the working copies, corrected ----
+my @fixes   = read_fixes("$dist/sources/FIXES");
+my $fix_sha = sha256_hex(join "\n", map { join "\t", @$_ } @fixes);
+my $refix   = ($version{FIXES}{sha} // '') ne $fix_sha;
+for my $m (@manifest) {
+    my $out = "$src/$m->{path}";
+    next if -f $out && !$refix && !grep { index($_, "$m->{path} ") == 0 } @changed;
+    my $text = read_bytes("$orig/$m->{path}");
+    for my $f (grep { $_->[0] eq $m->{path} } @fixes) {
+        my $n = () = $text =~ /\Q$f->[1]\E/g;
+        if ($n) {
+            $text =~ s/\Q$f->[1]\E/$f->[2]/g;
+        } else {
+            say "FIXES: '$f->[1]' is no longer in $m->{path}; skipped";
+        }
+    }
+    make_path(dirname $out);
+    write_bytes($out, $text);
+}
+if ($refix) {
+    $version{FIXES} = { sha => $fix_sha, date => strftime('%Y-%m-%d', gmtime) };
+    write_versions(\%version);
+    push @changed, 'FIXES' if @fixes || -e "$src/.built";
+}
+
+# In the background, a quiet day is the end of it.
+if ($opt{auto} && !@changed && -e "$src/.built") {
+    say 'nothing new';
+    exit 0;
+}
+say "updated: $_" for @changed;
+
+# ---- 3. the auxiliary lists ----
+my $aux = "$dir/aux";
+make_path($aux);
+for my $file (glob "$dist/lists/aux/*") {
+    my $name = $file =~ s{.*/}{}r;
+    # The old mk-utility wrote these at the top of DIR, where they would hide
+    # the ones here; they were built, not written by hand, so they go aside.
+    my $old = "$dir/$name";
+    if (-f $old && !-l $old && !-e "$old.old") {
+        rename $old, "$old.old";
+        say "moved the old built $old to $old.old (the list now lives in $aux)";
+    }
+    my @rows = merge_added($name, [read_rows($file)]);
+    @rows = add_rule_sets(@rows) if $name eq 'animals';
+    write_list("$aux/$name", \@rows, 1);
+}
+
+# ---- 4. the lists built from the dictionary ----
+my $dict = "$src/Dictionary/L-to-E-TDR.html";
+open my $fh, '<:encoding(UTF-8)', $dict or die "open $dict: $!";
+my $html = do { local $/; <$fh> };
+close $fh;
+
+my %entity = (nbsp => ' ', mdash => '-', ndash => '-', lt => '<', gt => '>',
+              amp => '&', quot => '"', zwj => '');
+sub text ($s) {
+    $s =~ s/<[^>]+>//g;
+    $s =~ s/&(\w+);/$entity{$1} \/\/ ''/ge;
+    $s =~ s/&#(\d+);/chr $1/ge;
+    $s =~ s/\s+/ /g;
+    return $s =~ s/^ | $//gr;
+}
+
+# An entry is
+#   <b><a name="bakso">bakso</a></b>, <br>
+#   <em class="origin">bao</em> <em class="origin">&lt;4/4E box; ...&gt;</em>&nbsp;42% C-Prim L4 1975 2.3<br>
+#   &nbsp;&nbsp;&nbsp;(2n) D is a <em class="key">box</em>/<em class="key">crate</em> of/containing B. [D-B]<br>
+#   ...</p>
+my (@order, %e);
+while ($html =~ m{<b><a name="([^"]+)">[^<]*</a></b>,\s*<br>\s*(.*?)</p>}sg) {
+    my ($word, $body) = ($1, $2);
+    next if $e{$word};
+    my ($head, @lines) = split /<br>/, $body;
+    my ($type) = $head =~ /\b([CDSINLO]-Prim|Afx|[123]-Cpx|Cpd|Bor\.|LW|Name)(?!\w)/ or next;
+    my ($aff)  = $head =~ m{^\s*<em class="origin">([a-z ]+)</em>};
+    my ($from) = $head =~ m{<em class="origin">&lt;([a-z()]+)&gt;</em>};
+    # The first numbered sense, "(2n)", "(1a)", "(1)"; failing that, the first
+    # sense of any kind, "(l)", "(af)".
+    my ($sense) = grep { /^\s*(?:&nbsp;)*\s*\(\d[a-z]*\)/ } @lines;
+    ($sense)    = grep { /^\s*(?:&nbsp;)*\s*\([a-z]+\)/ } @lines unless defined $sense;
+    push @order, $word;
+    $e{$word} = { type => $type, aff => $aff, from => $from, sense => $sense };
+}
+die "dictionary parse failed: $dict\n" unless @order > 5000;
+
+# A little word's affixes are listed only under the affixes themselves:
+# "fer, <fe> Afx: a combining form of fe".
+for my $w (@order) {
+    my $x = $e{$w};
+    next unless $x->{type} eq 'Afx' and defined $x->{from};
+    (my $base = $x->{from}) =~ tr/()//d;
+    my $b = $e{$base} or next;
+    my @have = split ' ', $b->{aff} // '';
+    push @have, $w unless grep { $_ eq $w } @have;
+    $b->{aff} = join ' ', @have;
+}
+
+my $PREP = qr/(?:of|to|for|from|in|at|on|by|with|about|than|under|into|over|between|among|containing)\b/;
+
+sub gloss_notes ($sense) {
+    return ('-', '') unless defined $sense;
+    my $s = $sense;
+    $s =~ s/^\s*(?:&nbsp;)*\s*\(\w+\)\s*//;         # "(2n)"
+    $s =~ s/\s*\[[^\]]*\]\s*$//;                     # "[D-B]"
+    my @keys;
+    if ($s =~ m{((?:<em class="key">[^<]*</em>)(?:/<em class="key">[^<]*</em>)*)}) {
+        my $run = $1;
+        @keys = map { text($_) =~ s/ /-/gr } $run =~ m{<em class="key">([^<]*)</em>}g;
+        $s =~ s/\Q$run\E/ - /;
+    }
+    my $t = text($s);
+    $t =~ s/\s*\.\s*$//;                    # the closing period
+    $t =~ s/^[A-Z]\d?\b\s*//;               # the first place is the word itself
+    $t =~ s/\b[A-Z]\d?\b/../g;              # the other places
+    $t =~ s/ +\.\./../g;
+    $t =~ s/ +/ /g;
+    $t =~ s/ ,/,/g;
+    # "is a - of/containing.." -> "of/containing..", as the MacTeach lists have
+    # it -- but "is a - place/territory" keeps its noun.
+    $t =~ s{^(?:is|are|is/are)(?: (?:a|an|the|a/the|some))? - (?=$PREP|\.\.)}{};
+    return (@keys ? join('/', @keys) : '-', $t);
+}
+
+# core is the everyday vocabulary: the primitives less the native (N-) and
+# scientific (S-) ones -- composite, derived (the declensions), international,
+# Loglan and onomatopoeic.
+my (@prims, @affs, @core);
+for my $w (@order) {
+    my $x = $e{$w};
+    my $is_prim = $x->{type} =~ /-Prim\z/;
+    my $aff = $x->{aff} // '-';
+    next unless $is_prim or ($x->{type} eq 'LW' and $aff ne '-');
+    my $rec = join "\t", $w, $aff, gloss_notes($x->{sense});
+    push @prims, $rec if $is_prim;
+    push @core,  $rec if $x->{type} =~ /^[CDILO]-Prim\z/;
+    push @affs,  $rec if $aff ne '-';
+}
+
+# affsets is the other two together, so their additions go into it as well
+# (an affsets.added entry having the last word).
+my %seen;
+my @affsets = grep { !$seen{ (split /\t/)[0] }++ } @affs, @prims;
+@affsets = merge_added($_, \@affsets) for qw(affs prims affsets);
+@prims   = merge_added('prims', \@prims);
+@affs    = merge_added('affs',  \@affs);
+@core    = merge_added('core',  \@core);
+
+# The auxiliary lists -- shipped and your own, everything in DIR/aux --
+# supplement the main ones: a word they have that prims lacks goes into prims
+# and affsets, and into affs as well if it has affixes.
+for my $file (sort glob "$aux/*") {
+    next if $file =~ /\.(?:old|state\.json)\z/ || !-f $file;
+    my @rows = read_rows($file);
+    for my $list ([\@prims, 1], [\@affsets, 1], [\@affs, 0]) {
+        my ($rows, $all) = @$list;
+        my %have = map { (split /\t/)[0] => 1 } @$rows;
+        push @$rows, grep { my @f = split /\t/; !$have{ $f[0] } && ($all || ($f[1] // '-') ne '-') } @rows;
+    }
+    # core takes only the words the dictionary does not have at all -- set
+    # members formed by rule, or your own -- and of those only the ones whose
+    # set is made of primitives: derived primitives like the rest of their
+    # set (kurmi, kavha), not the borrowings' (romhane beside romhani).
+    my %have = map { (split /\t/)[0] => 1 } @core;
+    push @core, grep {
+        my ($w) = split /\t/;
+        my @kin = grep { $e{$_} } map { substr($w, 0, -1) . $_ } qw(a e i o u);
+        !$have{$w} && !$e{$w} && (!@kin || grep { $e{$_}{type} =~ /-Prim\z/ } @kin);
+    } @rows;
+}
+
+write_list("$dir/prims",   \@prims);
+write_list("$dir/core",    \@core);
+write_list("$dir/affs",    \@affs);
+write_list("$dir/affsets", \@affsets);
+
+# ---- the lists shipped as they are (utts) ----
+# Never over a list that is already there: it may be your own copy, or a
+# symlink to one.
+for my $file (grep { -f } glob "$dist/lists/*") {
+    my $name = $file =~ s{.*/}{}r;
+    my $to   = "$dir/$name";
+    next if -e $to || -l $to;
+    copy($file, $to) or die "copy $file: $!";
+    say "installed $to";
+}
+
+# ---- the rest: l1prims, derivs, the cheat sheet ----
+my $mk = -x "$RealBin/mk-utility" ? "$RealBin/mk-utility" : 'mk-utility';
+system($mk, '--dir', $dir, ($opt{'replace-links'} ? '--replace-links' : ())) == 0
+    or die "mk-utility failed\n";
+
+touch("$src/.built");
+if ($opt{auto} && @changed) {
+    open my $note, '>>', "$dir/UPDATED" or exit 0;
+    print $note strftime('%Y-%m-%d', localtime), ': new Loglan sources (',
+        join(', ', map { s/ .*//r } @changed), "); the lists were rebuilt\n";
+    close $note;
+}
+
+# ---- Helpers ----
+
+sub touch ($file) {
+    open my $fh, '>>', $file or die "touch $file: $!";
+    close $fh;
+    utime undef, undef, $file;
+}
+
+sub read_manifest ($file) {
+    open my $fh, '<', $file or die "open $file: $!";
+    my @out;
+    while (<$fh>) {
+        next if /^\s*(?:#|$)/;
+        chomp;
+        my ($path, $url, $sha, $date) = split /\t/;
+        push @out, { path => $path, url => $url, sha => $sha, date => $date };
+    }
+    return @out;
+}
+
+sub read_versions () {
+    my %v;
+    open my $fh, '<', "$orig/VERSIONS" or return %v;
+    while (<$fh>) {
+        chomp;
+        my ($path, $sha, $date) = split /\t/;
+        $v{$path} = { sha => $sha, date => $date } if defined $date;
+    }
+    return %v;
+}
+
+sub write_versions ($v) {
+    open my $fh, '>', "$orig/VERSIONS.tmp" or die "write $orig/VERSIONS: $!";
+    print $fh join("\t", $_, $v->{$_}{sha}, $v->{$_}{date}), "\n" for sort keys %$v;
+    close $fh;
+    rename "$orig/VERSIONS.tmp", "$orig/VERSIONS" or die "rename $orig/VERSIONS: $!";
+}
+
+sub read_fixes ($file) {
+    open my $fh, '<:encoding(UTF-8)', $file or return ();
+    my @out;
+    my %esc = ('t' => "\t", 'n' => "\n", '\\' => '\\');
+    while (<$fh>) {
+        next if /^\s*(?:#|$)/;
+        chomp;
+        my @f = map { s/\\([tn\\])/$esc{$1}/gr } split /\t/;
+        push @out, [@f[0 .. 2]] if @f >= 3;
+    }
+    return @out;
+}
+
+sub read_bytes ($file) {
+    open my $fh, '<:raw', $file or die "open $file: $!";
+    local $/;
+    return scalar <$fh>;
+}
+
+sub write_bytes ($file, $bytes, $mtime = undef) {
+    open my $fh, '>:raw', "$file.tmp" or die "write $file: $!";
+    print $fh $bytes;
+    close $fh or die "write $file: $!";
+    utime $mtime, $mtime, "$file.tmp" if defined $mtime;
+    rename "$file.tmp", $file or die "rename $file: $!";
+}
+
+# (body, undef, its date online) if the copy online is newer than $file;
+# nothing if it is not; (undef, message) if there was no telling.
+sub fetch_if_newer ($url, $file) {
+    my $since = -e $file ? (stat $file)[9] : 0;
+    if (HTTP::Tiny->can_ssl) {
+        my %h = $since ? ('If-Modified-Since' => http_date($since)) : ();
+        my $r = HTTP::Tiny->new(agent => 'loglan-update/1', timeout => 20)
+                          ->get($url, { headers => \%h });
+        return () if $r->{status} == 304;
+        return (undef, "$r->{status} $r->{reason}") unless $r->{success};
+        return ($r->{content}, undef, parse_http_date($r->{headers}{'last-modified'}));
+    }
+    my ($tfh, $tmp) = tempfile();
+    close $tfh;
+    unlink $tmp;
+    my @z = $since ? ('-z', $file) : ();
+    system('curl', '-fsS', '--max-time', '60', '-R', @z, '-o', $tmp, $url) == 0
+        or return (undef, 'curl failed');
+    return () unless -e $tmp;
+    my $body  = read_bytes($tmp);
+    my $mtime = (stat $tmp)[9];
+    unlink $tmp;
+    return ($body, undef, $mtime);
+}
+
+# (A sub, not a file-level array: the main code above runs before any
+# assignment down here would.)
+sub MON () { qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec) }
+
+sub http_date ($t) {
+    my @g = gmtime $t;
+    return sprintf '%s, %02d %s %04d %02d:%02d:%02d GMT',
+        (qw(Sun Mon Tue Wed Thu Fri Sat))[ $g[6] ], $g[3], (MON)[ $g[4] ], $g[5] + 1900, @g[2, 1, 0];
+}
+
+# "Wed, 08 Oct 2026 16:19:00 GMT" -> seconds; undef if it is not that.
+sub parse_http_date ($s) {
+    my ($d, $mon, $y, $h, $mi, $sec) =
+        ($s // '') =~ /(\d+) (\w{3}) (\d{4}) (\d+):(\d+):(\d+)/ or return undef;
+    my @mon = MON;
+    my ($m) = grep { $mon[$_] eq $mon } 0 .. 11;
+    return defined $m ? timegm($sec, $mi, $h, $d, $m, $y) : undef;
+}
+
+sub read_rows ($file) {
+    open my $fh, '<:encoding(UTF-8)', $file or die "open $file: $!";
+    return grep { /\S/ && !/^\s*#/ } map { s/\r?\n\z//r } <$fh>;
+}
+
+# <list>.added holds entries of your own, in the list's layout (blank lines
+# and '#' lines skipped): each replaces the entry for the same word, or is
+# added.  Nothing here writes to a .added file.
+sub merge_added ($name, $rows) {
+    my $file = "$dir/$name.added";
+    return @$rows unless -f $file;
+    my @add = read_rows($file);
+    my %add = map { (split /\t/)[0] => $_ } @add;
+    my %done;
+    my @out = map { my $w = (split /\t/)[0];
+                    $add{$w} ? do { $done{$w} = 1; $add{$w} } : $_ } @$rows;
+    return (@out, grep { !$done{ (split /\t/)[0] } } @add);
+}
+
+# An animal the list lacks can be started from its generic -u word in
+# animals.added (kavhu); the rest of its set -- female -a, male -o, young -i
+# and -like -e -- is formed by rule.
+sub add_rule_sets (@rows) {
+    my %have = map { (split /\t/)[0] => 1 } @rows;
+    my @out = @rows;
+    my %ending = (a => 'female', o => 'male', i => 'baby');
+    my %note = (a => 'is a female -', o => 'is a male -',
+                i => 'is an infant -', e => 'is more - like than..');
+    for my $row (@rows) {
+        my ($w, $aff, $gloss) = split /\t/, $row;
+        next unless defined $gloss && $w =~ /^(\w{2,})u$/;
+        my $st = $1;
+        my @name = split m{/}, $gloss;
+        for my $v (qw(a o i e)) {
+            next if $have{"$st$v"}++;
+            my @alt = $v eq 'e' ? map { "$_-like" } @name : map { "$ending{$v}-$_" } @name;
+            push @out, join "\t", "$st$v", '-', join('/', @alt), "$note{$v} (formed by rule)";
+        }
+    }
+    return @out;
+}
+
+# Written beside the target and renamed into place, so a half-written list is
+# never left behind.  A symlink in the way is somebody's own list, so it is
+# replaced only on request.
+sub write_list ($file, $rows, $keep_order = 0) {
+    my $name = $file =~ s{.*/}{}r;
+    if (-l $file && !$opt{'replace-links'}) {
+        warn "$file is a symlink (to ${\ readlink $file}); left alone -- use --replace-links\n";
+        return;
+    }
+    my ($out, $tmp) = tempfile("$name.XXXX", DIR => dirname $file);
+    binmode $out, ':encoding(UTF-8)';
+    print $out "$_\n" for $keep_order ? @$rows : sort @$rows;
+    close $out or die "write $tmp: $!";
+    chmod 0666 & ~umask, $tmp;              # tempfile makes it 0600
+    rename $tmp, $file or die "rename $tmp: $!";
+    say "$name: ", scalar @$rows, " words";
+}
+
+# For whoever maintains the tools: download every source afresh and put the
+# changed ones into REPO/sources, with MANIFEST updated to match.
+sub refresh_repo ($repo) {
+    my $man = "$repo/sources/MANIFEST";
+    my @m = read_manifest($man);
+    my $today = strftime('%Y-%m-%d', gmtime);
+    my $n = 0;
+    for my $x (@m) {
+        my ($got, $err) = fetch_if_newer($x->{url}, '/nonexistent');
+        die "$x->{url}: ", $err // 'nothing came back', "\n" unless defined $got;
+        my $sha = sha256_hex($got);
+        if ($sha ne $x->{sha}) {
+            write_bytes("$repo/sources/$x->{path}", $got);
+            say "changed: $x->{path}";
+            $n++;
+        }
+        @$x{qw(sha date)} = ($sha, $sha eq $x->{sha} ? $x->{date} : $today);
+    }
+    open my $fh, '<', $man or die "open $man: $!";
+    my @head = grep { /^#/ } <$fh>;
+    close $fh;
+    open $fh, '>', $man or die "write $man: $!";
+    print $fh @head;
+    print $fh join("\t", @$_{qw(path url sha date)}), "\n" for @m;
+    close $fh;
+    say $n ? "$n source(s) changed; commit sources/ to ship them" : 'all sources are current';
+}
+
+sub usage {
+    print <<"END";
+Usage: loglan-update [--dir DIR] [--offline] [--replace-links]
+       loglan-update --refresh-repo REPO
+
+Brings the Loglan sources in DIR/src up to date -- from the copies shipped
+with the tools and, if the copy online has changed, from
+randall-holmes.github.io -- and builds the lists in DIR from them: prims,
+core, affs, affsets, the auxiliary lists in DIR/aux (ethnic, animals), l1prims,
+derivs and cheatsheet.html.
+
+  --dir DIR         the data directory (default \$LOGLAN_STATE_DIR, else ~/.loglan)
+  --offline         do not look online; use the copies here
+  --replace-links   replace a list that is a symlink instead of skipping it
+  --auto            what loglan-teach runs in the background: at most once a
+                    day, silently, and rebuilding only if a source changed
+  --refresh-repo REPO
+                    for maintainers: download every source and put the
+                    changed ones into REPO/sources, updating its MANIFEST
+
+LOGLAN_NO_UPDATE=1 in the environment stops loglan-teach and loglan-coin
+from starting the background check.
+END
+    exit 0;
+}

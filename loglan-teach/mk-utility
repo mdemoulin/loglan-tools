@@ -5,47 +5,80 @@ use open ':std', ':encoding(UTF-8)';
 
 use Getopt::Long qw(:config bundling no_ignore_case);
 
-# Builds a practice cheat-sheet (cheatsheet.html) plus four drill files for
-# loglan-teach -- ethnic, animals, l1prims, derivs -- from the prims list,
-# Loglan 1 and Lavinia Randall Holmes's Loglan-to-English dictionary, all of which
-# loglan-fetch puts in the data directory.  l1prims is the set of primitives
+# Builds a practice cheat-sheet (cheatsheet.html) plus two drill files for
+# loglan-teach -- l1prims and derivs -- from the prims list, the auxiliary
+# ethnic and animals lists, Loglan 1 and Lavinia Randall Holmes's
+# Loglan-to-English dictionary, all of which loglan-update puts in the data
+# directory (it runs this script itself).  l1prims is the set of primitives
 # actually used in the main text (chapters 1-7); Appendix B supplies their
 # book definitions.  derivs is the word-origin table loglan-teach shows after
-# each answer.  The ethnic and animal declensions run wider than the prims
-# list: borrowings and later coinages are in the dictionary only, so the sets
-# are collected from both.
+# each answer.
+#
+# The ethnic and animals lists ship with the tools (lists/aux), curated.  They
+# were first made, and can be made again, by --aux DIR: the ethnic and animal
+# declensions run wider than the prims list -- borrowings and later coinages
+# are in the dictionary only -- so the sets are collected from both, and the
+# members none of the sources has are formed by rule.
 
 my %opt;
-GetOptions(\%opt, 'dir=s', 'replace-links', 'help|h') or die "Try --help\n";
+GetOptions(\%opt, 'dir=s', 'replace-links', 'aux=s', 'help|h') or die "Try --help\n";
 if ($opt{help}) {
     print <<"END";
 Usage: mk-utility [--dir DIR] [--replace-links]
+       mk-utility --aux OUTDIR [--dir DIR]
 
-Builds cheatsheet.html and the ethnic, animals, l1prims and derivs drill lists
-in DIR (default \$LOGLAN_STATE_DIR, else ~/.loglan) from what loglan-fetch put
-there.  A list that is a symlink is left alone unless --replace-links is given.
+Builds cheatsheet.html and the l1prims and derivs drill lists in DIR (default
+\$LOGLAN_STATE_DIR, else ~/.loglan) from what loglan-update put there.  A list
+that is a symlink is left alone unless --replace-links is given.
+
+--aux OUTDIR is for whoever maintains the tools: it works the ethnic and
+animals lists out afresh from the dictionary and writes them to OUTDIR (the
+repository's lists/aux), leaving everything in DIR as it was.
 END
     exit 0;
 }
 my $dir = $opt{dir} // $ENV{LOGLAN_STATE_DIR} // "$ENV{HOME}/.loglan";
+my $gen = defined $opt{aux};
 
 my $prims_file = "$dir/prims";
 my $l1_dir     = "$dir/src/Loglan1";
 my $appb_file  = "$l1_dir/app-b.html";
 my @chapters   = map { "$l1_dir/chap$_.html" } 1 .. 7;
 my $dict_file  = "$dir/src/Dictionary/L-to-E-TDR.html";
-for ($prims_file, $appb_file, $dict_file) {
-    die "$_ is missing -- run loglan-fetch first\n" unless -f;
+my @aux_files  = $gen ? () : map { "$dir/aux/$_" } qw(ethnic animals);
+for ($prims_file, $appb_file, $dict_file, @aux_files) {
+    die "$_ is missing -- run loglan-update first\n" unless -f;
 }
 
 # Primitive-shaped tokens in the chapters that are only ever the English word.
 my %not_loglan = map { $_ => 1 } qw(hindi versa);
 
+# ---- The auxiliary lists: name -> [rows] ----
+# Read whenever they are there, even by --aux: loglan-update adds their words
+# to prims, and those are not to be read back as primitives.
+my %aux;
+for my $name (qw(ethnic animals)) {
+    my $file = "$dir/aux/$name";
+    next unless -f $file;
+    open my $fh, '<', $file or die "open $file: $!";
+    $aux{$name} = [ grep { /\S/ && !/^\s*#/ } map { s/\r?\n\z//r } <$fh> ];
+    close $fh;
+}
+my %aux_word = map { (split /\t/)[0] => 1 } map { @$_ } values %aux;
+
+# Which words the dictionary itself calls primitives, to tell them from the
+# words the auxiliary lists put into prims.
+my %dict_prim;
+{
+    open my $fh, '<', $dict_file or die "open $dict_file: $!";
+    my $html = do { local $/; <$fh> };
+    close $fh;
+    $dict_prim{$1} = 1
+        while $html =~ m{<b><a name="([^"]+)">[^<]*</a></b>,\s*<br>[^<]*(?:<em[^>]*>[^<]*</em>\s*)*[^<]*?\b[A-Z]-Prim\b}g;
+}
+
 # ---- Institute PRIMS: word -> { affix, gloss, notes, line } ----
 my (%prims, @prims_order);
-# Set members from ethnic.added and animals.added are put into prims below,
-# like the members formed by rule, so they are not read back as prims either.
-my %set_member_added = map { (split /\t/)[0] => 1 } read_added('ethnic'), read_added('animals');
 {
     open my $fh, '<', $prims_file or die "open $prims_file: $!";
     my @lines = <$fh>;
@@ -56,8 +89,8 @@ my %set_member_added = map { (split /\t/)[0] => 1 } read_added('ethnic'), read_a
         next unless @f >= 3;
         my $w = $f[0];
         $_ = defined $_ ? s/^\s+|\s+$//gr : '' for @f;
-        next if $f[3] && $f[3] =~ /\(formed by rule\)\z/;   # ours, added below
-        next if $set_member_added{$w};                       # likewise
+        next if $f[3] && $f[3] =~ /\(formed by rule\)\z/;   # an auxiliary list's
+        next if $aux_word{$w} && !$dict_prim{$w};            # likewise
         $prims{$w} = { affix => $f[1], gloss => $f[2], notes => $f[3] // '', line => $_ };
         push @prims_order, $w;
     }
@@ -230,8 +263,10 @@ for my $w (sort keys %dict) {
     next unless $senses >= 2;
     $ethnic_stem{$st} //= 'dict';
 }
-for my $st (sort keys %ethnic_stem) {
-    die "no English label for ethnic stem $st\n" unless $ethnic_label{$st};
+if ($gen) {
+    for my $st (sort keys %ethnic_stem) {
+        die "no English label for ethnic stem $st\n" unless $ethnic_label{$st};
+    }
 }
 
 # What an ending means, for the glosses built below.
@@ -278,6 +313,7 @@ sub dict_ethnic_row ($st, $v) {
 # is written, an added entry replaces the built one for the same word, and the
 # rest are appended.  Nothing here ever writes to a .added file.
 sub read_added ($name) {
+    return () if $gen;              # the shipped lists are everyone's
     my $file = "$dir/$name.added";
     return () unless -f $file;
     open my $fh, '<', $file or die "open $file: $!";
@@ -329,7 +365,7 @@ for my $w (sort keys %dict) {
 }
 
 # An animal the dictionary lacks altogether starts with its -u word in
-# animals.added (hamsteru, kavhu); the rest of its set is formed by rule.
+# animals.added (kavhu); the rest of its set is formed by rule.
 my %added_animal;
 for my $line (read_added('animals')) {
     my @f = split /\t/, $line;
@@ -353,9 +389,11 @@ my %animal_label = (
     cimp => 'chimpanzee / chimp',  elhefant => 'elephant',
     hath => 'Asian-elephant',      temb     => 'African-elephant',
 );
-for my $st (sort keys %animal_stem) {
-    next if $prims{"${st}u"} || $animal_label{$st} || $added_animal{"${st}u"};
-    die "no English name for animal stem $st\n" unless @{ $dict{"${st}u"}{kw} };
+if ($gen) {
+    for my $st (sort keys %animal_stem) {
+        next if $prims{"${st}u"} || $animal_label{$st} || $added_animal{"${st}u"};
+        die "no English name for animal stem $st\n" unless @{ $dict{"${st}u"}{kw} };
+    }
 }
 
 # The declension gives a dictionary-only animal word its gloss -- the animal's
@@ -409,6 +447,29 @@ for my $st (sort keys %animal_stem) {
     }
 }
 
+# ---- The sets as the auxiliary lists have them ----
+# What is worked out above is what --aux writes; otherwise the curated lists
+# loglan-update installed are the word: which sets there are, and every word
+# in them.  A member formed by rule is drawn as one.
+unless ($gen) {
+    %ethnic_stem = ();
+    for (@{ $aux{ethnic} }) {
+        my ($w) = split /\t/;
+        $ethnic_stem{$1} = 'aux' if $w =~ /^(\w+)[aeio]\z/;
+    }
+    %animal_stem = ();
+    %animal_word = ();
+    for (@{ $aux{animals} }) {
+        my ($w, $affix, $gloss, $notes) = split /\t/;
+        $notes //= '';
+        next unless $w =~ /^(\w+)([uaoie])\z/;
+        $animal_stem{$1} = 1 if $2 eq 'u';
+        next if $notes =~ /\(formed by rule\)\z/;
+        $animal_word{$w} = { affix => $affix, gloss => $gloss, notes => $notes, line => $_,
+                             dict => (!$prims{$w} && $dict{$w} ? 1 : 0) };
+    }
+}
+
 # ---- Words in Loglan 1 that are no longer in PRIMS ----
 my %replaced = (
     birhu => 'birju', canse => 'tcane', cupri => 'cupro', curdi => 'surba',
@@ -448,6 +509,8 @@ sub write_drill ($name, $rows) {
     return $rows;
 }
 
+# --aux: the ethnic and animals lists, written for shipping, and nothing else.
+if ($gen) {
 my @ethnic_rows;
 for my $st (sort keys %ethnic_stem) {
     for my $v (qw(a e i o)) {
@@ -459,37 +522,22 @@ for my $st (sort keys %ethnic_stem) {
         else               { push @ethnic_rows, rule_ethnic_row($st, $v) }
     }
 }
-@ethnic_rows = @{ write_drill('ethnic', \@ethnic_rows) };
+
 
 my @animal_rows;
 for my $st (sort keys %animal_stem) {
     push @animal_rows, map { $animal_word{"$st$_"} ? $animal_word{"$st$_"}{line}
                                                    : rule_animal_row($st, $_) } qw(u a o i e);
 }
-@animal_rows = @{ write_drill('animals', \@animal_rows) };
-
-# The members formed by rule, and those from ethnic.added and animals.added,
-# are primitives like the rest of their sets, so they go into prims and
-# affsets as well (affs takes only words with affixes).  loglan-fetch builds
-# those two from the dictionary alone; adding only what is missing keeps a
-# second run from changing anything.
-my %set_added = map { (split /\t/)[0] => 1 } read_added('ethnic'), read_added('animals');
-my @by_rule = grep { /\(formed by rule\)\z/ || $set_added{ (split /\t/)[0] } }
-              @ethnic_rows, @animal_rows;
-for my $name (qw(prims affsets)) {
-    my $file = "$dir/$name";
-    next unless -f $file;
-    open my $in, '<', $file or die "open $file: $!";
-    chomp(my @rows = <$in>);
-    close $in;
-    my %have = map { (split /\t/)[0] => 1 } @rows;
-    my @add  = grep { !$have{ (split /\t/)[0] } } @by_rule;
-    next unless @add;
-    my $out = out_file($name) // next;
-    open my $fh, '>', $out or die "open $out: $!";
-    print $fh "$_\n" for sort @rows, @add;
+for my $list (['ethnic', \@ethnic_rows], ['animals', \@animal_rows]) {
+    my ($name, $rows) = @$list;
+    my $file = "$opt{aux}/$name";
+    open my $fh, '>', $file or die "open $file: $!";
+    print $fh "$_\n" for @$rows;
     close $fh;
-    say "$name: added ", scalar(@add), " set members (formed by rule or from .added)";
+    say "$file: ", scalar(@$rows), " items";
+}
+exit 0;
 }
 
 # A member of a set that none of the sources has is still a word -- the
@@ -614,7 +662,8 @@ for my $st (sort keys %ethnic_stem) {
         elsif ($dict{$w})  { push @cells, "<td><b>$w</b><sup>&Dagger;</sup></td>" }
         else               { push @cells, "<td class=rule>$w<sup>*</sup></td>" }
     }
-    $ethnic_html .= "<tr><th>$ethnic_label{$st}</th>@cells</tr>\n";
+    # A set of your own (in ethnic.added) has no label here; its stem will do.
+    $ethnic_html .= "<tr><th>" . ($ethnic_label{$st} // $st) . "</th>@cells</tr>\n";
 }
 
 my $ethnic_note = marks_note($ethnic_html);
@@ -684,7 +733,7 @@ print $out <<"HTML";
 <h1>Loglan Vocabulary Cheat Sheet</h1>
 <p class=note>Ethnic and animal words are taken from the Institute PRIMS file and the
 Loglan-to-English dictionary; the primitive list is
-every primitive used in the main text of <i>Loglan 1</i>. Regenerate with <tt>mk-utility</tt>. Matching drill files for
+every primitive used in the main text of <i>Loglan 1</i>. Regenerate with <tt>loglan-update</tt>. Matching drill files for
 <tt>loglan-teach</tt>: <tt>ethnic</tt>, <tt>animals</tt>, <tt>l1prims</tt>, plus <tt>derivs</tt>, the word-origin
 table it shows after each answer.</p>
 
