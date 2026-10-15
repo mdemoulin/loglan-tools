@@ -1,4 +1,27 @@
 #!/usr/bin/env perl
+# loglan-update: keep the Loglan sources current and build the word lists.
+# Part of loglan-tools <https://github.com/mdemoulin/loglan-tools>.
+# Copyright (C) 2026  Michael A. Demoulin <35350967+mdemoulin@users.noreply.github.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# The Loglan material this program works from -- the dictionary, Loglan 1,
+# omnibus.py, and the word lists drawn from them -- is not covered by the
+# GPL: it is owned by
+# The Loglan Center, Inc., which reserves all rights to it, and is used with
+# its permission.  See COPYING-TLC.
+
 use v5.36;
 use utf8;
 use open ':std', ':encoding(UTF-8)';

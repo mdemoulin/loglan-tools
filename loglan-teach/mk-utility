@@ -1,4 +1,27 @@
 #!/usr/bin/env perl
+# mk-utility: build the cheat sheet and the l1prims and derivs lists.
+# Part of loglan-tools <https://github.com/mdemoulin/loglan-tools>.
+# Copyright (C) 2026  Michael A. Demoulin <35350967+mdemoulin@users.noreply.github.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# The Loglan material this program works from -- the dictionary, Loglan 1,
+# omnibus.py, and the word lists drawn from them -- is not covered by the
+# GPL: it is owned by
+# The Loglan Center, Inc., which reserves all rights to it, and is used with
+# its permission.  See COPYING-TLC.
+
 use v5.36;
 use utf8;
 use open ':std', ':encoding(UTF-8)';
@@ -529,10 +552,21 @@ for my $st (sort keys %animal_stem) {
     push @animal_rows, map { $animal_word{"$st$_"} ? $animal_word{"$st$_"}{line}
                                                    : rule_animal_row($st, $_) } qw(u a o i e);
 }
+# Each opens with the rights statement The Loglan Center asked for: the lists
+# are drawn from its dictionary.
+my %what = (ethnic  => 'the ethnic declension sets (-a language, -e territory, -i person, -o culture)',
+            animals => 'the animal declension sets (-u any, -a female, -o male, -i young, -e -like)');
 for my $list (['ethnic', \@ethnic_rows], ['animals', \@animal_rows]) {
     my ($name, $rows) = @$list;
     my $file = "$opt{aux}/$name";
     open my $fh, '>', $file or die "open $file: $!";
+    print $fh <<"END";
+# $name -- $what{$name}, for loglan-teach: word<TAB>affixes<TAB>gloss<TAB>notes.
+# Drawn from Lavinia Randall Holmes's Loglan-to-English dictionary; a member no source has is formed by rule.
+# All rights reserved by The Loglan Center, Inc. (the Idaho corporation which has superseded the Florida corporation).
+# Included with the permission of The Loglan Center (Lavinia Randall Holmes, October 2026).
+# This file is not covered by the GPL that covers the code in this repository.
+END
     print $fh "$_\n" for @$rows;
     close $fh;
     say "$file: ", scalar(@$rows), " items";
@@ -742,6 +776,9 @@ Loglan-to-English dictionary; the primitive list is
 every primitive used in the main text of <i>Loglan 1</i>. Regenerate with <tt>loglan-update</tt>. Matching drill files for
 <tt>loglan-teach</tt>: <tt>ethnic</tt>, <tt>animals</tt>, <tt>l1prims</tt>, plus <tt>derivs</tt>, the word-origin
 table it shows after each answer.</p>
+<p class=note>The Loglan words and definitions here are drawn from Loglan material: all rights reserved
+by The Loglan Center, Inc. (the Idaho corporation which has superseded the Florida corporation);
+used with its permission.</p>
 
 <h2>Ethnic declension ($n_eth stems)</h2>
 <table>

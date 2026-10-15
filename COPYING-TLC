@@ -1,46 +1,66 @@
-loglan-tools
-============
+loglan-tools: who owns what
+===========================
 
-The programs in this repository -- everything under loglan-teach/, and
-install.sh -- are Copyright (C) 2026 Michael A. Demoulin, and are free
-software under the GNU General Public License, version 3 or (at your
-option) any later version; see COPYING.
+This repository holds two kinds of file, under different terms.
 
-Some files are not covered by the GPL.  They are Loglan material, owned by
-The Loglan Center, Inc., and included with its permission:
+
+1. LOGLAN MATERIAL -- OWNED BY THE LOGLAN CENTER, INC.
+   NOT covered by the GPL.  All rights reserved by The Loglan Center.
 
     sources/Dictionary/L-to-E-TDR.html
                     Lavinia Randall Holmes's Loglan-to-English dictionary
-    sources/Loglan1/
+    sources/Loglan1/*
                     Loglan 1, by James Cooke Brown, HTML edition
     sources/Sources/omnibus.py
                     Randall Holmes's PEG parser for Loglan
     lists/utts      the sentences of the Institute's LoglanTeach and MacTeach
                     programs, corrected to current Loglan grammar
-    lists/aux/ethnic, lists/aux/animals
+    lists/aux/ethnic
+    lists/aux/animals
                     the ethnic and animal declension sets, drawn from the
                     dictionary
-    loglan-teach/new-words-html.py
-                    the page around the entries (its HEAD and FOOT) is taken
-                    from the Loglan-to-English dictionary's own pages; the
-                    rest of the file is under the GPL like the other programs
+    loglan-teach/new-words-html.py -- the page template only
+                    the HEAD and FOOT strings, between the lines marked
+                    "The Loglan Center's material", taken from the
+                    Loglan-to-English dictionary's own pages
 
-The word lists and pages the programs build from this material are Loglan
-material too.
+   Also Loglan material: everything the programs build from it in your data
+   directory (~/.loglan) -- the word lists, the cheat sheet, the dictionary
+   pages -- except your own words.
 
-The permission, from Lavinia Randall Holmes for The Loglan Center, October
-2026:
+   All rights to this material are reserved by The Loglan Center, Inc. (the
+   Idaho corporation which has superseded the Florida corporation).  It is
+   included with The Loglan Center's permission, given by Lavinia Randall
+   Holmes in October 2026:
 
-    "I have no problem with your using current Loglan materials.  Just
-    include the statement that all rights are reserved by The Loglan
-    Center, Inc (the Idaho corporation which has superseded the Florida
-    corporation).  Our general view is that a language should be used,
-    not hoarded."
+       "I have no problem with your using current Loglan materials.  Just
+       include the statement that all rights are reserved by The Loglan
+       Center, Inc (the Idaho corporation which has superseded the Florida
+       corporation).  Our general view is that a language should be used,
+       not hoarded."
 
-All rights to this material are reserved by The Loglan Center, Inc. (the
-Idaho corporation which has superseded the Florida corporation).
+   The originals are published at
+   <https://randall-holmes.github.io/Loglan/cefli.html>; sources/MANIFEST
+   gives the address, checksum and date of each copy here.  Each of these
+   files, or its directory, says the same in a notice of its own
+   (sources/NOTICE; the header of each list; the marked lines in
+   new-words-html.py).
 
-The originals are published at
-<https://randall-holmes.github.io/Loglan/cefli.html>; sources/MANIFEST
-gives the address, checksum and date of each copy here, and sources/NOTICE
-says the same of the sources/ directory.
+
+2. THE PROGRAMS -- COPYRIGHT (C) 2026 MICHAEL A. DEMOULIN
+   Free software under the GNU General Public License, version 3 or (at
+   your option) any later version; see COPYING.
+
+    install.sh
+    loglan-teach/loglan-coin
+    loglan-teach/loglan-fetch
+    loglan-teach/loglan-lookup
+    loglan-teach/loglan-parse
+    loglan-teach/loglan-teach
+    loglan-teach/loglan-update
+    loglan-teach/mk-utility
+    loglan-teach/new-words-html.py -- all but its page template (above)
+    README.md, COPYING-TLC, sources/MANIFEST, sources/FIXES, .gitattributes
+
+   Each program says so at its top.  Contact:
+   Michael A. Demoulin <35350967+mdemoulin@users.noreply.github.com>
