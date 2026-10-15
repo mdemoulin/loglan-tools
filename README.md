@@ -35,7 +35,7 @@ one of a gloss's alternatives ("box/crate/carton") counts as right.  Open
 | `mk-utility` | Run by `loglan-update`: builds `cheatsheet.html` (the ethnic and animal declensions, and every primitive used in *Loglan 1*) and the `l1prims` and `derivs` lists |
 | `loglan-lookup WORD` | Looks a word up in the dictionary, either direction: `kliri` or `clear`; `-p` for every headword containing it.  The English side is made from the keywords the definitions mark; your auxiliary words are found too, and coined words with `--words FILE` |
 | `new-words-html.py` | Makes a Loglan-to-English page of your coined words (see [Your own words](#your-own-words)): by default the ones not yet submitted, `--submitted DATE` for a batch already sent, `--all` for every one |
-| `loglan-parse` | Randall Holmes's parser, `omnibus.py`, in its own interactive loop: type a Loglan utterance and see how it parses (`?` for its commands, `...` to leave).  It runs in `~/.loglan/parse`, where its scratch files and anything it saves land |
+| `loglan-parse` | Randall Holmes's parser, `omnibus.py`, in its own interactive loop: type a Loglan utterance and see how it parses (`?` for its commands, `...` to leave).  It runs in `~/.loglan/parse`, where its scratch files and anything it saves land; `man loglan-parse` documents its commands, batch files and output |
 | `loglan-teach LIST` | Drills a list: `--recognition` (Loglan to English, the default), `--recall`, or `--both`; `--status` shows how far along you are, and `loglan-teach --tables` lists every list with its size and whether progress is saved |
 
 Everything lives in `~/.loglan` (or `$LOGLAN_STATE_DIR`): the sources

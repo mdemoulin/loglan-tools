@@ -81,6 +81,28 @@ case ":$PATH:" in
        echo "    export PATH=\"$dest:\$PATH\"" ;;
 esac
 
+# The manual pages: in ~/.local/share/man for an install in your home
+# directory, else in the share/man beside the bin directory
+# (/usr/local/share/man for /usr/local/bin).  man finds them through PATH:
+# it looks in X/share/man for each X/bin there.
+case $dest in
+    "$HOME"/*) mandir=$HOME/.local/share/man/man1; msudo= ;;
+    *)         mandir=$(dirname "$dest")/share/man/man1; msudo=$sudo ;;
+esac
+$msudo mkdir -p "$mandir"
+for m in "$here"/man/*.1; do
+    $msudo install -m 644 "$m" "$mandir/"
+    echo "installed $mandir/$(basename "$m")"
+done
+if [ "$mandir" = "$HOME/.local/share/man/man1" ]; then
+    case ":$PATH:" in
+        *":$HOME/.local/bin:"*) ;;
+        *) echo "Note: man finds pages in ~/.local/share/man only while ~/.local/bin is on"
+           echo "your PATH; otherwise add to ~/.bashrc:  export MANPATH=\"\$HOME/.local/share/man:\""
+           ;;
+    esac
+fi
+
 data=${LOGLAN_STATE_DIR:-$HOME/.loglan}
 
 # What ships with the tools -- the sources (used with The Loglan Center's
@@ -151,6 +173,7 @@ Look a word up, either direction (needs Python 3):
 Parse a sentence (needs Python 3):
 
        loglan-parse                      # type an utterance; ? for help, ... to leave
+       man loglan-parse                  # its commands, batch files and output
 
 Everything is kept in $data: the lists, your progress
 (<list>.state.json), the sources, and cheatsheet.html -- open that in a

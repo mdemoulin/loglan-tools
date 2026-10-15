@@ -1,0 +1,374 @@
+.\" loglan-parse(1), part of loglan-tools <https://github.com/mdemoulin/loglan-tools>.
+.\" Copyright (C) 2026  Michael A. Demoulin <35350967+mdemoulin@users.noreply.github.com>
+.\" Free documentation under the GNU General Public License, version 3 or
+.\" (at your option) any later version; see COPYING.  The parser it
+.\" describes, omnibus.py, is Loglan material: all rights reserved by The
+.\" Loglan Center, Inc.; see COPYING-TLC.
+.TH LOGLAN-PARSE 1 "2026-10-15" "loglan-tools" "Loglan Tools"
+.SH NAME
+loglan-parse \- Randall Holmes's PEG parser for Loglan, with its built-in grammar and interactive loop
+.SH SYNOPSIS
+.B loglan-parse
+.RB [ \-i ]
+.SH DESCRIPTION
+.B loglan-parse
+runs
+.BR omnibus.py ,
+Randall Holmes's parser for Loglan, built on Parsing Expression Grammars (PEG).
+It runs the copy that
+.B loglan-update
+keeps current in
+.BR ~/.loglan/src/Sources/omnibus.py ,
+and it runs it in
+.BR ~/.loglan/parse :
+see
+.BR FILES .
+.PP
+In
+.BR omnibus.py ,
+the PEG engine, the PEG rule compiler and the whole Loglan grammar
+(about 500
+.B L(\(dq...\(dq)
+rule definitions) are all in this one file.
+It needs no other modules.
+.PP
+It starts an interactive loop (see
+.BR "INTERACTIVE COMMANDS" ).
+Anything typed that is not a command is parsed as a Loglan utterance
+with the default grammar class
+.BR utterance .
+The bracketed parse is printed and the input is appended to the log file.
+.PP
+With
+.BR \-i ,
+the interactive loop still starts first.
+Leave it with
+.B ...
+to get the Python prompt, where you can call the module's functions directly (see
+.BR FUNCTIONS ).
+Call
+.B interface()
+to go back into the loop.
+.SH OUTPUT
+Each parse prints the input, a blank line, and then the parse tree.
+In the tree,
+.BI [ class : " ..." ]
+marks a grammar class.
+Any input that was not consumed comes after the tree.
+Then the
+.B Parser cache size
+is printed, followed by a line of dashes.
+If no parse is found, the output is
+.BR fail .
+.PP
+The display settings at startup are:
+.IP \(bu 2
+indented output is on
+.IP \(bu 2
+shallow display is on, so a run of nested classes is shown as
+.BI [ outer ": " inner : ...]
+.IP \(bu 2
+class names are shown
+.IP \(bu 2
+the
+.B niceprecs()
+settings are active.
+These compact the little-word classes
+.BR TAI0 ", " A1 ", " ACI ", " AGE ", " CA ", " ZE2 ", " I ", " ICA ", " ICI ", " IGE ", " KA ", " KI
+into unlabelled strings, and mark
+.B imperative
+as important.
+.SH INTERACTIVE COMMANDS
+Each command is a single line.
+In the commands below, the prefix character comes directly before its argument, with no space.
+.TP
+.B ...
+Exit the loop.
+.TP
+.B ?
+Show the command summary.
+.TP
+.BI ? line
+Run
+.B uttertest
+on
+.IR line .
+This parses the longest initial segment that parses without failure.
+It retries by removing one character at a time from the end, so it is very slow on long input.
+.TP
+.B ??
+Turn off all compacted classes, for fully detailed parses.
+Note: this line also begins with
+.BR ? ,
+so it additionally runs
+.B uttertest
+on the string
+.RB \(dq ? \(dq.
+.TP
+.B !!
+Restore the
+.B niceprecs()
+display settings and reset the default class to
+.BR utterance .
+.TP
+.B |
+Toggle the display of class names (verbose mode).
+.TP
+.BI : word
+Parse
+.I word
+as a borrowing by parsing
+.RB \(dq "liu " \fIword\fP\(dq
+as class
+.BR LIU ,
+with compaction off for that parse.
+.TP
+.BI ^ class
+Make
+.I class
+the default grammar class used to parse input.
+.TP
+.BI * rule
+Show the definition of grammar rule
+.IR rule .
+.TP
+.BI @ "name " "<- " expression
+Add or replace a grammar rule for this session only.
+The rule must pass the termination check (see
+.BR "GRAMMAR SYNTAX" ).
+.TP
+.BI & line
+Parse
+.I line
+without writing it to the log.
+.TP
+.BI # comment
+Write
+.I comment
+to the log file.
+.TP
+.BI % name
+Append the log from now on to
+.IB name log.txt\fR.
+.TP
+.BI > name
+Batch-parse
+.IB name .txt
+and write the results to
+.IB name .llg\fR.
+See
+.BR "BATCH FILES" .
+.TP
+.BI < name
+Turn an edited
+.IB name .llg
+back into
+.IB name .txt
+by removing the
+.BR % -prefixed
+parse lines.
+.TP
+.BI $ name
+Export the current grammar as Python source to
+.IB name .py\fR.
+The exported file imports
+.B loglanpreamble
+and starts
+.B interface()
+when it is run.
+.TP
+.BI ` name
+Export the current grammar, including comments, as PEG text to
+.IB name .peg\fR.
+.SH BATCH FILES
+A batch input file
+.IB name .txt
+has one utterance per line.
+.IP \(bu 2
+A line starting with
+.B #
+is copied into the output as a comment.
+.IP \(bu 2
+A line starting with
+.B %
+is skipped.
+.IP \(bu 2
+A line ending in
+.B \e
+is joined to the line after it.
+.PP
+In the output
+.IB name .llg\fR,
+each utterance is followed by its parse.
+Every parse line starts with
+.BR % ,
+so
+.B <
+can remove them again.
+.SH GRAMMAR SYNTAX
+Rules use Bryan Ford's PEG notation, without ASCII code escapes:
+.PP
+.RS
+.nf
+name <- expression
+e1 e2        sequence
+e1 / e2      ordered choice
+e?  e*  e+   optional, zero or more, one or more
+&e  !e       and-predicate, not-predicate
+( e )        grouping
+\(dqabc\(dq 'abc'  literal string
+[a-zA-Z]     character class
+\&.            any character
+.fi
+.RE
+.PP
+Escape sequences
+.BR \en ", " \et ", " \er ", " \e' ", " \e\(dq ", " \e[ ", " \e] " and " \e\e
+can be used in literals and character classes.
+A definition line that starts with
+.B #
+or
+.B <
+is stored as a comment.
+.PP
+Each new rule is checked for termination.
+A rule that might match without consuming input in a way that could loop is rejected with
+.BR "Termination check failure in" " \fIname\fP" .
+Rule names that start with
+.B _
+skip this check.
+.SH FUNCTIONS
+These functions are useful after
+.BR "loglan-parse \-i" :
+.TP
+.BI utter( s ") / Utter(" s )
+Parse
+.I s
+as the default class.
+.B utter
+returns the parse as a string; the capitalized version prints it.
+.TP
+.BI utteras( class ", " s ") / Utteras(" class ", " s )
+Parse
+.I s
+as a specific grammar class.
+.TP
+.BI uttertest( s ") / Uttertest(" s )
+Find the longest initial segment of
+.I s
+that parses.
+.TP
+.BI L( rule )
+Define a grammar rule, the same as
+.BR @ .
+.TP
+.BI Showrule( name )
+Print a rule.
+.TP
+.BI filebatch( name ") / revbatch(" name )
+The same as the
+.B >
+and
+.B <
+commands.
+.TP
+.BI saverules( name ") / saverules2(" name )
+The same as the
+.B $
+and
+.B `
+commands.
+.TP
+.BI grammarbatch( name )
+Discard the built-in grammar and load all rules from
+.IB name .peg\fR.
+.TP
+.B Verbose() Shallow() Indent() Numberbrackets() Greedy()
+Toggle, in order: class names; shallow display; indented display;
+.BI < n >
+depth markers on brackets; greedy parsing.
+Greedy parsing always takes the longest successful alternative, and it is slow.
+If greedy and normal parsing give different results, the grammar has a formal problem.
+.TP
+.BI Compact( class ") / Decompact()"
+Show a class as a plain unlabelled string, or clear all such settings.
+.TP
+.BI MakeImportant( class ") / DevalueImportance()"
+Mark a class as important, so that decluttering does not hide it, or clear all such marks.
+.TP
+.B niceprecs()
+Apply the default compaction settings.
+.TP
+.B interface2()
+An alternative interactive loop.
+It prints parses with
+.B %
+in front of every line, in the
+.B .llg
+style.
+.SH FILES
+.B loglan-parse
+runs the parser in
+.B ~/.loglan/parse
+(or
+.B $LOGLAN_STATE_DIR/parse\fR),
+since the parser reads and writes its files in the directory it runs in.
+A name given to the
+.BR > ,
+.BR < ,
+.BR % ,
+.B $
+or
+.B `
+command is therefore taken from there, unless it is a full path:
+.B >/home/me/text
+batch-parses
+.BR /home/me/text.txt .
+.PP
+At startup, the parser creates or truncates
+.B dummy
+and
+.B dummy2
+there.
+It also opens
+.B dummylog
+for appending, and this is the log file until
+.B %
+selects another.
+.TP
+.IB name log.txt
+Log file chosen with
+.BR % .
+.TP
+.IB name .txt ", " name .llg
+Batch input and output files.
+.TP
+.IB name .py ", " name .peg
+Exported grammars.
+.SH ENVIRONMENT
+.TP
+.B LOGLAN_STATE_DIR
+The data directory, instead of
+.BR ~/.loglan .
+.SH NOTES
+Parse results are cached for each rule and input position.
+The cache is cleared before every top-level parse.
+.PP
+The source is published at
+.UR https://randall-holmes.github.io/Loglan/Sources/omnibus.py
+.UE ;
+loglan-tools ships a copy, and
+.B loglan-update
+replaces it when the published one changes.
+.SH AUTHOR
+The parser is by Lavinia Randall Holmes, for The Loglan Center, which reserves
+all rights to it; it is used with its permission (see
+.B COPYING-TLC
+in loglan-tools).
+This page is by Michael A. Demoulin.
+.SH SEE ALSO
+.BR python3 (1);
+in loglan-tools,
+.B loglan-coin
+(checks single words with this parser) and
+.BR loglan-update .
