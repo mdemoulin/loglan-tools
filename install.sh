@@ -7,8 +7,9 @@
 # Installs loglan-teach (the drill), loglan-update (keeps the Loglan sources
 # current and builds the lists), mk-utility (which loglan-update runs for the
 # cheat sheet and the l1prims and derivs lists), loglan-coin (checks new words
-# and builds complexes), loglan-parse (Holmes's parser, interactively), and
-# loglan-fetch (the old name of loglan-update).
+# and builds complexes), loglan-lookup (looks words up, either direction),
+# loglan-parse (Holmes's parser, interactively), and loglan-fetch (the old
+# name of loglan-update).
 #
 # The sources -- the dictionary, Loglan 1, the parser -- and the shipped lists
 # (utts, and the auxiliary ethnic and animals) go into ~/.loglan/dist, and the
@@ -18,7 +19,7 @@
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
-tools=(loglan-teach loglan-update mk-utility loglan-coin loglan-parse loglan-fetch)
+tools=(loglan-teach loglan-update mk-utility loglan-coin loglan-lookup loglan-parse loglan-fetch)
 
 if [ $# -gt 0 ]; then
     dest=$1
@@ -116,6 +117,11 @@ Coin a word (needs Python 3):
 
        loglan-coin check kangydzoduo     # a word?  of what kind?  clashes?
        loglan-coin make kangu dzoru durzo # every complex from a metaphor
+
+Look a word up, either direction (needs Python 3):
+
+       loglan-lookup kliri               # the Loglan word
+       loglan-lookup clear               # the English word
 
 Parse a sentence (needs Python 3):
 

@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+"""loglan-lookup -- look a word up in the Loglan dictionary, either direction.
+
+    loglan-lookup kliri          the Loglan word
+    loglan-lookup clear          the English word
+    loglan-lookup -p kang        every headword containing 'kang'
+
+A Loglan word is looked for among the Loglan-to-English entries and an
+English one among the English keywords, and whatever is found is shown;
+-l or -e keeps to one side.  With no exact match the search falls back to
+the headwords containing what was typed, so a half-remembered word still
+gets you somewhere.
+
+The dictionary is Lavinia Randall Holmes's current Loglan-to-English one,
+which loglan-update keeps in ~/.loglan/src.  It has no English-to-Loglan
+half, so that side is made here from the English keywords its definitions
+mark.  The words of the auxiliary lists in ~/.loglan/aux that the
+dictionary lacks -- set members formed by rule, and your own -- are found
+too, and so are coined words from a JSON file of {"words": [{"word",
+"origin", "tec", "defs"}]} given with --words.
+"""
+
+import argparse
+import html
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import textwrap
+import time
+
+STATE = os.environ.get('LOGLAN_STATE_DIR') or os.path.expanduser('~/.loglan')
+DICTIONARY = os.path.join(STATE, 'src', 'Dictionary', 'L-to-E-TDR.html')
+AUX = os.path.join(STATE, 'aux')
+
+ENTRY = re.compile(r'<b><a name="([^"]+)">([^<]*)</a></b>,\s*<br>\s*(.*?)</p>', re.S)
+KEY = re.compile(r'<em class="key">(.*?)</em>', re.S)
+
+
+def fail(msg):
+    sys.exit('loglan-lookup: ' + msg)
+
+
+def start_update():
+    """Once a day, loglan-update looks online for changed sources, in the
+    background, as loglan-teach and loglan-coin do; LOGLAN_NO_UPDATE=1 turns
+    it off."""
+    if os.environ.get('LOGLAN_NO_UPDATE') or not os.path.isdir(STATE):
+        return
+    stamp = os.path.join(STATE, 'src', '.last-check')
+    if os.path.exists(stamp) and time.time() - os.path.getmtime(stamp) < 24 * 60 * 60:
+        return
+    here = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'loglan-update')
+    up = here if os.access(here, os.X_OK) else shutil.which('loglan-update')
+    if not up:
+        return
+    try:
+        subprocess.Popen([up, '--auto', '--dir', STATE], stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    except OSError:
+        pass
+
+
+def text(s):
+    """Markup out, entities resolved, whitespace closed up."""
+    s = re.sub(r'<[^>]+>', '', s)
+    s = html.unescape(s).replace('‍', '').replace('\xa0', ' ')
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+class Entry:
+    """One headword: the line about the word, its senses, and Used In."""
+
+    def __init__(self, word, head, senses, used=(), where=''):
+        self.word = word
+        self.head = head          # affixes, origin, type, author, date
+        self.senses = senses      # [(text, [keywords])]
+        self.used = list(used)
+        self.where = where        # '' for the dictionary, else the file
+
+
+def load_dictionary(path):
+    if not os.path.exists(path):
+        fail('no dictionary at %s -- run loglan-update first' % path)
+    with open(path, encoding='utf-8') as fh:
+        src = fh.read()
+    out = []
+    for m in ENTRY.finditer(src):
+        word, shown, body = m.groups()
+        head, *lines = body.split('<br>')
+        senses, used = [], []
+        for line in lines:
+            t = text(line)
+            if not t:
+                continue
+            if t.startswith('Used In:'):
+                used = [u.strip() for u in t[len('Used In:'):].split(';') if u.strip()]
+                continue
+            senses.append((t, [text(k) for k in KEY.findall(line)]))
+        out.append(Entry(text(shown) or word, text(head), senses, used))
+    if len(out) < 5000:
+        fail('could not read the dictionary at %s' % path)
+    return out
+
+
+def load_aux(have):
+    """The auxiliary lists' words the dictionary lacks: word, affix, gloss, notes."""
+    out = []
+    if not os.path.isdir(AUX):
+        return out
+    for name in sorted(os.listdir(AUX)):
+        path = os.path.join(AUX, name)
+        if name.startswith('.') or name.endswith('.old') or not os.path.isfile(path):
+            continue
+        with open(path, encoding='utf-8') as fh:
+            for line in fh:
+                f = line.rstrip('\r\n').split('\t')
+                if len(f) < 3 or line.startswith('#') or f[0] in have:
+                    continue
+                have.add(f[0])
+                notes = f[3] if len(f) > 3 else ''
+                head = ' '.join(x for x in (f[1] if f[1] != '-' else '',
+                                            'formed by rule' if 'formed by rule' in notes else '')
+                                if x)
+                gloss = f[2]
+                sense = '%s: %s' % (gloss.replace('/', ', '),
+                                    notes.replace(' (formed by rule)', ''))
+                out.append(Entry(f[0], head, [(sense, gloss.replace('-', ' ').split('/'))],
+                                 where='aux/' + name))
+    return out
+
+
+def load_words(path, have):
+    try:
+        with open(path, encoding='utf-8') as fh:
+            words = json.load(fh)['words']
+    except (OSError, ValueError, KeyError) as e:
+        fail('%s: %s' % (path, e))
+    out = []
+    for w in words:
+        head = ' '.join(x for x in (w.get('affix', ''),
+                                    '<%s>' % w['origin'] if w.get('origin') else '',
+                                    w.get('tec', '')) if x)
+        senses = [(d.replace('{', '').replace('}', ''), re.findall(r'\{([^{}]*)\}', d))
+                  for d in w.get('defs', [])]
+        have.add(w['word'])
+        out.append(Entry(w['word'], head, senses, where=os.path.basename(path)))
+    return out
+
+
+def english_index(entries):
+    """keyword (lower case) -> [(shown keyword, Loglan word, sense)], in order.
+
+    An affix's sense, "(af) a combining form of kliri, clear", marks the
+    Loglan word it stands for the way other senses mark English keywords; that
+    is no English word, so it is left out.
+    """
+    words = {e.word for e in entries}
+    idx = {}
+    for e in entries:
+        for sense, keys in e.senses:
+            for k in dict.fromkeys(keys):
+                if sense.startswith('(af)') and k in words:
+                    continue
+                idx.setdefault(english_key(k), []).append((k, e, sense))
+    return idx
+
+
+def english_key(s):
+    """guinea-pig, Guinea pig and guinea  pig are one keyword."""
+    return re.sub(r'[\s-]+', ' ', s.lower()).strip()
+
+
+# ---- output ----------------------------------------------------------------
+
+def width():
+    cols = shutil.get_terminal_size((80, 24)).columns if sys.stdout.isatty() else 80
+    return max(40, cols - 1)
+
+
+def wrap(s, indent, hang=0):
+    return textwrap.fill(s, width=width(), initial_indent=indent,
+                         subsequent_indent=' ' * (len(indent) + hang),
+                         break_on_hyphens=False)
+
+
+def show_entry(e):
+    print('\n' + e.word + ('    (%s)' % e.where if e.where else ''))
+    if e.head:
+        print(wrap(e.head, '    '))
+    for sense, _ in e.senses:
+        print(wrap(sense, '    '))
+    if e.used:
+        print(wrap('Used in: ' + ', '.join(e.used), '    '))
+
+
+def show_english(key, rows):
+    print('\n' + rows[0][0])
+    pad = max(len(e.word) for _, e, _ in rows)
+    for _, e, sense in rows:
+        print(wrap('%-*s  %s' % (pad, e.word, sense), '    ', hang=pad + 2))
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        prog='loglan-lookup',
+        description='Look a word up in the Loglan dictionary, either direction.',
+        epilog=__doc__.split('\n\n', 1)[1],
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('lookups', nargs='+', metavar='WORD')
+    ap.add_argument('-l', '--loglan', action='store_true',
+                    help='look only among the Loglan words')
+    ap.add_argument('-e', '--english', action='store_true',
+                    help='look only among the English keywords')
+    ap.add_argument('-p', '--partial', action='store_true',
+                    help='every headword containing the word, not just the word itself')
+    ap.add_argument('--dictionary', default=DICTIONARY, metavar='FILE',
+                    help='Loglan-to-English dictionary (default: %(default)s)')
+    ap.add_argument('--words', action='append', default=[], metavar='FILE',
+                    help='coined words to include (JSON); may be repeated')
+    args = ap.parse_args()
+    start_update()
+
+    entries = load_dictionary(args.dictionary)
+    have = {e.word for e in entries}
+    for f in args.words:
+        entries += load_words(f, have)
+    entries += load_aux(have)
+    english = english_index(entries)
+    want_l = args.loglan or not args.english
+    want_e = args.english or not args.loglan
+
+    status = 1
+    for word in args.lookups:
+        w = word.lower()
+        k = english_key(word)
+        if args.partial:
+            hits_l = [e for e in entries if w in e.word.lower()] if want_l else []
+            hits_e = sorted(x for x in english if k in x) if want_e else []
+        else:
+            hits_l = [e for e in entries if e.word.lower() == w] if want_l else []
+            hits_e = [k] if want_e and k in english else []
+
+        if not (hits_l or hits_e):
+            near_l = sorted({e.word for e in entries if w in e.word.lower()}) if want_l else []
+            near_e = sorted({english[x][0][0] for x in english if k in x}) if want_e else []
+            if near_l or near_e:
+                print('\n%s: no entry.  Containing it:' % word)
+                for label, near in (('Loglan', near_l), ('English', near_e)):
+                    if near:
+                        print(wrap('%s: %s' % (label, ', '.join(near[:40])
+                                   + (' ...' if len(near) > 40 else '')), '    '))
+            else:
+                print('\n%s: not found.' % word)
+            continue
+
+        status = 0
+        if hits_l:
+            print('\n==== Loglan to English ====')
+            for e in hits_l:
+                show_entry(e)
+        if hits_e:
+            print('\n==== English to Loglan ====')
+            for k in hits_e:
+                show_english(k, english[k])
+    print()
+    return status
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except BrokenPipeError:
+        os._exit(0)
+    except KeyboardInterrupt:
+        os._exit(130)
