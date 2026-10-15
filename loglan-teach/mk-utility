@@ -662,8 +662,14 @@ for my $st (sort keys %ethnic_stem) {
         elsif ($dict{$w})  { push @cells, "<td><b>$w</b><sup>&Dagger;</sup></td>" }
         else               { push @cells, "<td class=rule>$w<sup>*</sup></td>" }
     }
-    # A set of your own (in ethnic.added) has no label here; its stem will do.
-    $ethnic_html .= "<tr><th>" . ($ethnic_label{$st} // $st) . "</th>@cells</tr>\n";
+    # A set of your own (coined, or in ethnic.added) has no label here: the
+    # name in its language word's gloss ("Klingon-language") will do, else
+    # the stem.
+    my ($aux_a) = grep { /^\Q$st\Ea\t/ } @{ $aux{ethnic} // [] };
+    my ($from_gloss) = (split /\t/, $aux_a // '')[2] // '';
+    $from_gloss =~ s/-language\b.*//;
+    $ethnic_html .= "<tr><th>" . ($ethnic_label{$st} // ($from_gloss =~ s/-/ /gr || $st))
+                  . "</th>@cells</tr>\n";
 }
 
 my $ethnic_note = marks_note($ethnic_html);

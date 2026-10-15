@@ -153,7 +153,10 @@ sub show_tables ($dir) {
 sub start_update ($dir) {
     return if $ENV{LOGLAN_NO_UPDATE};
     my $stamp = "$dir/src/.last-check";
-    return if -e $stamp && time - (stat $stamp)[9] < 24 * 60 * 60;
+    my $nw    = "$dir/new-words.json";
+    # ... or sooner, when your words have changed since coined was built.
+    my $words_changed = -f $nw && (!-e "$dir/coined" || -M $nw < -M "$dir/coined");
+    return if !$words_changed && -e $stamp && time - (stat $stamp)[9] < 24 * 60 * 60;
     my $up = -x "$RealBin/loglan-update" ? "$RealBin/loglan-update" : 'loglan-update';
     # Forked twice, so it is nobody's child to wait for.
     my $pid = fork // return;

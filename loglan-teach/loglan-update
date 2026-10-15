@@ -29,7 +29,9 @@ use Time::Local    qw(timegm);
 #   2. puts each into DIR/src with the corrections in sources/FIXES made;
 #   3. installs the auxiliary lists (lists/aux: ethnic, animals) into DIR/aux,
 #      with your <list>.added entries;
-#   4. builds coined from your own words, in DIR/new-words.json;
+#   4. builds coined from your own words, in DIR/new-words.json, and puts the
+#      members of your declension sets into the auxiliary lists and your
+#      other primitives into prims and core;
 #   5. builds prims, core, affs and affsets from the dictionary, adds your .added
 #      entries and every word of the auxiliary lists that is not already
 #      there, and runs mk-utility for the rest (l1prims, derivs, the cheat
@@ -72,7 +74,13 @@ unless (flock $lock, LOCK_EX | LOCK_NB) {
 
 my $stamp = "$src/.last-check";
 if ($opt{auto}) {
-    exit 0 if -e $stamp && time - (stat $stamp)[9] < $DAY;
+    # Looked online today already: only your words changing brings it back,
+    # and then just to rebuild.
+    if (-e $stamp && time - (stat $stamp)[9] < $DAY) {
+        my $nw = "$dir/new-words.json";
+        exit 0 unless -f $nw && (!-e "$dir/coined" || -M $nw < -M "$dir/coined");
+        $opt{offline} = 1;
+    }
     # Out of sight: everything said goes to the log, kept short.
     my $log = "$dir/update.log";
     unlink $log if -s $log && -s $log > 200_000;
@@ -175,24 +183,7 @@ if ($opt{auto} && !@changed && -e "$src/.built") {
 }
 say "updated: $_" for @changed;
 
-# ---- 3. the auxiliary lists ----
-my $aux = "$dir/aux";
-make_path($aux);
-for my $file (glob "$dist/lists/aux/*") {
-    my $name = $file =~ s{.*/}{}r;
-    # The old mk-utility wrote these at the top of DIR, where they would hide
-    # the ones here; they were built, not written by hand, so they go aside.
-    my $old = "$dir/$name";
-    if (-f $old && !-l $old && !-e "$old.old") {
-        rename $old, "$old.old";
-        say "moved the old built $old to $old.old (the list now lives in $aux)";
-    }
-    my @rows = merge_added($name, [read_rows($file)]);
-    @rows = add_rule_sets(@rows) if $name eq 'animals';
-    write_list("$aux/$name", \@rows, 1);
-}
-
-# ---- 4. the lists built from the dictionary ----
+# ---- 3. the lists built from the dictionary ----
 my $dict = "$src/Dictionary/L-to-E-TDR.html";
 open my $fh, '<:encoding(UTF-8)', $dict or die "open $dict: $!";
 my $html = do { local $/; <$fh> };
@@ -268,6 +259,63 @@ sub gloss_notes ($sense) {
     return (@keys ? join('/', @keys) : '-', $t);
 }
 
+# ---- your coined words ----
+# Every word in new-words.json goes into coined, a list of its own.  A member
+# of a declension set ("set": "animal" or "ethnic") goes into that auxiliary
+# list as well, glossed by the declension (female-gopher, Klingon-person) as
+# the shipped sets are; any other primitive into prims, and into core by its
+# type.  Complexes and borrowings stay in coined.
+my (@coined, @coined_prims, %coined_type, %coined_set);
+if (-f $new_words) {
+    my $words = eval { decode_json(read_bytes($new_words))->{words} };
+    if (ref $words eq 'ARRAY') {
+        my %name = set_names($words);
+        for my $w (@$words) {
+            my $def = $w->{defs}[0] // next;
+            my ($type) = ($w->{tec} // '') =~ /^(\S+)/;
+            $coined_type{ $w->{word} } = $type // '';
+            # As the dictionary marks them, so gloss_notes can read them.
+            (my $html = $def) =~ s/&/&amp;/g;
+            $html =~ s/</&lt;/g;
+            $html =~ s/>/&gt;/g;
+            $html =~ s{\{([^{}]*)\}}{<em class="key">$1</em>}g;
+            my ($gloss, $notes) = gloss_notes($html);
+            my $set = $w->{set} // '';
+            $gloss = set_gloss($set, $w->{word}, $name{$set}{ substr $w->{word}, 0, -1 })
+                if $set =~ /^(?:animal|ethnic)\z/ && $name{$set}{ substr $w->{word}, 0, -1 };
+            my $row = join "\t", $w->{word}, $w->{affix} || '-', $gloss, $notes;
+            push @coined, $row;
+            if    ($set eq 'animal')           { push @{ $coined_set{animals} }, $row }
+            elsif ($set eq 'ethnic')           { push @{ $coined_set{ethnic} },  $row }
+            elsif (($type // '') =~ /-Prim\z/) { push @coined_prims, $row }
+        }
+        write_list("$dir/coined", [merge_added('coined', \@coined)]);
+    } else {
+        warn "$new_words: not a word list ($@); coined left as it was\n";
+    }
+}
+
+# ---- the auxiliary lists ----
+# As shipped, with your coined set members (which put real definitions where
+# the rule had formed a word), then your .added entries, then -- for animals
+# -- whatever members are still missing, formed by rule.
+my $aux = "$dir/aux";
+make_path($aux);
+for my $file (glob "$dist/lists/aux/*") {
+    my $name = $file =~ s{.*/}{}r;
+    # The old mk-utility wrote these at the top of DIR, where they would hide
+    # the ones here; they were built, not written by hand, so they go aside.
+    my $old = "$dir/$name";
+    if (-f $old && !-l $old && !-e "$old.old") {
+        rename $old, "$old.old";
+        say "moved the old built $old to $old.old (the list now lives in $aux)";
+    }
+    my @rows = merge_rows([read_rows($file)], $coined_set{$name} // []);
+    @rows = merge_added($name, \@rows);
+    @rows = add_rule_sets(@rows) if $name eq 'animals';
+    write_list("$aux/$name", \@rows, 1);
+}
+
 # core is the everyday vocabulary: the primitives less the native (N-) and
 # scientific (S-) ones -- composite, derived (the declensions), international,
 # Loglan and onomatopoeic.
@@ -292,6 +340,16 @@ my @affsets = grep { !$seen{ (split /\t/)[0] }++ } @affs, @prims;
 @affs    = merge_added('affs',  \@affs);
 @core    = merge_added('core',  \@core);
 
+# Your coined primitives outside any set, where the dictionary's would go.
+for my $row (@coined_prims) {
+    my ($w, $aff) = split /\t/, $row;
+    for my $list ([\@prims, 1], [\@affsets, 1], [\@affs, $aff ne '-'],
+                  [\@core, $coined_type{$w} =~ /^[CDILO]-Prim\z/]) {
+        my ($rows, $wanted) = @$list;
+        push @$rows, $row if $wanted && !grep { (split /\t/)[0] eq $w } @$rows;
+    }
+}
+
 # The auxiliary lists -- shipped and your own, everything in DIR/aux --
 # supplement the main ones: a word they have that prims lacks goes into prims
 # and affsets, and into affs as well if it has affixes.
@@ -306,35 +364,16 @@ for my $file (sort glob "$aux/*") {
     # core takes only the words the dictionary does not have at all -- set
     # members formed by rule, or your own -- and of those only the ones whose
     # set is made of primitives: derived primitives like the rest of their
-    # set (kurmi, kavha), not the borrowings' (romhane beside romhani).
+    # set (kurmi, kavha), not the borrowings' (romhane beside romhani).  A
+    # coined word goes by its own type.
     my %have = map { (split /\t/)[0] => 1 } @core;
     push @core, grep {
         my ($w) = split /\t/;
         my @kin = grep { $e{$_} } map { substr($w, 0, -1) . $_ } qw(a e i o u);
-        !$have{$w} && !$e{$w} && (!@kin || grep { $e{$_}{type} =~ /-Prim\z/ } @kin);
+        !$have{$w} && !$e{$w}
+            && (defined $coined_type{$w} ? $coined_type{$w} =~ /^[CDILO]-Prim\z/
+                                          : (!@kin || grep { $e{$_}{type} =~ /-Prim\z/ } @kin));
     } @rows;
-}
-
-# ---- your coined words: coined ----
-# A list of their own, drilled like prims but kept out of it: the gloss is the
-# key meanings of the first definition, the notes the rest of it.
-if (-f $new_words) {
-    my $words = eval { decode_json(read_bytes($new_words))->{words} };
-    if (ref $words eq 'ARRAY') {
-        my @coined;
-        for my $w (@$words) {
-            my $def = $w->{defs}[0] // next;
-            # As the dictionary marks them, so gloss_notes can read them.
-            (my $html = $def) =~ s/&/&amp;/g;
-            $html =~ s/</&lt;/g;
-            $html =~ s/>/&gt;/g;
-            $html =~ s{\{([^{}]*)\}}{<em class="key">$1</em>}g;
-            push @coined, join "\t", $w->{word}, $w->{affix} || '-', gloss_notes($html);
-        }
-        write_list("$dir/coined", [merge_added('coined', \@coined)]);
-    } else {
-        warn "$new_words: not a word list ($@); coined left as it was\n";
-    }
 }
 
 write_list("$dir/prims",   \@prims);
@@ -486,12 +525,48 @@ sub read_rows ($file) {
 sub merge_added ($name, $rows) {
     my $file = "$dir/$name.added";
     return @$rows unless -f $file;
-    my @add = read_rows($file);
-    my %add = map { (split /\t/)[0] => $_ } @add;
+    return merge_rows($rows, [read_rows($file)]);
+}
+
+# Each row of $add replaces the row for the same word in $rows, or is added.
+sub merge_rows ($rows, $add) {
+    my %add = map { (split /\t/)[0] => $_ } @$add;
     my %done;
     my @out = map { my $w = (split /\t/)[0];
                     $add{$w} ? do { $done{$w} = 1; $add{$w} } : $_ } @$rows;
-    return (@out, grep { !$done{ (split /\t/)[0] } } @add);
+    return (@out, grep { !$done{ (split /\t/)[0] } } @$add);
+}
+
+# set -> stem -> the English names of each coined set: the key meanings of
+# its base word (-u for animals, -a for ethnic) -- the first run of them,
+# {guinea pig}/{cavy} -- less the word an ending adds ("Klingon language" ->
+# Klingon).
+sub set_names ($words) {
+    my %name;
+    for my $w (@$words) {
+        my $set = $w->{set} // next;
+        my ($run) = ($w->{defs}[0] // '') =~ m{(\{[^{}]*\}(?:/\{[^{}]*\})*)} or next;
+        my @names = map { s/\s+(?:language|place|person|culture|like)\z//r } $run =~ /\{([^{}]*)\}/g;
+        my $stem = substr $w->{word}, 0, -1;
+        my $base = substr($w->{word}, -1) eq ($set eq 'animal' ? 'u' : 'a');
+        $name{$set}{$stem} = \@names if $base || !defined $name{$set}{$stem};
+    }
+    return %name;
+}
+
+# What the declension makes of the names, as the shipped lists gloss them:
+# female-guinea-pig/female-cavy.
+sub set_gloss ($set, $word, $names) {
+    my $v = substr $word, -1;
+    my @out;
+    for my $n (map { s/\s+/-/gr } @$names) {
+        my %animal = (u => $n, a => "female-$n", o => "male-$n",
+                      i => "baby-$n", e => "$n-like");
+        my %ethnic = (a => "$n-language", e => "$n-territory/$n-place",
+                      i => "$n-person", o => "$n-culture");
+        push @out, ($set eq 'animal' ? $animal{$v} : $ethnic{$v}) // $n;
+    }
+    return join '/', @out;
 }
 
 # An animal the list lacks can be started from its generic -u word in

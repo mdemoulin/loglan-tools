@@ -61,14 +61,18 @@ def fail(msg):
     sys.exit('loglan-coin: ' + msg)
 
 
-def start_update():
+def start_update(force=False):
     """Once a day, loglan-update looks online for changed sources, in the
     background; a new dictionary is used from the next run.  As in
     loglan-teach, LOGLAN_NO_UPDATE=1 turns it off."""
     if os.environ.get('LOGLAN_NO_UPDATE') or not os.path.isdir(STATE):
         return
     stamp = os.path.join(STATE, 'src', '.last-check')
-    if os.path.exists(stamp) and time.time() - os.path.getmtime(stamp) < 24 * 60 * 60:
+    coined = os.path.join(STATE, 'coined')
+    words_changed = os.path.exists(NEW_WORDS) and (
+        not os.path.exists(coined) or os.path.getmtime(NEW_WORDS) > os.path.getmtime(coined))
+    if (not force and not words_changed and os.path.exists(stamp)
+            and time.time() - os.path.getmtime(stamp) < 24 * 60 * 60):
         return
     here = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'loglan-update')
     up = here if os.access(here, os.X_OK) else shutil.which('loglan-update')
@@ -241,7 +245,9 @@ class Lexicon:
             origin = next((e for e in ems if e.startswith('<')), '')
             defs = [text(l) for l in lines]
             defs = [d for d in defs if d and not d.startswith('Used In:')]
-            self.add(word, t.group(1), affixes, origin, defs, 'dictionary')
+            key = next((text(k) for l in lines
+                        for k in re.findall(r'<em class="key">(.*?)</em>', l)), '')
+            self.add(word, t.group(1), affixes, origin, defs, 'dictionary', key)
         for aff, w in [(a, w) for w, e in self.words.items() for a in e['affixes']]:
             self.affix.setdefault(aff, set()).add(w)
         for w, e in self.words.items():
@@ -250,9 +256,9 @@ class Lexicon:
                 if re.fullmatch(r'[a-z]+', src_word):
                     self.affix.setdefault(w, set()).add(src_word)
 
-    def add(self, word, kind, affixes, origin, defs, source):
+    def add(self, word, kind, affixes, origin, defs, source, key=''):
         self.words.setdefault(word, {'type': kind, 'affixes': affixes, 'origin': origin,
-                                     'defs': defs, 'from': source})
+                                     'defs': defs, 'from': source, 'key': key})
 
     def add_file(self, path):
         try:
@@ -264,8 +270,10 @@ class Lexicon:
             tec = w.get('tec', '')
             kind = ('Cpx' if 'Cpx' in tec else 'Bor.' if tec.startswith('Bor')
                     else 'Prim' if 'Prim' in tec else tec.split()[0] if tec else '?')
+            keys = re.findall(r'\{([^{}]*)\}', ' '.join(w.get('defs', [])))
             defs = [d.replace('{', '').replace('}', '') for d in w.get('defs', [])]
-            self.add(w['word'], kind, [], w.get('origin', ''), defs, os.path.basename(path))
+            self.add(w['word'], kind, [], w.get('origin', ''), defs, os.path.basename(path),
+                     keys[0] if keys else '')
 
     def kind(self, word):
         return self.words.get(word, {}).get('type', '')
@@ -603,6 +611,239 @@ def keyword_hint(lex, token):
         token, ', '.join(hits[:12]) + (' ...' if len(hits) > 12 else ''))
 
 
+# ---- add -----------------------------------------------------------------
+
+# A declension set: its endings, the one the rest derive from, and the
+# definitions its members are given.  {art} {name} is "a gopher" or "an
+# English"; each is a draft for you to correct in new-words.json.
+SETS = {
+    'animal': {
+        'endings': 'uaoie', 'base': 'u',
+        'defs': {
+            'u': '(2n) B is any {{{name}}} of region/range S. [B-S]',
+            'a': '(2n) B is a female {{{name}}} of region/range S. [B-S]',
+            'o': '(2n) B is a male {{{name}}} of region/range S. [B-S]',
+            'i': '(2n) B is a baby {{{name}}} of region/range S. [B-S]',
+            'e': '(2a) G is more {{{name} like}} than J. [G-J]',
+        },
+    },
+    'ethnic': {
+        'endings': 'aeio', 'base': 'a',
+        'defs': {
+            'a': '(1n) N is an element/feature/expression of the {{{name} language}}. [N-]',
+            'e': '(1a) B is {art} {{{name} place}}/territory, a region inhabited by {name} people. [B-]',
+            'i': '(1n) B is {art} {{{name} person}}. [B-]',
+            'o': '(1n) N is an element/feature/expression of the {{{name} culture}}. [N-]',
+        },
+    },
+}
+PLACES = 'BCDFGJKNPSV'
+
+
+def article(word):
+    return 'an' if word[:1].lower() in 'aeiou' else 'a'
+
+
+def make_def(english):
+    """A definition in new-words.json's form from what was typed.
+
+    'gopher' becomes (1n) B is a {gopher}. [B-]; a sentence with its places
+    in it -- 'B is pink/rosy, a whitened red' -- gets the grammar code, the
+    key meanings in braces and the case tags it lacks:
+    (1a) B is {pink}/{rosy}, a whitened red. [B-]
+    """
+    t = english.strip()
+    places = []
+    for l in re.findall(r'\b([%s])\b' % PLACES, re.sub(r'\[[^\]]*\]', '', t)):
+        if l not in places:
+            places.append(l)
+    if not places:
+        return '(1n) B is %s {%s}. [B-]' % (article(t), t)
+    if '{' not in t:
+        m = (re.search(r'\b(?:is|are)(?: (?:a|an|the|some|a/the))? ', t)
+             or re.search(r'\b[%s] ' % PLACES, t))
+        if m:
+            run = re.match(r"[\w'-]+(?:/[\w'-]+)*", t[m.end():])
+            if run:
+                keyed = '/'.join('{%s}' % k for k in run.group().split('/'))
+                t = t[:m.end()] + keyed + t[m.end() + run.end():]
+    if not re.match(r'\(\w+\)', t):
+        pos = ('n' if re.search(r'\b(?:is|are) (?:a|an|the|some|a/the) ', t)
+               else 'a' if re.search(r'\b(?:is|are) ', t) else 'v')
+        t = '(%d%s) %s' % (len(places), pos, t)
+    if not re.search(r'\[[A-Z]-[A-Z]*\]\s*$', t):
+        t = t.rstrip(' .') + '. [%s-%s]' % (places[0], ''.join(places[1:]))
+    return t
+
+
+def spelled_from(piece, source):
+    """How a piece is spelled from its word: kia from kitsa is ki(ts)a."""
+    out, i = '', 0
+    run = ''
+    for c in source:
+        if i < len(piece) and c == piece[i]:
+            if run:
+                out += '(%s)' % run
+                run = ''
+            out += c
+            i += 1
+        else:
+            run += c
+    if i < len(piece):            # not drawn from it at all: fur for fu
+        return piece
+    return out + ('(%s)' % run if run else '')
+
+
+def complex_origin(lex, parts):
+    """kuk(ra)+y+ki(ts)a=quick coitus, and the term count for its type."""
+    bits, gloss, terms = [], [], 0
+    for p in parts:
+        st = stem(p)
+        src = sources_of(lex, p)
+        word = src[0] if src else st
+        bits.append(spelled_from(st, word))
+        if p != st:
+            bits.append(p[len(st):])
+        base = lex.source(word)
+        gloss.append(lex.words.get(base, {}).get('key') or base)
+        if lex.kind(base) != 'LW':
+            terms += 1
+    return '%s=%s' % ('+'.join(bits), ' '.join(gloss)), terms
+
+
+def tec_author(words):
+    """Your initials: the commonest author in your tec lines."""
+    counts = {}
+    for w in words:
+        f = w.get('tec', '').split()
+        if len(f) > 1:
+            counts[f[1]] = counts.get(f[1], 0) + 1
+    return max(counts, key=counts.get) if counts else '?'
+
+
+def render_words(data):
+    """new-words.json as the file has it: one line per field."""
+    out = ['{', '  "_README": [',
+           ',\n'.join('    ' + json.dumps(l, ensure_ascii=False) for l in data['_README']),
+           '  ],', '', '  "words": [']
+    out.append(',\n'.join(
+        '    {\n' + ',\n'.join('      %s: %s' % (json.dumps(k), json.dumps(v, ensure_ascii=False))
+                              for k, v in w.items()) + '\n    }'
+        for w in data['words']))
+    out += ['  ]', '}']
+    return '\n'.join(out) + '\n'
+
+
+def add(g, lex, args):
+    if not os.path.exists(NEW_WORDS):
+        data = {'_README': ['Words coined locally, i.e. words that are NOT in the Loglan dictionary.'],
+                'words': []}
+    else:
+        with open(NEW_WORDS, encoding='utf-8') as fh:
+            raw = fh.read()
+        data = json.loads(raw)
+        if render_words(data) != raw:
+            fail('%s is not laid out the way loglan-coin writes it; '
+                 'add the word by hand' % NEW_WORDS)
+    word = args.loglan.strip()
+    year = time.strftime('%Y')
+    author = args.author or tec_author(data['words'])
+    mine = {w['word'] for w in data['words']}
+    new, problems = [], []
+
+    if args.set:
+        spec = SETS[args.set]
+        if word[-1:] not in spec['endings']:
+            fail('a member of an %s set ends in one of -%s' % (args.set, '/-'.join(spec['endings'])))
+        st = word[:-1]
+        base = st + spec['base']
+        origin = args.origin or '?'
+        for v in spec['endings']:
+            w = st + v
+            if w in mine or lex.words.get(w, {}).get('from') == 'dictionary':
+                print('%-14s already there; left as it is' % w)
+                continue
+            kind, _ = analyze(g, w)
+            if kind not in ('borrowing', 'primitive'):
+                problems.append('%s reads as %s, not a borrowing or primitive'
+                                % (w, 'nothing at all' if kind is None else 'a ' + kind))
+            for c in clashes(lex, w):
+                other = re.search(r' (\S+) \(', c)
+                if 'final vowel' in c and other and other.group(1)[:-1] == st:
+                    continue          # another member of the same set
+                problems.append(c)
+            entry = {'word': w,
+                     'origin': origin if (w == base or args.set == 'ethnic') else base,
+                     'tec': '%s %s %s 7+' % ('N-Prim' if w == base else 'D-Prim', author, year),
+                     'set': args.set,
+                     'submitted': None,
+                     'defs': [spec['defs'][v].format(art=article(args.english), name=args.english)]}
+            new.append(entry)
+    else:
+        kind, parts = analyze(g, word)
+        if word in mine:
+            problems.append('%s is already in %s' % (word, os.path.basename(NEW_WORDS)))
+        if kind in (None, 'little word', 'name'):
+            problems.append('%s reads as %s; only complexes and borrowings can be added this way'
+                            % (word, 'nothing at all' if kind is None else 'a ' + kind))
+        elif kind == 'primitive':
+            problems.append('%s has the shape of a primitive: a new primitive is made by the '
+                            'procedure of Loglan 1 section 6.3 (a declension set: use --set)' % word)
+        definition = make_def(args.english)
+        readings = None
+        if kind == 'complex':
+            readings = [[lex.source(s) for s in sources_of(lex, p)] for p in parts]
+            if not all(readings):
+                problems.append('a piece of %s is not a form of any word in the dictionary' % word)
+                readings = None
+            origin, terms = complex_origin(lex, parts)
+            tec = '%d-Cpx %s %s 7+' % (terms, author, year)
+        else:
+            origin, tec = args.origin or '?', 'Bor. %s %s 7+' % (author, year)
+        if args.origin:
+            origin = args.origin
+        problems += clashes(lex, word, readings, definition)
+        new.append({'word': word, 'origin': origin, 'tec': tec, 'submitted': None,
+                    'defs': [definition]})
+
+    # The commonest reason a coined word is later withdrawn: the dictionary
+    # already has a word for what it means.
+    meant = ({args.english.lower()} if args.set else
+             {k.lower() for k in re.findall(r'\{([^{}]*)\}', new[-1]['defs'][0])} if new else set())
+    already = sorted(w for w, e in lex.words.items()
+                     if e['from'] == 'dictionary' and e['key'].lower() in meant)
+    if already:
+        problems.append('the dictionary already has a word for %s: %s'
+                        % ('/'.join(sorted(meant)), ', '.join(already)))
+
+    if problems and not args.force:
+        print('\nnot added:')
+        for p in problems:
+            print('    ! ' + p)
+        print()
+        return 1
+    if not new:
+        print('\nnothing to add\n')
+        return 0
+    data['words'] = sorted(data['words'] + new, key=lambda w: w['word'])
+    text_out = render_words(data)
+    json.loads(text_out)
+    tmp = NEW_WORDS + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as fh:
+        fh.write(text_out)
+    os.replace(tmp, NEW_WORDS)
+    print()
+    for w in new:
+        print('added %-14s %-22s <%s>' % (w['word'], w['tec'], w['origin']))
+        print('      %s' % w['defs'][0])
+    for p in problems:
+        print('    ! (added anyway) ' + p)
+    print('\n%d word%s added to %s; correct anything there that is not right.\n'
+          % (len(new), '' if len(new) == 1 else 's', NEW_WORDS))
+    start_update(force=True)
+    return 0
+
+
 # ---- main ----------------------------------------------------------------
 
 def main():
@@ -618,7 +859,25 @@ def main():
     ap.add_argument('--words', action='append', default=[], metavar='FILE',
                     help='more coined words to count as well (JSON); may be repeated.  '
                          'Your own, in %s, always count' % NEW_WORDS)
-    sub = ap.add_subparsers(dest='command', required=True)
+    ap.add_argument('--add', action='store_true',
+                    help='add --loglan to your new-words.json, after checking it; '
+                         'with --set, the whole declension set')
+    ap.add_argument('--loglan', metavar='WORD', help='the word to add')
+    ap.add_argument('--english', metavar='TEXT',
+                    help="what it means: a word ('gopher') or a definition with its "
+                         "places ('B is pink/rosy, a whitened red')")
+    ap.add_argument('--set', choices=sorted(SETS),
+                    help='add every member of the animal (-u -a -o -i -e) or ethnic '
+                         '(-a -e -i -o) set --loglan belongs to that is missing, '
+                         'each marked with "set"')
+    ap.add_argument('--origin', metavar='TEXT',
+                    help='the origin to record (default: worked out for a complex, '
+                         'else ?)')
+    ap.add_argument('--author', metavar='INITIALS',
+                    help='the author for the tec line (default: your commonest)')
+    ap.add_argument('--force', action='store_true',
+                    help='add even if the checks find a problem')
+    sub = ap.add_subparsers(dest='command')
 
     c = sub.add_parser('check', help='check words')
     c.add_argument('targets', nargs='+', metavar='WORD')
@@ -638,11 +897,17 @@ def main():
                         '(default: %(default)s)')
 
     args = ap.parse_args()
+    if args.add and not (args.loglan and args.english):
+        ap.error('--add needs --loglan and --english')
+    if not args.add and not args.command:
+        ap.error('give check, make, or --add')
     start_update()
     lex = Lexicon(args.dictionary)
     for f in ([NEW_WORDS] if os.path.exists(NEW_WORDS) else []) + args.words:
         lex.add_file(f)
     g = Grammar(args.parser)
+    if args.add:
+        return add(g, lex, args)
     return check(g, lex, args) if args.command == 'check' else make(g, lex, args)
 
 

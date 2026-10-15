@@ -110,18 +110,55 @@ Check a new word with `loglan-coin` first.
 ### Your own words
 
 Words you have coined live in `~/.loglan/new-words.json`, which the tools
-never ship and never write: `{"words": [...]}`, one object per word with
+never ship, and only `loglan-coin --add` writes (see below): `{"words": [...]}`, one object per word with
 `word`, `origin`, `tec` (the type line, `2-Cpx MD 2026 7+`), `defs` (each
 definition with its key meanings in braces and its case tags plainly,
 `(2n) B is an {omelette} of ingredients S. [B-S]`), an optional `affix`,
+an optional `set` (`animal` or `ethnic`, for a member of a declension set),
 and `submitted`, the date it went to the Institute or `null`.  Notes at the
 top of the file describe it in full.  With it there:
 
-- `loglan-update` makes the `coined` drill list from it, and rebuilds that
-  whenever the file changes;
+- `loglan-update` makes the `coined` drill list from it, and rebuilds the
+  lists whenever the file changes; a word with a `set` goes into that
+  auxiliary list as well (and so into `prims`, and `core` by its type),
+  glossed by the declension, and any other primitive into `prims` (and
+  `core`, if it is a C-, D-, I-, L- or O-Prim).  Complexes and borrowings
+  stay in `coined`;
 - `loglan-lookup` finds the words, either direction;
 - `loglan-coin` checks new words against them as against the dictionary;
 - `new-words-html.py` renders them as a page for submission.
+
+`loglan-coin --add` puts a word in for you, once it has passed the checks
+below, filling in a draft of what you have not given -- correct anything
+in the file that is not right:
+
+    loglan-coin --add --loglan=kaurhafbao --english='B is a doghouse for dog D'
+    loglan-coin --add --loglan=brokolie --english=broccoli --origin='It. broccoli'
+    loglan-coin --add --set=animal --loglan=hamsiteru --english=hamster --origin='Ger. Hamster'
+
+A complex gets its origin worked out from its pieces
+(`ka(ng)u+r+ha(s)f(a)+ba(ks)o=dog house box`) and its type (`3-Cpx`); a
+borrowing gets `Bor.` and the `--origin` you give (else `?`).  `--english`
+is either a word (`broccoli` becomes `(1n) B is a {broccoli}. [B-]`) or a
+definition with its places, which gets the grammar code, braces and case
+tags it lacks (`B is pink/rosy, a whitened red` becomes `(1a) B is
+{pink}/{rosy}, a whitened red. [B-]`).  The tec line is the type, your
+commonest author initials (`--author` to say otherwise) and the year.
+
+`--set=animal` or `--set=ethnic` adds every member of the declension set
+the word belongs to that is missing, each marked with `set`.  In an animal
+set the `-u` word (any) is the N-Prim the others derive from, and `-a`
+(female), `-o` (male), `-i` (baby) and `-e` (-like) are D-Prims with it as
+their origin; in an ethnic set the `-a` word (the language) is the N-Prim,
+and `-e` (territory), `-i` (person) and `-o` (culture) are D-Prims sharing
+its origin.
+
+A word is not added, and the reasons are given, if it is already in the
+dictionary or your file; if the dictionary already has a word for the
+meaning you give (`gofru` for gopher) -- the commonest reason a coined word
+is later withdrawn; if it clashes with another (as `check` finds); or if it
+is not a complex or borrowing (a set's members must be borrowings or
+primitives).  `--force` adds it anyway.
 
 `~/.loglan/dropped-new-words.json`, in the same form, is a record of words
 withdrawn because the dictionary already had them; no tool reads it.

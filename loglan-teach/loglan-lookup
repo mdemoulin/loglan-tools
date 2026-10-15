@@ -52,7 +52,11 @@ def start_update():
     if os.environ.get('LOGLAN_NO_UPDATE') or not os.path.isdir(STATE):
         return
     stamp = os.path.join(STATE, 'src', '.last-check')
-    if os.path.exists(stamp) and time.time() - os.path.getmtime(stamp) < 24 * 60 * 60:
+    coined = os.path.join(STATE, 'coined')
+    words_changed = os.path.exists(NEW_WORDS) and (
+        not os.path.exists(coined) or os.path.getmtime(NEW_WORDS) > os.path.getmtime(coined))
+    if (not words_changed and os.path.exists(stamp)
+            and time.time() - os.path.getmtime(stamp) < 24 * 60 * 60):
         return
     here = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'loglan-update')
     up = here if os.access(here, os.X_OK) else shutil.which('loglan-update')
