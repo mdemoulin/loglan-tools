@@ -89,15 +89,65 @@ in `animals.added`: `mk-utility` forms the rest of the set (*-a*, *-o*,
 
     hamsteru	-	hamster	is any -, a rodent of the subfamily Cricetinae, of region/range..
 
+## loglan-coin
+
+Checks a new word before you propose it, and builds complexes from a
+metaphor.  The word grammar is Randall Holmes's own PEG parser,
+`omnibus.py`, which `loglan-fetch` downloads; the dictionary supplies the
+rest.
+
+    loglan-coin check kangydzoduo
+    loglan-coin check --as borrowing hamsteru
+    loglan-coin make sanpa djano
+
+`check` says whether each word is a little word, a name, a borrowing, a
+primitive or a complex, how a complex splits (`kangy + dzo + duo`) and what
+its pieces stand for (`kangu + dzoru + durzo`), and whether it clashes with
+the dictionary:
+
+- the same word as another, or one differing only in its final vowel, or
+  only by a pair of sibilants on adjacent corners of the square s-c, c-j,
+  j-z, z-s (*Loglan 1* section 6.3; the diagonals s-j and c-z are fine)
+- the same metaphor as a complex that already exists
+- with `--def TEXT`, the same definition word for word
+
+`--as complex` or `--as borrowing` says what the word is meant to be, which
+catches the commonest mistakes: a complex that reads as a borrowing because
+a *y* is missing (`tcidnatmia`), and a borrowing that falls apart into the
+pieces of a complex (`hamsteru` = *ham + steru*).
+
+`make` takes the pieces of a metaphor -- primitives, borrowings, little
+words with affixes (`nu` gives *nur*), or affixes to force one form -- tries
+each piece in each of its forms with the hyphens *y*, *r* and *n* where they
+can go, keeps only what the parser accepts as a complex made of exactly
+those pieces, and lists the results shortest first (`-n` for more).  If a
+complex with that metaphor already exists, it says so first.
+
+    $ loglan-coin make kangu dzoru durzo
+    kaurdzoduo         kaur + dzo + duo             ok
+    kangydzoduo        kangy + dzo + duo            ok
+    ...
+
+Words you have coined but that are not in the dictionary can be counted
+too, from a JSON file of `{"words": [{"word", "origin", "tec", "defs"}]}`:
+`loglan-coin --words mine.json check ...`.  Final-vowel sets among your own
+words (*kavha*, *kavhe*, ... *kavhu*) are taken as deliberate, as *Loglan 1*
+allows for *spana*/*spani*/*spano*.
+
+The first run builds the parser's grammar and caches it in
+`~/.loglan/cache`, which takes a few seconds; after that a check takes a
+second or two.
+
 ## Sources and licensing
 
 The code here is Copyright (C) 2026 Michael A. Demoulin, licensed under the
 GNU General Public License, version 3 or (at your option) any later version;
 see [COPYING](COPYING).
 
-The dictionary and *Loglan 1* are not included.  Lavinia Randall Holmes
-publishes them at <https://randall-holmes.github.io/Loglan/cefli.html>, and
-`loglan-fetch` downloads your own copy and builds the word lists from it.
+The dictionary, *Loglan 1* and the parser `omnibus.py` are not included.
+Lavinia Randall Holmes publishes them at
+<https://randall-holmes.github.io/Loglan/cefli.html>, and `loglan-fetch`
+downloads your own copy and builds the word lists from it.
 
 The sentences in `lists/utts` are included with the permission of The Loglan
 Center (Lavinia Randall Holmes, October 2026).  **All rights to the Loglan
@@ -108,4 +158,5 @@ by the GPL.
 ## Requirements
 
 - Perl 5.36 or later (core modules only)
+- Python 3.8 or later, for `loglan-coin` (standard library only)
 - HTTPS for `loglan-fetch`: Perl's `IO::Socket::SSL`, or `curl`

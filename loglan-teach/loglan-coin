@@ -1,0 +1,619 @@
+#!/usr/bin/env python3
+"""loglan-coin -- check a new Loglan word, or build complexes from a metaphor.
+
+    loglan-coin check WORD...           is it a word, of what kind, made of
+                                        what, and does it clash with another
+    loglan-coin make PIECE PIECE...     every complex the pieces can make,
+                                        best first, each checked as above
+
+The word grammar is Randall Holmes's own: loglan-fetch downloads her PEG
+parser, omnibus.py, and this script asks its word classes whether a string
+is a little word, a name, a borrowing or a complex, and how a complex
+splits into its parts.  What the parser cannot know -- the dictionary --
+comes from the Loglan-to-English dictionary loglan-fetch also downloads:
+
+  * clashes, Loglan 1 section 6.3: the same word as another; one differing
+    only in its final vowel; or only by a pair of sibilants on adjacent
+    corners of the square s-c, c-j, j-z, z-s (the diagonals are fine)
+  * the same metaphor: a complex made of the same words as one that
+    already exists
+  * with --def, the same definition, word for word, as another word
+
+Pieces for `make` are primitives (sanpa), little words that have affixes
+(nu, which gives nur), borrowings, or affixes themselves (saa) to force
+one form.  Each piece can take each of its forms, the hyphens y, r and n
+are tried where they can go, and the parser keeps only the strings that
+really are complexes made of exactly those parts.  Shortest comes first, as
+in Loglan 1 section 6.4, where saadja wins over sanydja.
+
+Words coined but not yet in the dictionary can be counted as well, from a
+JSON file of {"words": [{"word", "origin", "tec", "defs"}, ...]}: --words.
+"""
+
+import argparse
+import contextlib
+import hashlib
+import html
+import io
+import itertools
+import json
+import os
+import pickle
+import re
+import sys
+import types
+
+STATE = os.environ.get('LOGLAN_STATE_DIR') or os.path.expanduser('~/.loglan')
+DICTIONARY = os.path.join(STATE, 'src', 'Dictionary', 'L-to-E-TDR.html')
+OMNIBUS = os.path.join(STATE, 'src', 'Sources', 'omnibus.py')
+CACHE = os.path.join(STATE, 'cache')
+
+VOWELS = set('aeiou')
+SIBILANT_SIDES = {'sc', 'cs', 'cj', 'jc', 'jz', 'zj', 'zs', 'sz'}
+
+
+def fail(msg):
+    sys.exit('loglan-coin: ' + msg)
+
+
+
+# ---- the parser ----------------------------------------------------------
+
+class Grammar:
+    """Holmes's omnibus.py, loaded once.
+
+    Building the grammar runs its ~500 rule definitions and takes several
+    seconds, so the built grammar is pickled under ~/.loglan/cache, keyed by
+    the parser's own text; afterwards only the engine (everything before the
+    first rule) is run, and the grammar is unpickled into it.
+    """
+
+    FIRST_RULE = '\nL("sp <-'
+
+    def __init__(self, path):
+        if not os.path.exists(path):
+            fail('no parser at %s -- run loglan-fetch first' % path)
+        with open(path, encoding='utf-8') as fh:
+            src = fh.read()
+        cut = src.find(self.FIRST_RULE)
+        key = hashlib.sha1(src.encode()).hexdigest()[:16]
+        cached = os.path.join(CACHE, 'omnibus-%s.pickle' % key)
+        self.o = None
+        if cut > 0 and os.path.exists(cached):
+            try:
+                engine = self._run(src[:cut], path)
+                with open(cached, 'rb') as fh:
+                    engine.loglan = pickle.load(fh)
+                self.o = engine
+            except Exception:
+                self.o = None
+        if self.o is None:
+            self.o = self._run(src, path)
+            try:
+                os.makedirs(CACHE, exist_ok=True)
+                with open(cached + '.tmp', 'wb') as fh:
+                    pickle.dump(self.o.loglan, fh)
+                os.replace(cached + '.tmp', cached)
+            except OSError:
+                pass
+
+    @staticmethod
+    def _run(code, path):
+        module = types.ModuleType('omnibus')
+        module.__file__ = path
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(compile(code, path, 'exec'), module.__dict__)
+        return module
+
+    def tree(self, rule, word):
+        """The parse tree if `rule` takes the whole of `word`, else None.
+
+        omnibus's own Parse() empties the parser's memo table every time;
+        it is keyed by rule and position in the string, so it stays good for
+        as long as the string does, and asking several rules about one word
+        costs little more than asking one.
+        """
+        o = self.o
+        if o.TheString != word:
+            o.TheString = word
+            o.thecache.clear()
+        r = o.parse(o.loglan, o.loglan[rule], 0)
+        if isinstance(r, (list, tuple)) and len(r) > 1 and r[1] == len(word):
+            return r[0]
+        return None
+
+    def is_a(self, rule, word):
+        return self.tree(rule, word) is not None
+
+    # The rules that stand for one part of a complex: the affix shapes
+    # (Cvc, Ccv, Cvv and their stressed, hyphenated and final variants), the
+    # five-letter primitive shapes (CcvCv, CvcCv), and borrowings.
+    PIECE = re.compile(r'^(?:Cvv|Ccv|CCV|Cvc|(?:Stressed)?Borrowing)')
+
+    def pieces(self, word):
+        """How a complex splits, hyphens kept on their piece: resy lin mao."""
+        t = self.tree('PreComplex', word)
+        if t is None:
+            return None
+        out = []
+
+        def walk(node):
+            if isinstance(node, str):
+                return
+            if (isinstance(node, list) and len(node) == 3
+                    and isinstance(node[1], str)):
+                if self.PIECE.match(node[1]):
+                    out.append(leaves(node))
+                    return
+                walk(node[2])
+                return
+            for n in node:
+                walk(n)
+
+        def leaves(node):
+            if isinstance(node, str):
+                return node
+            if (isinstance(node, list) and len(node) == 3
+                    and isinstance(node[1], str)):
+                return leaves(node[2])
+            return ''.join(leaves(n) for n in node)
+
+        walk(t)
+        return out if ''.join(out) == word else None
+
+
+# ---- the dictionary ------------------------------------------------------
+
+TYPE = re.compile(r'\b([CDSINLO]-Prim|Afx|[1-9]-Cpx|Cpd|Bor\.|LW|Name)(?!\w)')
+
+
+def text(s):
+    s = re.sub(r'<[^>]+>', '', s)
+    s = html.unescape(s).replace('‍', '').replace('\xa0', ' ')
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+def metaphor(origin):
+    """kuk(ra)+y+ki(ts)a=quick coitus -> [kukra, kitsa]; None if no '+'.
+
+    The dictionary also marks dropped letters with a slash: fo/lma+... for
+    flo, the affix of folma."""
+    origin = origin.strip().strip('<>')
+    parts = origin.split('=', 1)[0]
+    if '+' not in parts:
+        return None
+    return [re.sub(r'[()/]', '', p).strip().lower()
+            for p in parts.split('+')
+            if p.strip() and p.strip() not in ('y', 'r', 'n')]
+
+
+class Lexicon:
+    def __init__(self, path):
+        if not os.path.exists(path):
+            fail('no dictionary at %s -- run loglan-fetch first' % path)
+        with open(path, encoding='utf-8') as fh:
+            src = fh.read()
+        self.words = {}       # word -> {'type', 'affixes', 'origin', 'defs', 'from'}
+        self.affix = {}       # affix -> set of words it stands for
+        for m in re.finditer(r'<b><a name="([^"]+)">[^<]*</a></b>,\s*<br>\s*(.*?)</p>',
+                             src, re.S):
+            word, body = m.groups()
+            head, *lines = body.split('<br>')
+            t = TYPE.search(head)
+            if not t:
+                continue
+            ems = [html.unescape(e) for e in re.findall(r'<em class="origin">(.*?)</em>', head)]
+            affixes = ems[0].split() if ems and re.fullmatch(r'[a-z ]+', ems[0]) else []
+            origin = next((e for e in ems if e.startswith('<')), '')
+            defs = [text(l) for l in lines]
+            defs = [d for d in defs if d and not d.startswith('Used In:')]
+            self.add(word, t.group(1), affixes, origin, defs, 'dictionary')
+        for aff, w in [(a, w) for w, e in self.words.items() for a in e['affixes']]:
+            self.affix.setdefault(aff, set()).add(w)
+        for w, e in self.words.items():
+            if e['type'] == 'Afx':
+                src_word = e['origin'].strip('<>').replace('(', '').replace(')', '')
+                if re.fullmatch(r'[a-z]+', src_word):
+                    self.affix.setdefault(w, set()).add(src_word)
+
+    def add(self, word, kind, affixes, origin, defs, source):
+        self.words.setdefault(word, {'type': kind, 'affixes': affixes, 'origin': origin,
+                                     'defs': defs, 'from': source})
+
+    def add_file(self, path):
+        try:
+            with open(path, encoding='utf-8') as fh:
+                words = json.load(fh)['words']
+        except (OSError, ValueError, KeyError) as e:
+            fail('%s: %s' % (path, e))
+        for w in words:
+            tec = w.get('tec', '')
+            kind = ('Cpx' if 'Cpx' in tec else 'Bor.' if tec.startswith('Bor')
+                    else 'Prim' if 'Prim' in tec else tec.split()[0] if tec else '?')
+            defs = [d.replace('{', '').replace('}', '') for d in w.get('defs', [])]
+            self.add(w['word'], kind, [], w.get('origin', ''), defs, os.path.basename(path))
+
+    def kind(self, word):
+        return self.words.get(word, {}).get('type', '')
+
+    def is_predicate(self, word):
+        k = self.kind(word)
+        return 'Prim' in k or 'Cpx' in k or k == 'Bor.'
+
+    def metaphor_of(self, word):
+        e = self.words.get(word)
+        return metaphor(e['origin']) if e and 'Cpx' in e['type'] else None
+
+    def source(self, word):
+        """The word a piece stands for.
+
+        A little word's affix stands for the little word (fur for fu), and so
+        does the h-form a two-letter little word takes inside a complex since
+        2016 (vah for va, as in vahyhansiu).
+        """
+        if self.kind(word) == 'Afx':
+            return next(iter(sorted(self.affix.get(word, {word}))))
+        if len(word) == 3 and word[2] == 'h' and self.kind(word[:2]) == 'LW':
+            return word[:2]
+        return word
+
+
+# ---- clashes -------------------------------------------------------------
+
+def sound_clash(new, old):
+    if new == old:
+        return 'is the same word as'
+    if len(new) != len(old):
+        return None
+    diff = [i for i in range(len(new)) if new[i] != old[i]]
+    if len(diff) != 1:
+        return None
+    i = diff[0]
+    pair = new[i] + old[i]
+    if i == len(new) - 1 and set(pair) <= VOWELS:
+        return 'differs only in its final vowel from'
+    if pair in SIBILANT_SIDES:
+        return 'differs only by %s/%s from' % (new[i], old[i])
+    return None
+
+
+def normal_def(d):
+    d = d.replace('{', '').replace('}', '')
+    return re.sub(r'\s+', ' ', d).strip().lower()
+
+
+def clashes(lex, word, readings=None, definition=None):
+    """Every way `word` clashes with the lexicon, as printable lines.
+
+    readings: for a complex, the words each piece may stand for, one list per
+    piece; another complex has the same metaphor if one reading matches it.
+    """
+    out = []
+    for other, e in lex.words.items():
+        if other == word or not lex.is_predicate(other):
+            continue
+        why = sound_clash(word, other)
+        # Coined a/e/i/o/u sets (kavha ... kavhu) differ in their final
+        # vowels on purpose, as Loglan 1 allows for spana/spani/spano.
+        if why and not (why.startswith('differs only in its final')
+                        and e['from'] != 'dictionary'):
+            out.append('%s %s %s' % (word, why, describe(lex, other)))
+    if lex.words.get(word, {}).get('from') == 'dictionary':
+        out.insert(0, 'already a word: %s' % describe(lex, word))
+    if readings:
+        for other, e in lex.words.items():
+            m = lex.metaphor_of(other)
+            if (other != word and m and len(m) == len(readings)
+                    and all(lex.source(p) in r for p, r in zip(m, readings))):
+                out.append('same metaphor (%s) as %s'
+                           % ('+'.join(lex.source(p) for p in m), describe(lex, other)))
+    if definition:
+        want = normal_def(definition)
+        for other, e in lex.words.items():
+            if other != word and any(normal_def(d) == want for d in e['defs']):
+                out.append('same definition as %s' % describe(lex, other))
+    return out
+
+
+def describe(lex, word):
+    e = lex.words[word]
+    where = '' if e['from'] == 'dictionary' else ', in %s' % e['from']
+    return '%s (%s%s)' % (word, e['type'], where)
+
+
+# ---- check ---------------------------------------------------------------
+
+def stem(piece):
+    """The piece without its hyphen: resy -> res, cuir -> cui, tcidy -> tcid."""
+    if len(piece) > 3 and piece.endswith('y'):
+        return piece[:-1]
+    if (len(piece) == 4 and piece[3] in 'rn' and piece[1] in VOWELS
+            and piece[2] in VOWELS):
+        return piece[:3]
+    return piece
+
+
+def sources_of(lex, piece):
+    """The words a piece of a complex can stand for."""
+    s = stem(piece)
+    if len(s) == 3 and s in lex.affix:
+        return sorted(lex.affix[s])
+    if lex.source(s) != s:
+        return [lex.source(s)]
+    if s in lex.words:
+        return [s]
+    if len(s) == 4:   # the long form: the primitive less its final vowel
+        return sorted(w for w in lex.words
+                      if 'Prim' in lex.kind(w) and len(w) == 5 and w.startswith(s))
+    return []
+
+
+def show_readings(lex, words):
+    """What a piece stands for, as printed: kangu (or kanga/e/i/o).
+
+    A long form such as kangy- fits every member of a declension set, and the
+    dictionary has the whole set.  The set is shown once, led by the member
+    the others are derived from -- the one their origins name (kangu for the
+    dogs, but kurma for the worms) -- or, in an ethnic set, whose members all
+    name the same source, by the -a form, as Loglan 1 names them (spana).
+    """
+    if len(words) < 2:
+        return '/'.join(words) or '?'
+    stem = words[0][:-1]
+    if not all(len(w) == len(words[0]) and w[:-1] == stem for w in words):
+        return '/'.join(words)
+    named = {}
+    for w in words:
+        base = re.sub(r'[<>()]', '', lex.words.get(w, {}).get('origin', '')).strip()
+        if base in words and base != w:
+            named[base] = named.get(base, 0) + 1
+    lead = (max(named, key=named.get) if named
+            else stem + 'a' if stem + 'a' in words else words[0])
+    rest = [w[-1] for w in words if w != lead]
+    return '%s (or %s%s)' % (lead, stem, '/'.join(rest))
+
+
+def analyse(g, word):
+    """('complex'|'borrowing'|'primitive'|'little word'|'name'|None, pieces)."""
+    if g.is_a('Cmapua', word):
+        return 'little word', None
+    if g.is_a('PRENAME', word) and word[:1].isupper():
+        return 'name', None
+    if not g.is_a('Complex', word):
+        return None, None
+    parts = g.pieces(word)
+    if g.is_a('Borrowing', word):
+        return 'borrowing', parts
+    if parts and len(parts) == 1:
+        return 'primitive', parts
+    return 'complex', parts
+
+
+def check(g, lex, args):
+    status = 0
+    for word in args.targets:
+        word = word.strip()
+        kind, parts = analyse(g, word)
+        print('\n' + word)
+        if kind is None:
+            print('    not a Loglan word: the parser takes it as nothing at all')
+            status = 1
+            continue
+        line = '    a %s' % kind
+        if kind == 'complex' and parts:
+            line += ': ' + ' + '.join(parts)
+        print(line)
+
+        problems, notes = [], []
+        if args.as_ and args.as_ != kind:
+            problems.append(MISMATCH.get((args.as_, kind),
+                            'you meant a %s, but it reads as a %s' % (args.as_, kind)))
+        readings = None
+        if kind == 'complex' and parts:
+            readings = []
+            for p in parts:
+                src = [lex.source(s) for s in sources_of(lex, p)]
+                if not src:
+                    problems.append('%s is not a form of any word in the dictionary' % stem(p))
+                readings.append(src)
+            print('    made of ' + ' + '.join(show_readings(lex, r) for r in readings))
+            if not all(readings):
+                readings = None
+        if kind == 'primitive':
+            notes.append('primitive-shaped: a new primitive has to be made by the procedure '
+                         'of Loglan 1 section 6.3, from the eight source languages')
+        if kind == 'borrowing':
+            notes.append('a borrowing ends in -e for foods, plants and animals, -i for '
+                         'sciences and medicine, -u for anything else (Loglan 1 section 6.7)')
+        problems += clashes(lex, word, readings, args.definition)
+        for p in problems:
+            print('    ! ' + p)
+        for n in notes:
+            print('    - ' + n)
+        if problems:
+            status = 1
+        elif kind in ('complex', 'borrowing'):
+            print('    no clashes found')
+    print()
+    return status
+
+
+MISMATCH = {
+    ('complex', 'borrowing'): 'meant as a complex, but it reads as a borrowing -- a y-hyphen '
+                              'is probably missing after a consonant-final piece',
+    ('borrowing', 'complex'): 'meant as a borrowing, but it falls apart into the pieces of a '
+                              'complex (Loglan 1 section 6.9); change a vowel or consonant so '
+                              'it cannot',
+    ('borrowing', 'primitive'): 'meant as a borrowing, but it has the shape of a primitive',
+}
+
+
+# ---- make ----------------------------------------------------------------
+
+def forms(lex, token):
+    """[(form, final?, word)] -- the ways a piece can appear in a complex."""
+    out = []
+    kind = lex.kind(token)
+    if 'Prim' in kind and len(token) == 5:
+        for a in lex.words[token]['affixes']:
+            out.append((a, False, token))
+            if a[-1] in VOWELS:
+                out.append((a, True, token))
+        out.append((token[:4] + 'y', False, token))
+        out.append((token, True, token))
+    elif kind == 'Bor.':
+        out.append((token + 'y', False, token))
+        out.append((token, True, token))
+    elif len(token) == 3 and token in lex.affix:
+        out.append((token, False, token))
+        if token[-1] in VOWELS:
+            out.append((token, True, token))
+    else:   # a little word: its affixes, such as nur for nu
+        for a, srcs in lex.affix.items():
+            if token in srcs and lex.kind(a) == 'Afx':
+                out.append((a, False, token))
+        if kind == 'LW' and len(token) == 2 and token[1] in VOWELS:
+            out.append((token + 'hy', False, token))   # va -> vahy, since 2016
+    return out
+
+
+def joints(form, next_form):
+    """The hyphens that may follow a non-final form."""
+    if form.endswith('y'):
+        return ['']
+    if form[-1] not in VOWELS:            # CVC: y where needed
+        return ['', 'y']
+    if form[-2] in VOWELS:                # CVV: r, or n before r
+        return ['', 'n' if next_form.startswith('r') else 'r']
+    return ['']
+
+
+def candidates(lex, tokens):
+    """Every spelling the pieces could have, shortest and plainest first."""
+    choices = []
+    for i, t in enumerate(tokens):
+        final = i == len(tokens) - 1
+        fs = [(f, w) for f, fin, w in forms(lex, t) if fin == final]
+        if not fs:
+            fail('%s cannot be %s piece of a complex' % (t, 'the last' if final else 'a'))
+        choices.append(fs)
+    seen = set()
+    out = []
+    for combo in itertools.product(*choices):
+        fs = [f for f, _ in combo]
+        for hy in itertools.product(*[joints(fs[i], fs[i + 1]) for i in range(len(fs) - 1)]):
+            parts = [f + h for f, h in zip(fs, hy)] + [fs[-1]]
+            word = ''.join(parts)
+            if word not in seen:
+                seen.add(word)
+                out.append((word, parts, tuple(fs), hy))
+    out.sort(key=lambda c: (len(c[0]), sum(1 for h in c[3] if h), c[0]))
+    return out
+
+
+def needless(hy, found):
+    """True if a spelling already found used a subset of these hyphens."""
+    have = {i for i, h in enumerate(hy) if h}
+    return any({i for i, h in enumerate(f) if h} < have for f in found)
+
+
+def make(g, lex, args):
+    tokens = [t.lower() for t in args.pieces]
+    for t in tokens:
+        if t not in lex.words and t not in lex.affix and not forms(lex, t):
+            hint = keyword_hint(lex, t)
+            fail('%s is not a primitive, borrowing, affix or little word in the dictionary%s'
+                 % (t, hint))
+    if len(tokens) < 2:
+        fail('a complex needs at least two pieces')
+    mine = [lex.source(w) for w in tokens]
+    for other in lex.words:
+        m = lex.metaphor_of(other)
+        if m and [lex.source(p) for p in m] == mine:
+            print('\n! %s already says %s: %s' % (describe(lex, other), '+'.join(mine),
+                                                  lex.words[other]['defs'][0]
+                                                  if lex.words[other]['defs'] else ''))
+    found, tried, valid = [], 0, {}
+    for word, parts, fs, hy in candidates(lex, tokens):
+        if len(found) >= args.count or (tried >= args.max_tries and found):
+            break
+        # A hyphen the same forms manage without is left out (Loglan puts
+        # one in only where it is needed); --all shows them anyway.
+        if not args.all and needless(hy, valid.get(fs, [])):
+            continue
+        tried += 1
+        # A borrowing never splits into the parts, so two parses settle it.
+        if g.pieces(word) == parts and g.is_a('Complex', word):
+            found.append((word, parts))
+            valid.setdefault(fs, []).append(hy)
+    if not found:
+        print('\nno complex can be made from %s (%d spellings tried)' % (' + '.join(tokens), tried))
+        return 1
+    print()
+    for word, parts in found:
+        trouble = [c for c in clashes(lex, word) if 'same metaphor' not in c]
+        print('%-18s %-28s %s' % (word, ' + '.join(parts),
+                                  '; '.join(trouble) if trouble else 'ok'))
+    print()
+    return 0
+
+
+def keyword_hint(lex, token):
+    """If the piece was an English word, which primitives mean it."""
+    hits = sorted(w for w, e in lex.words.items()
+                  if 'Prim' in e['type'] and e['defs']
+                  and re.search(r'\b%s\b' % re.escape(token), e['defs'][0].lower()))
+    if not hits:
+        return ''
+    return ' (primitives whose first meaning mentions "%s": %s)' % (
+        token, ', '.join(hits[:12]) + (' ...' if len(hits) > 12 else ''))
+
+
+# ---- main ----------------------------------------------------------------
+
+def main():
+    ap = argparse.ArgumentParser(
+        prog='loglan-coin',
+        description='Check a new Loglan word, or build complexes from a metaphor.',
+        epilog=__doc__.split('\n\n', 1)[1],
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--dictionary', default=DICTIONARY, metavar='FILE',
+                    help='Loglan-to-English dictionary (default: %(default)s)')
+    ap.add_argument('--parser', default=OMNIBUS, metavar='FILE',
+                    help="Holmes's omnibus.py (default: %(default)s)")
+    ap.add_argument('--words', action='append', default=[], metavar='FILE',
+                    help='coined words to count as well (JSON); may be repeated')
+    sub = ap.add_subparsers(dest='command', required=True)
+
+    c = sub.add_parser('check', help='check words')
+    c.add_argument('targets', nargs='+', metavar='WORD')
+    c.add_argument('--as', dest='as_', choices=['complex', 'borrowing'],
+                   help='what the word is meant to be')
+    c.add_argument('--def', dest='definition', metavar='TEXT',
+                   help='its definition, to look for another word defined the same way')
+
+    m = sub.add_parser('make', help='build complexes from pieces')
+    m.add_argument('pieces', nargs='+', metavar='PIECE')
+    m.add_argument('-n', '--count', type=int, default=6,
+                   help='how many complexes to show (default: %(default)s)')
+    m.add_argument('--all', action='store_true',
+                   help='include spellings with a hyphen they could do without')
+    m.add_argument('--max-tries', type=int, default=40,
+                   help='spellings to try before settling for what was found '
+                        '(default: %(default)s)')
+
+    args = ap.parse_args()
+    lex = Lexicon(args.dictionary)
+    for f in args.words:
+        lex.add_file(f)
+    g = Grammar(args.parser)
+    return check(g, lex, args) if args.command == 'check' else make(g, lex, args)
+
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except BrokenPipeError:
+        os._exit(0)
+    except KeyboardInterrupt:
+        os._exit(130)

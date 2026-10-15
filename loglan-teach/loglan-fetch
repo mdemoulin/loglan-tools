@@ -8,9 +8,10 @@ use File::Path   qw(make_path);
 use File::Temp   qw(tempfile);
 use HTTP::Tiny;
 
-# Downloads the sources loglan-teach and mk-utility work from -- Randall
-# Holmes's current Loglan-to-English dictionary and the HTML edition of
-# Loglan 1 -- and builds the vocabulary drill lists from the dictionary:
+# Downloads the sources loglan-teach, mk-utility and loglan-coin work from --
+# Randall Holmes's current Loglan-to-English dictionary, the HTML edition of
+# Loglan 1, and her PEG parser omnibus.py -- and builds the vocabulary drill
+# lists from the dictionary:
 #
 #   prims     every primitive (C-, D-, S-, I-, N-, L- and O-Prims)
 #   affs      every primitive or little word that has affixes
@@ -28,6 +29,7 @@ use HTTP::Tiny;
 my $BASE = 'https://randall-holmes.github.io/Loglan';
 my @SOURCES = (
     'Dictionary/L-to-E-TDR.html',
+    'Sources/omnibus.py',          # Holmes's PEG parser, for loglan-coin
     (map { "Loglan1/chap$_.html" } 1 .. 7),
     'Loglan1/app-b.html',
 );
@@ -197,8 +199,9 @@ sub usage {
     print <<"END";
 Usage: loglan-fetch [--dir DIR] [--refresh] [--replace-links]
 
-Downloads Lavinia Randall Holmes's Loglan-to-English dictionary and Loglan 1 into
-DIR/src, and builds the prims, affs and affsets drill lists in DIR.
+Downloads Lavinia Randall Holmes's Loglan-to-English dictionary, Loglan 1 and
+her parser omnibus.py into DIR/src, and builds the prims, affs and affsets
+drill lists in DIR.
 
   --dir DIR         where the lists go (default \$LOGLAN_STATE_DIR, else ~/.loglan)
   --refresh         download the sources again even if they are already there

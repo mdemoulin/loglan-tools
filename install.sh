@@ -4,15 +4,16 @@
 #   ./install.sh                  ask where
 #   ./install.sh DIR              install into DIR without asking
 #
-# Installs loglan-teach (the drill), loglan-fetch (downloads the dictionary
-# and Loglan 1 and builds the word lists) and mk-utility (the cheat sheet and
-# the ethnic, animals, l1prims and derivs lists).  Nothing is downloaded
+# Installs loglan-teach (the drill), loglan-fetch (downloads the dictionary,
+# Loglan 1 and the parser, and builds the word lists), mk-utility (the cheat
+# sheet and the ethnic, animals, l1prims and derivs lists) and loglan-coin
+# (checks new words and builds complexes).  Nothing is downloaded
 # until you run loglan-fetch.
 
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
-tools=(loglan-teach loglan-fetch mk-utility)
+tools=(loglan-teach loglan-fetch mk-utility loglan-coin)
 
 if [ $# -gt 0 ]; then
     dest=$1
@@ -111,6 +112,11 @@ Drill a list:
 Lists: prims (all primitives), affs (words with affixes; try --field affix),
 affsets, animals, ethnic, l1prims (the primitives used in Loglan 1), and utts
 (whole sentences, installed with the tools: loglan-teach utts).
+
+Coin a word (needs Python 3):
+
+       loglan-coin check kangydzoduo     # a word?  of what kind?  clashes?
+       loglan-coin make kangu dzoru durzo # every complex from a metaphor
 
 Everything is kept in $data: the lists, your progress
 (<list>.state.json), the downloaded sources, and cheatsheet.html -- open
