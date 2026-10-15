@@ -118,7 +118,7 @@ drill_loop($state, \@records);
 # your own, kept wherever it is.
 sub show_tables ($dir) {
     die "No list directory: set LOGLAN_STATE_DIR or run loglan-update\n" unless defined $dir;
-    my @known = qw(core prims affs affsets utts animals ethnic l1prims m1-test);
+    my @known = qw(core prims affs affsets utts animals ethnic coined l1prims m1-test);
     my %known = map { $_ => 1 } @known;
     opendir my $dh, $dir or die "opendir $dir: $!";
     my @own = grep { !$known{$_} } map { /^(.+)\.state\.json\z/ ? $1 : () } readdir $dh;

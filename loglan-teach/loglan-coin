@@ -26,8 +26,9 @@ are tried where they can go, and the parser keeps only the strings that
 really are complexes made of exactly those parts.  Shortest comes first, as
 in Loglan 1 section 6.4, where saadja wins over sanydja.
 
-Words coined but not yet in the dictionary can be counted as well, from a
-JSON file of {"words": [{"word", "origin", "tec", "defs"}, ...]}: --words.
+Words coined but not yet in the dictionary count as well: your own, in
+~/.loglan/new-words.json, always, and any other JSON file of {"words":
+[{"word", "origin", "tec", "defs"}, ...]} given with --words.
 """
 
 import argparse
@@ -50,6 +51,7 @@ STATE = os.environ.get('LOGLAN_STATE_DIR') or os.path.expanduser('~/.loglan')
 DICTIONARY = os.path.join(STATE, 'src', 'Dictionary', 'L-to-E-TDR.html')
 OMNIBUS = os.path.join(STATE, 'src', 'Sources', 'omnibus.py')
 CACHE = os.path.join(STATE, 'cache')
+NEW_WORDS = os.path.join(STATE, 'new-words.json')
 
 VOWELS = set('aeiou')
 SIBILANT_SIDES = {'sc', 'cs', 'cj', 'jc', 'jz', 'zj', 'zs', 'sz'}
@@ -614,7 +616,8 @@ def main():
     ap.add_argument('--parser', default=OMNIBUS, metavar='FILE',
                     help="Holmes's omnibus.py (default: %(default)s)")
     ap.add_argument('--words', action='append', default=[], metavar='FILE',
-                    help='coined words to count as well (JSON); may be repeated')
+                    help='more coined words to count as well (JSON); may be repeated.  '
+                         'Your own, in %s, always count' % NEW_WORDS)
     sub = ap.add_subparsers(dest='command', required=True)
 
     c = sub.add_parser('check', help='check words')
@@ -637,7 +640,7 @@ def main():
     args = ap.parse_args()
     start_update()
     lex = Lexicon(args.dictionary)
-    for f in args.words:
+    for f in ([NEW_WORDS] if os.path.exists(NEW_WORDS) else []) + args.words:
         lex.add_file(f)
     g = Grammar(args.parser)
     return check(g, lex, args) if args.command == 'check' else make(g, lex, args)

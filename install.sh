@@ -8,8 +8,9 @@
 # current and builds the lists), mk-utility (which loglan-update runs for the
 # cheat sheet and the l1prims and derivs lists), loglan-coin (checks new words
 # and builds complexes), loglan-lookup (looks words up, either direction),
-# loglan-parse (Holmes's parser, interactively), and loglan-fetch (the old
-# name of loglan-update).
+# loglan-parse (Holmes's parser, interactively), new-words-html.py (a page of
+# your coined words, for submission), and loglan-fetch (the old name of
+# loglan-update).
 #
 # The sources -- the dictionary, Loglan 1, the parser -- and the shipped lists
 # (utts, and the auxiliary ethnic and animals) go into ~/.loglan/dist, and the
@@ -19,7 +20,7 @@
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
-tools=(loglan-teach loglan-update mk-utility loglan-coin loglan-lookup loglan-parse loglan-fetch)
+tools=(loglan-teach loglan-update mk-utility loglan-coin loglan-lookup loglan-parse new-words-html.py loglan-fetch)
 
 if [ $# -gt 0 ]; then
     dest=$1
@@ -107,7 +108,8 @@ Drill a list:
 Lists: core (the everyday primitives: no native or scientific ones), prims
 (all primitives), affs (words with affixes; try --field affix),
 affsets, l1prims (the primitives used in Loglan 1), utts (whole sentences),
-and the auxiliary lists animals and ethnic, whose words are in prims too.
+the auxiliary lists animals and ethnic, whose words are in prims too, and
+coined (your own words, from $data/new-words.json, if you keep one).
 
 Once a day loglan-teach and loglan-coin quietly look online for newer
 sources and rebuild the lists if there are any (LOGLAN_NO_UPDATE=1 stops

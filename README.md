@@ -26,6 +26,7 @@ one of a gloss's alternatives ("box/crate/carton") counts as right.  Open
 | `loglan-update` | Brings the sources up to date -- from the copies shipped with the tools, and from the web when they have changed there -- and builds every list from them.  `loglan-teach` and `loglan-coin` run it in the background once a day |
 | `mk-utility` | Run by `loglan-update`: builds `cheatsheet.html` (the ethnic and animal declensions, and every primitive used in *Loglan 1*) and the `l1prims` and `derivs` lists |
 | `loglan-lookup WORD` | Looks a word up in the dictionary, either direction: `kliri` or `clear`; `-p` for every headword containing it.  The English side is made from the keywords the definitions mark; your auxiliary words are found too, and coined words with `--words FILE` |
+| `new-words-html.py` | Makes a Loglan-to-English page of your coined words (see [Your own words](#your-own-words)): by default the ones not yet submitted, `--submitted DATE` for a batch already sent, `--all` for every one |
 | `loglan-parse` | Randall Holmes's parser, `omnibus.py`, in its own interactive loop: type a Loglan utterance and see how it parses (`?` for its commands, `...` to leave).  It runs in `~/.loglan/parse`, where its scratch files and anything it saves land |
 | `loglan-teach LIST` | Drills a list: `--recognition` (Loglan to English, the default), `--recall`, or `--both`; `--status` shows how far along you are, and `loglan-teach --tables` lists every list with its size and whether progress is saved |
 
@@ -46,6 +47,7 @@ your own can be given by path.  `loglan-fetch`, the old name of
 | `affsets` | `prims` and `affs` together, likewise |
 | `ethnic` | auxiliary: the ethnic declension, *-a* language, *-e* territory, *-i* person, *-o* culture |
 | `animals` | auxiliary: the animal declension, *-u* generic, *-a* female, *-o* male, *-i* young, *-e* -like |
+| `coined` | your own words, from `~/.loglan/new-words.json` (see [Your own words](#your-own-words)); kept out of the other lists |
 | `l1prims` | the primitives used in chapters 1-7 of *Loglan 1*, with the book's definitions |
 | `derivs` | not a drill: the word origins `loglan-teach` shows after each answer |
 | `utts` | 383 sentences from the Institute's LoglanTeach and MacTeach programs, corrected to current Loglan grammar; a sentence drill (see below).  Shipped in `lists/`, not built, and put into `~/.loglan` unless you already have one there |
@@ -105,6 +107,25 @@ Check a new word with `loglan-coin` first.
 
     kavhu	-	guinea-pig/cavy	is any -, a rodent of the genus Cavia, of region/range..
 
+### Your own words
+
+Words you have coined live in `~/.loglan/new-words.json`, which the tools
+never ship and never write: `{"words": [...]}`, one object per word with
+`word`, `origin`, `tec` (the type line, `2-Cpx MD 2026 7+`), `defs` (each
+definition with its key meanings in braces and its case tags plainly,
+`(2n) B is an {omelette} of ingredients S. [B-S]`), an optional `affix`,
+and `submitted`, the date it went to the Institute or `null`.  Notes at the
+top of the file describe it in full.  With it there:
+
+- `loglan-update` makes the `coined` drill list from it, and rebuilds that
+  whenever the file changes;
+- `loglan-lookup` finds the words, either direction;
+- `loglan-coin` checks new words against them as against the dictionary;
+- `new-words-html.py` renders them as a page for submission.
+
+`~/.loglan/dropped-new-words.json`, in the same form, is a record of words
+withdrawn because the dictionary already had them; no tool reads it.
+
 ## loglan-coin
 
 Checks a new word before you propose it, and builds complexes from a
@@ -144,9 +165,9 @@ complex with that metaphor already exists, it says so first.
     kangydzoduo        kangy + dzo + duo            ok
     ...
 
-Words you have coined but that are not in the dictionary can be counted
-too, from a JSON file of `{"words": [{"word", "origin", "tec", "defs"}]}`:
-`loglan-coin --words mine.json check ...`.  Final-vowel sets among your own
+Your coined words in `~/.loglan/new-words.json` always count as well, and
+another file of them can be added with `loglan-coin --words mine.json
+check ...`.  Final-vowel sets among your own
 words (*kavha*, *kavhe*, ... *kavhu*) are taken as deliberate, as *Loglan 1*
 allows for *spana*/*spani*/*spano*.
 
@@ -198,6 +219,7 @@ by the GPL.
 ## Requirements
 
 - Perl 5.36 or later (core modules only)
-- Python 3.8 or later, for `loglan-coin`, `loglan-lookup` and `loglan-parse` (standard library only)
+- Python 3.8 or later, for `loglan-coin`, `loglan-lookup`, `loglan-parse` and
+  `new-words-html.py` (standard library only)
 - for the online check (optional: the tools work from the shipped sources
   without it), HTTPS: Perl's `IO::Socket::SSL`, or `curl`

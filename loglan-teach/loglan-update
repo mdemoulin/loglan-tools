@@ -12,6 +12,7 @@ use File::Temp     qw(tempfile);
 use FindBin        qw($RealBin);
 use Getopt::Long   qw(:config bundling no_ignore_case);
 use HTTP::Tiny;
+use JSON::PP       qw(decode_json);
 use POSIX          qw(strftime);
 use Time::Local    qw(timegm);
 
@@ -28,7 +29,8 @@ use Time::Local    qw(timegm);
 #   2. puts each into DIR/src with the corrections in sources/FIXES made;
 #   3. installs the auxiliary lists (lists/aux: ethnic, animals) into DIR/aux,
 #      with your <list>.added entries;
-#   4. builds prims, core, affs and affsets from the dictionary, adds your .added
+#   4. builds coined from your own words, in DIR/new-words.json;
+#   5. builds prims, core, affs and affsets from the dictionary, adds your .added
 #      entries and every word of the auxiliary lists that is not already
 #      there, and runs mk-utility for the rest (l1prims, derivs, the cheat
 #      sheet).
@@ -160,6 +162,11 @@ if ($refix) {
     write_versions(\%version);
     push @changed, 'FIXES' if @fixes || -e "$src/.built";
 }
+
+# Your coined words changing is reason enough to rebuild.
+my $new_words = "$dir/new-words.json";
+push @changed, 'new-words.json'
+    if -f $new_words && (!-e "$dir/coined" || -M $new_words < -M "$dir/coined");
 
 # In the background, a quiet day is the end of it.
 if ($opt{auto} && !@changed && -e "$src/.built") {
@@ -308,6 +315,28 @@ for my $file (sort glob "$aux/*") {
     } @rows;
 }
 
+# ---- your coined words: coined ----
+# A list of their own, drilled like prims but kept out of it: the gloss is the
+# key meanings of the first definition, the notes the rest of it.
+if (-f $new_words) {
+    my $words = eval { decode_json(read_bytes($new_words))->{words} };
+    if (ref $words eq 'ARRAY') {
+        my @coined;
+        for my $w (@$words) {
+            my $def = $w->{defs}[0] // next;
+            # As the dictionary marks them, so gloss_notes can read them.
+            (my $html = $def) =~ s/&/&amp;/g;
+            $html =~ s/</&lt;/g;
+            $html =~ s/>/&gt;/g;
+            $html =~ s{\{([^{}]*)\}}{<em class="key">$1</em>}g;
+            push @coined, join "\t", $w->{word}, $w->{affix} || '-', gloss_notes($html);
+        }
+        write_list("$dir/coined", [merge_added('coined', \@coined)]);
+    } else {
+        warn "$new_words: not a word list ($@); coined left as it was\n";
+    }
+}
+
 write_list("$dir/prims",   \@prims);
 write_list("$dir/core",    \@core);
 write_list("$dir/affs",    \@affs);
@@ -332,8 +361,8 @@ system($mk, '--dir', $dir, ($opt{'replace-links'} ? '--replace-links' : ())) == 
 touch("$src/.built");
 if ($opt{auto} && @changed) {
     open my $note, '>>', "$dir/UPDATED" or exit 0;
-    print $note strftime('%Y-%m-%d', localtime), ': new Loglan sources (',
-        join(', ', map { s/ .*//r } @changed), "); the lists were rebuilt\n";
+    print $note strftime('%Y-%m-%d', localtime), ': ',
+        join(', ', map { s/ .*//r } @changed), " changed; the lists were rebuilt\n";
     close $note;
 }
 
@@ -542,8 +571,9 @@ Usage: loglan-update [--dir DIR] [--offline] [--replace-links]
 Brings the Loglan sources in DIR/src up to date -- from the copies shipped
 with the tools and, if the copy online has changed, from
 randall-holmes.github.io -- and builds the lists in DIR from them: prims,
-core, affs, affsets, the auxiliary lists in DIR/aux (ethnic, animals), l1prims,
-derivs and cheatsheet.html.
+core, affs, affsets, the auxiliary lists in DIR/aux (ethnic, animals),
+l1prims, derivs and cheatsheet.html; and coined, from your own words in
+DIR/new-words.json.
 
   --dir DIR         the data directory (default \$LOGLAN_STATE_DIR, else ~/.loglan)
   --offline         do not look online; use the copies here

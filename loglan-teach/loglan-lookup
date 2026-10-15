@@ -14,10 +14,11 @@ gets you somewhere.
 The dictionary is Lavinia Randall Holmes's current Loglan-to-English one,
 which loglan-update keeps in ~/.loglan/src.  It has no English-to-Loglan
 half, so that side is made here from the English keywords its definitions
-mark.  The words of the auxiliary lists in ~/.loglan/aux that the
-dictionary lacks -- set members formed by rule, and your own -- are found
-too, and so are coined words from a JSON file of {"words": [{"word",
-"origin", "tec", "defs"}]} given with --words.
+mark.  Your coined words, in ~/.loglan/new-words.json, are found too, as
+are the words of the auxiliary lists in ~/.loglan/aux that the dictionary
+lacks (set members formed by rule, and your own), and those of any other
+JSON file of {"words": [{"word", "origin", "tec", "defs"}]} given with
+--words.
 """
 
 import argparse
@@ -34,6 +35,7 @@ import time
 STATE = os.environ.get('LOGLAN_STATE_DIR') or os.path.expanduser('~/.loglan')
 DICTIONARY = os.path.join(STATE, 'src', 'Dictionary', 'L-to-E-TDR.html')
 AUX = os.path.join(STATE, 'aux')
+NEW_WORDS = os.path.join(STATE, 'new-words.json')
 
 ENTRY = re.compile(r'<b><a name="([^"]+)">([^<]*)</a></b>,\s*<br>\s*(.*?)</p>', re.S)
 KEY = re.compile(r'<em class="key">(.*?)</em>', re.S)
@@ -220,13 +222,14 @@ def main():
     ap.add_argument('--dictionary', default=DICTIONARY, metavar='FILE',
                     help='Loglan-to-English dictionary (default: %(default)s)')
     ap.add_argument('--words', action='append', default=[], metavar='FILE',
-                    help='coined words to include (JSON); may be repeated')
+                    help='more coined words to include (JSON); may be repeated.  '
+                         'Your own, in %s, are always included' % NEW_WORDS)
     args = ap.parse_args()
     start_update()
 
     entries = load_dictionary(args.dictionary)
     have = {e.word for e in entries}
-    for f in args.words:
+    for f in ([NEW_WORDS] if os.path.exists(NEW_WORDS) else []) + args.words:
         entries += load_words(f, have)
     entries += load_aux(have)
     english = english_index(entries)
