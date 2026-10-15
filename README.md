@@ -147,9 +147,10 @@ commonest author initials (`--author` to say otherwise) and the year.
 
 `--set=animal` or `--set=ethnic` adds every member of the declension set
 the word belongs to that is missing, each marked with `set`.  In an animal
-set the `-u` word (any) is the N-Prim the others derive from, and `-a`
-(female), `-o` (male), `-i` (baby) and `-e` (-like) are D-Prims with it as
-their origin; in an ethnic set the `-a` word (the language) is the N-Prim,
+set the `-u` word (any) is the borrowing (`Bor.`) the others derive from --
+or an N-Prim, if it has a primitive's five letters -- and `-a` (female),
+`-o` (male), `-i` (baby) and `-e` (-like) are D-Prims with it as their
+origin; in an ethnic set the `-a` word (the language) is the N-Prim,
 and `-e` (territory), `-i` (person) and `-o` (culture) are D-Prims sharing
 its origin.
 

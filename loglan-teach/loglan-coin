@@ -772,9 +772,19 @@ def add(g, lex, args):
                 if 'final vowel' in c and other and other.group(1)[:-1] == st:
                     continue          # another member of the same set
                 problems.append(c)
+            # The base: an animal's -u word is the borrowing the set is made
+            # from (or, five letters long, a primitive); an ethnic set's -a
+            # word, the language, is a native primitive as in the dictionary.
+            # The other members are derived from it.
+            if w != base:
+                kind_tec = 'D-Prim'
+            elif args.set == 'animal' and kind == 'borrowing':
+                kind_tec = 'Bor.'
+            else:
+                kind_tec = 'N-Prim'
             entry = {'word': w,
                      'origin': origin if (w == base or args.set == 'ethnic') else base,
-                     'tec': '%s %s %s 7+' % ('N-Prim' if w == base else 'D-Prim', author, year),
+                     'tec': '%s %s %s 7+' % (kind_tec, author, year),
                      'set': args.set,
                      'submitted': None,
                      'defs': [spec['defs'][v].format(art=article(args.english), name=args.english)]}
