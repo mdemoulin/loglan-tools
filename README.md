@@ -56,7 +56,7 @@ your own can be given by path.  `loglan-fetch`, the old name of
 | `ethnic` | auxiliary: the ethnic declension, *-a* language, *-e* territory, *-i* person, *-o* culture |
 | `animals` | auxiliary: the animal declension, *-u* generic, *-a* female, *-o* male, *-i* young, *-e* -like |
 | `coined` | your own words, from `~/.loglan/new-words.json` (see [Your own words](#your-own-words)); kept out of the other lists |
-| `m1-text` | not a drill: the commentary of the Institute's MacTeach 1 / LoglanTeach program, the 34 short lessons it showed between groups of the `utts` sentences -- to read alongside them.  Shipped in `lists/` and put into `~/.loglan` like `utts` |
+| `m1-text` | not a drill: the commentary of the Institute's MacTeach 1 / LoglanTeach program, the 34 short lessons it showed between groups of the `utts` sentences.  `loglan-teach utts` shows them as it goes (see below).  Shipped in `lists/` and put into `~/.loglan` like `utts` |
 | `l1prims` | the primitives used in chapters 1-7 of *Loglan 1*, with the book's definitions |
 | `derivs` | not a drill: the word origins `loglan-teach` shows after each answer |
 | `utts` | 383 sentences from the Institute's LoglanTeach and MacTeach programs, corrected to current Loglan grammar; a sentence drill (see below).  Shipped in `lists/`, not built, and put into `~/.loglan` unless you already have one there |
@@ -96,6 +96,19 @@ many wordings:
 Answers are compared without regard to case, spacing, hyphens or
 punctuation -- except Loglan commas, which are pauses and part of the
 grammar.  The prompt shows the main wording, without the alternatives.
+
+`utts` is taught as MacTeach 1 taught it, with its lessons: a line
+`# {7}` in it marks where lesson 7 of `m1-text` comes.  Every sentence is
+asked in its turn, from the top of the file, and each lesson is shown once,
+before the sentences it goes with -- the first six, on pronunciation and the
+kinds of word, before the very first.  A sentence you miss is asked again,
+until you have it, before the next lesson begins; after the last sentence
+it starts again from the top.  `:l` shows the last lesson again, `:s` says
+where you are, and `--random` drills the list on the ladder instead,
+without the lessons.  A sentence that comes twice with two Englishes (a
+literal and an idiomatic one) is two cards, each with its own progress, and
+one that has no translation -- ungrammatical, its English just `-` -- is
+answered with a `-`.
 
 In any list, a line starting with `#` is skipped.
 

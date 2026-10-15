@@ -4,6 +4,13 @@
 # All rights reserved by The Loglan Center, Inc. (the Idaho corporation which has superseded the Florida corporation).
 # Included with the permission of The Loglan Center (Lavinia Randall Holmes, October 2026).
 # This file is not covered by the GPL that covers the code in this repository.
+# A line '# {n}' marks where lesson n of m1-text comes: before the sentence that follows it.
+# {1}
+# {2}
+# {3}
+# {4}
+# {5}
+# {6}
 Hompi ti	Drink this!
 Eo titci ti	Please eat this.
 Katca ta eo	Watch that, please.
@@ -15,21 +22,25 @@ Ai katca ta	I-intend(-that)-you(*-to) watch that.|(Idiomatically: 'You're going 
 Ai-mi katca ti	I+intend-to/will/shall watch this.|(The declarative form does require a specific subject. But expressing intention works equally well with both forms.)
 Ai	I+will./shall/intend-to.|(Similar to the nautical reply 'Aye, aye, sir', a signal of an unconditional intention to comply.)
 Ai-no                                    [Emphasize the intention.]	Certainly-not!/(No)I=will-not/won't.|(An equally firm refusal to comply.)
+# {7}
 No-ai                                    [Emphasize the negation.]	(*No,)+certainly!/I=will-not/won't.
 Hapci	Be-happy!
 Eo skitu	Please sit(down).
 Ao kerju tu	I-want-you-to take-care-of/look-after/care-for yourself./you.
 Ai-mi kerju mi	I+will/shall/intend-to take-care-of/look-after/care-for myself./me.
 Stali eo	Stand,(up) please.
+# {30}
 La-Djan, mrenu	John is/'s+a-man.
 La-Alis, fumna	Alice is-a-woman.
 Ti gudbi monza	This is-a-good morning.|(Idiomatic: 'Good morning.')
+# {8}
 Ao-no-mi hompi ti	I-don't-want-to drink this.|(I want not to drink it.)
 Ao-no-mi helba tu	I-don't-want-to help/assist you.
 No takna	Don't talk!/speak!
 Ae-no takna mi	I+hope-you-don't/wish-you-wouldn't/'d-rather-you-didn't talk/speak+to me.
 No totco mi	Don't touch me.
 No-mi totco tu	I+am/'m+not touching you.
+# {9}
 Loi hoi Djim.	Hello/Hi/Greetings Jim.
 Hoi Djin, loi	Jean, hello./hi/greetings.
 Oi resto	You-may/It's-OK-if-you rest./lie-down.
@@ -45,6 +56,7 @@ No-oi	You-need-not./You-don't-have-to/It's-Ok-if-you-don't.
 Ea-mu godzi	Let(u)'s/I-suggest-we go.
 Ao	OK./Fine/I-want-to.
 Loa, hoi, Tcet	Goodbye, Chet.
+# {10}
 Hoi Djan, prano	John, run!
 Prano, hoi Djan	Run, John!
 La-Djan, prano	John runs./is-a-runner.
@@ -53,6 +65,7 @@ Skesa mi hoi Keit	Kiss me, Kate!
 Skesa la-Bab, Hoi Keit	Kiss Bob, O Kate!
 Hoi Djan, santi	John, be+quiet!/silent!
 La-Djan, santi	John is/s+quiet./silent.
+# {11}
 Le rodlu ga-gudbi le fitrua	The road is/s+better-than the (foot)path.|(From 'fitpi rutma' \= 'foot-route'.)
 Le ditca ga-fundi-mi le groda	The teacher likes-me-better/is-fonder-of-me+than(of) the big-one.
 Lo-skati ga blanu	Skies/The-sky are/(i)s blue.
@@ -61,6 +74,7 @@ Lo-grasa ga vegri	Grass is green.
 Lo-rozme ga redro	Roses are red.
 Lo-batra ga pelto	Butter is/s yellow.
 Lo-natli ga nigro	The-night/Nights is/are black.
+# {12}
 Tu he                                    [Translate\/d literally.]	You are/re+what?|(How are you?)
 Tu-he                                    [Translate\/d idiomatically.]	How-are-you?|(Literally, 'You're what?')
 Mi djela	I am/'m+well./fine/healthy.
@@ -77,7 +91,9 @@ Na-lo-ferdei mu zanduo lo-breba	On/During+Friday(s), we bake bread.|(From 'zavno
 Na-la-Sordei, mu fa tcaro-traci	(*On-)(This)Saturday, we will/'ll travel-by-car./car-travel/take-a-car-trip.|(The local Saturday. Predicates used as names are also followed by pause-commas.)
 #Na-la-Serdei, mu fa besbo	(*On-)(This)Sunday, we will/'ll play-baseball.|(The local Sunday.)
 Lo-nermea ga-kleda	Januaries/January are/is cold.
+# {31}
 Na-lo-tormea, lo-merki ga-grarisdou lo-bradei je-la-Linkyn	In/During+February, Americans celebrate the-birthday of-Lincoln.|(From 'grada rispe donsu' \= 'great-respect-give'; also 'bradei' from 'brana denli'.
+# {32}
 Ti briflo na lo-termea	This(place) is+windy/breezy in/during March.|(From 'brize folma' \= 'wind-full'.)
 Na-lo-formea lo-tulpa ga-rodja vi ro gardi	In/During+April tulips grow in many gardens.
 Fa lo-fermea lo-ruski ga-godzi lo-fanlai	After May Russians go-to the-country.|(From 'fanra landi' \= 'farm-land'.)
@@ -95,6 +111,7 @@ Mu klinymao le-hasfa na-lo-dotfui	We clean (the)house in/during+(*the-)spring(ti
 Na-lo-dotra mu kizpli vi-lo-monca	(*In/During)+(the)winter(s)(time), we ski on/in/at+the-mountains.|(From 'skizo plizo' \= 'ski-use', 'use skis'.)
 Na-lo-dotra mu kizgoi lo-monca	(*In/During)+(the)winter(s)(time), we ski-to the-mountains.|(From 'skizo godzi' \= 'ski-go', 'go by skis'.  The sense of 'to' is conveyed by the predicate.)
 Na-lo-dotra mu kizgoi lo-monca lo-vlako	(*In/During)+(the)winter(s)(time), we ski-to the-mountains from-the-lakes.|(The sense of 'from' is also conveyed by this Loglan predicate.)
+# {33}
 Na-lo-cimra mu sucmi, e gardykeu	(*In/During+)(the)summer,(s)(time) we swim and garden.|(From 'gardi kerju' \= 'garden-care-for'.)
 Mu futbo na-lo-cimfui	We play-football/are-football(play)ers in/during+(*the)+fall./autumn.|(From 'cimra futci' \= 'summer-after'.)
 Leva cersi ga-komfu	That chair is/s+comfortable.
@@ -108,6 +125,7 @@ Levi ri herba ga-he	These several plants are-what?
 Da vendu	They/X are-poisonous.
 Leva ro-junti na-he	Those many-young-ones are-now-(doing)what?
 Da na-prano	They/X are/re+now-running.
+# {13}
 Hu namci tu                              [Translate\/d literally.]	What names you?|(Idiomatic: 'What is your name?')
 Hu namci-tu                              [Translate\/d idiomatically.]	What is/s+your-name?|(Literal: 'What names you?')
 Liu Djim, namci mi	The-word Jim names me.|(My name is Jim.)
@@ -132,6 +150,7 @@ Da fulri mrenu	He/It/They/X is/s/are+(*a)-rich man./men.
 Ie da	Which he?/she/it/they/X?
 La-Men Smit	Mr/Man Smith.
 La-Fum Smit	Ms/Mrs/Miss/Woman Smith.
+# {14}
 La-Bab, na-hijra, hoi Fum Smit	Bob is/s+(now-)here,/present/attending Ms./Miss/Mrs/Woman Smith.|(Both pauses are obligatory.)
 Ie la-Bab	Which Bob?
 La-Bab, bi le hapci	Bob is/s the happy-one.
@@ -155,6 +174,7 @@ Tu-danza hu le natmia?	You want/desire what for+the-evening-meal?/dinner?/supper
 Mi danza lo-ficli, ze-lo-palto, ze-lo-sliti, ze-lo-vinjo	I want fish, (and)(jointly)potatoes, (and)(jointly)dessert/(a)sweet, and-(jointly)wine.
 Tu-danza hu le gromia	You want/desire what for+the-main-meal?/the-big-meal?/dinner?
 Su tcidi	Some(thing)/At-least-one food./edible(s).
+# {15}
 Da godzi de hu	X/They/He/She/It go(*es)-to Y/it from+what/where?
 Da godzi de la-Danmark	X/They/He/She/It go(*es)-to Y/it from-Denmark.
 Hu matma leva botci	Who is/s+the-mother-of that boy?
@@ -173,6 +193,7 @@ Le matma ga-klinymao le hasfa	The mother cleans the house.|(As reported by an ou
 Neba sorme la-Bab	(Exactly)(one)Someone(x) is/s+a-sister-of Bob.|(Bob has a sister.)
 Suba brudi la-Pit	Someone/Some/At-least-one&(x) is/s/are+a/the+brother(s)-of Pete.|(Pete has at least one brother.)
 Da detra ne kicmu	She/They/X is/s/are+a/the+daughter(s)-of a/(exactly)=1/one doctor.
+# {16}
 Ei ti breba                              [Translate\/d idiomatically.]	Is this bread?|(Literally: 'Is it the case that this is bread?')
 Ei ti breba                              [Translate\/d literally.]	Is-it+the-case/true+that this is-bread?|(Is this bread?)
 Ia da breba	Yes,/Certainly/I-agree-that it/X is/s+bread.
@@ -190,6 +211,7 @@ Ei tu saadja toi                         [Translate\/d literally.]	Is-it+the-cas
 Ei tu saadja toi                         [Translate\/d idiomatically.]	Do you understand this?/that?
 No mi saadja da                          [Translate\/d literally.]	It-is-not+the-case/true+that I understand it./X.
 No-mi saadja da                          [Translate\/d idiomatically.]	(No-)I-don't understand it./X.
+# {17}
 Ei-tu-pa tidjo mi	Were-you heavier-than me?/I(was)?
 Ia. I-mi mutce-tidjo tu	Yes./Certainly. (And)I am-much-heavier/weigh-much-more+than you.(are/do).
 Ei-tu na bleka mi	Are-you now looking-at me?
@@ -209,6 +231,7 @@ Tu fa trena-traci                        [Expressing prediction.]	You will/are-g
 La-Djan, fa botsu-traci                 [Expressing prediction.]	John will/is-going-to boat-travel./travel-by-boat/take-a-boat-trip.
 Le mela-Smit, famji fa rorpeutca-traci	The Smith family will/are-going-to bus-travel./travel-by-bus/take-a-bus.|(From 'ro pernu tcaro' \= 'many person vehicle'.)
 Ae no flebou-traci	I+hope/wish/\'d-rather+you don\'t/won\'t/wouldn\'t/didn't (*go-)(travel-)by-air(plane)./airplane-travel.|(From 'fleti botsu' \= 'flying-boat'.)
+# {18}
 Ei tu stolo vi	Do/Are you stay(ing)/remain(ing) here?
 No. I-mi stolo va	No. (And-)I (*(*a)m)+stay/remain&(*ing) (over-)there.
 Ei tu stude vi	Are/Do you a-student/study here?
@@ -220,12 +243,14 @@ Vahu	Near-where?
 Va la-Ditroit	Near Detroit.
 Vuhu	Far-from-where?
 Vu le mursi	Far-from the sea.
+# {19}
 Ei ba breba	Is some(*thing)(x) bread?|(Is there any bread?)
 Ia. I-ba breba vi	Yes./Certainly. (And-)Some(*thing)(x) is/s+bread here.|(Yes; there's bread here.)
 Ei raba cninu vi	Is every(some)(*thing)(x) new here?
 No. I-ba no cninu vi	No. (And-)Some(*thing)(x)-is/there-are-some-things(x)-that-are not new here.
 Ei raba cluva rabe	Does every(some)(*thing)(body)(one)(x) love every(some)(*thing-)(body)(one)(*else)(y)?|(The meaning of 'else' is contained in 'be', which is not 'ba'.)
 No. I-ba no cluva rabe	No. (And)(There-are)Some(x)(who) don't love every(some)(*thing-)(body)(one)(*else)(y).
+# {20}
 Ifeu ba no-cluva be	(And)In-fact, (there-are)some(people)(x)(who) don't-love any(*one)(body)(-*else)(x).
 Raba gudbi be bo	Every(some)(*thing)(body)(one)(x) is/s+better-than some(*thing-)(body)(one)(*else)(y) for/at+something(w).
 Ei raba kunci be	Is every(some)(*one)(body)(one)(x) related-to some(*one)(body)(else)(y)?
@@ -247,14 +272,17 @@ Ti vedma	This(*-person)(one) sells./is-a=seller/salesperson.
 Inusoa, da vedma ba be bo	Therefore he/she/X sells something(x)/some-x to-some(*one)(body)(y) at/for+some(*-price)(w).
 Ti gudbi	This(*-person)(one)(thing) is-good.
 Inusoa, da gudbi ba be	Therefore he/she/it/X is/s+better-than some(*thing)(one)(body)(else)(x) at/for+some(*thing)(*-else)(y).
+# {21}
 Da cmalo ge-janto kangu	X/He/She/It is/s+(a)small (*for-a-)hunting dog.
 Da laldo ge-dorja cefli	X/He/She is/s+(an)old (*for a-)war chief.
 Da botsu go-mutce-groda	X/It/She is/s+a-boat that-is-very+large./big.
+# {22}
 Da cmalo janto-ci-kangu	X/He/She/It is/s+a-small hunting\-dog.|(The hyphen is necessary to translate 'ci'.)
 Da junti famva ce terla-ci-sadji	X/He/She is/s+young to-be-famous and worldly-wise.
 Da junti ke famva ki terla-ci-sadji	X/He/She is/s+young to-be-both famous and worldly-wise.|(Again, the 'ci' is essential to the Loglan meaning. If we drop it, we get a very different meaning.)
 Da junti famva ce terla sadji	X/He/She is/s+a-youthfully famous and worldly wise-person.|(Both youthfully famous and youthfully worldly for a wise person.)
 Da junti ke famva ki terla sadji	X/He/She is/s+a-youthfully both famous and worldly wise-person.|(Again, the kekked form is a little clearer.)
+# {23}
 Da bilti ge cmalo nirli cue ckela	X/It is-a-beautiful for small girls' type-of school.|(A school for small girls who are beautiful. This can be more neatly said as follows\:)
 Da bilti cmalo ci nirli ckela	X/It is/s+a-beautiful small\-girls' school.|(Neatest of all, of course, is the claim with the new predicate 'cmanirli' \= 'smallgirls', as below\:)
 Da bilti cmanirli ckela	X/It is/s+a-beautiful smallgirls' school.|(And now the meaning of the last two claims is utterly clear.)
@@ -262,6 +290,7 @@ Da ckela go cmalo nirli go bilti	X/It is/s+a-school for small girls who/that+are
 Da cui-bilti cmalo ca nirli ckela	X/It is/s+a-beautifully small, or a-girls', school.|(Just as 'cue' is an optional right parenthesis, 'cui' is a left one.)
 Da bilti canoi cmalo-ci-nirli ckela	X/It is/s+a-beautiful if for/a+small\-girls' school.|(Again, the hyphen is required.)
 Da bilti ce kanoi cmalo ki nirli ckela	X/It is/s+a-beautiful, and, if (a-)small, then a-girls', school.|(The scope of a kek is just one predicate word on each side of its 'ki'.)
+# {24}
 Da zbuma	X/It/She/He/They explode(*s).
 Da po-zbuma	X/It/They is/s+an/are+explosion(s).|(An event or events of exploding.)
 Da po de zbuma	X/It is/s+an-event/a-case+of Y(*s)/it(s) explo(*ding)(sion).
@@ -270,6 +299,7 @@ Da po de mrenu	X/It is/s+an-event/a-state+of Y(*'s) manhood./being-a-man.
 Da pu de forli	X/It is/s+a/the+property/quality+of Y(*'s) strength./being-strong.
 Da pu de forli di	X/It is/s+a/the+property/quality+of Y(*'s) being-stronger-than Z.
 Da zo de blanu di	X/It is/s+an/the+amount-by-which Y is/s+bluer-than Z.
+# {25}
 Ei da fundi lo-malna	Is/Are she/he/they/X fond-of milk?
 Ei lo-nirda vi-sucmi	Do birds here-swim/swim-here?
 Ei lovi-nirda ga-sucmi	Do local/the\-here birds swim?
@@ -287,6 +317,7 @@ Ei tu pa-djano lepo mi pa stude	Did you know that I was a-student?/studied?
 Ei tu na-djano lepo mi pa stude	Do you now-know that I was a-student?/studied?
 Ei tu danza lepo-mi tcihea tu            [Translate\/d idiomatically.]	Do you want me-to feed you?|(I.e., help you eat? From 'titci helba' \= 'eat-help'.)
 Ei tu danza lepo mi tcihea tu            [Translate\/d literally.]	Is-it-true-that you want/desire the+event/state+of my/me feeding you?
+# {26}
 Uo la-Maik, pa-dupma mi	How-annoying-that/What!/Good-grief! Mike deceived/tricked/duped me!|(Anger, annoyance.)
 Ue tu nu-dupma	How-odd-that/I'm-surprised-that/Well! you are+deceivable!/deceived/tricked/duped!|(Surprise.)
 Ui la-Keit, no dupma tu	Happily/Fortunately/How-nice/I(a)m=glad/happy+(that) Kate didn't deceive/trick/dupe you!|(Pleasure.)
@@ -300,6 +331,7 @@ Tu no fatru-mi	You are-not troubling/bothering/annoying+me.
 Levi trime ga-no-nu-plizo raba	This tool is/s+unusable-by/useless-to every(*one)(body)(x).|(No one can use it.)
 Levi-trime no ga-nu-plizo raba	This-tool is/s+not usable-by/useful-to every(*one)(body)(x).|(Not everyone can use it. The difference is in the scope of 'no'.)
 Levi-bedkru-cutci ga-no-nu-plizo raba lopo-rozduo lo-naldi	This-bedroom-shoe/slipper is/s+unusable-by/useless-to every(*one)(body)(x) for-hammering nails.|(From 'bedpu kruma', and 'mroza durzo' \= 'hammer-do'.)
+# {27}
 Konduo le-batpi	Count the-bottles!|(From 'konte durzo' \= 'count-do'.)
 Ne. I-to. I-te. I-fo. I-foba batpi       [Translate\/d literally.]	One. And-two. And-three. And-four. And-four-somethings(x) are-bottles.|(This is grammatically one utterance because its parts are connected by 'I's.)
 Ne. I-to. I-te. I-fo. I-foba batpi       [Translate\/d idiomatically.]	One. (And-)Two. (And-)Three. (And-)Four. (And-)There-are-four bottles.|(This is grammatically one utterance because its parts are connected by 'I's.)
@@ -310,6 +342,7 @@ Foba tugle levi-tobme	Four-somethings(x) are-legs+of/on this-table.|(There are f
 Levi tobme ga-nu-tugle foba              [Translate\/d literally.]	This table is/s+belegged+with/by four-somethings(x).|(This table has four legs.)
 Levi tobme ga-nu-tugle-foba              [Translate\/d idiomatically.]	This table has-four-legs./is-four-legged.
 Ri mrenu pa-kamla	Several/A-few men came.
+# {28}
 Iene-da bi leda-fregoi	Which-one-of+them/X is/s the(*ir)/X's+leader?|(From 'frena godzi' \= 'front-go'.)
 Le langa ce-nigro	The tall/long (and)black(one).|(It is sometimes unnecessary to translate 'ce' into English.)
 Ru fumna pa-kamla	Enough women came.
@@ -361,9 +394,11 @@ Konduo da	Count them./X.
 Ne. I to. I te. I fo. I fe. I so. I se. I vo. I ve. I neni. I nene	One. Two. Three. Four. Five. Six. Seven. Eight. Nine. Ten. Eleven.
 Netoba/12x pinsi                         [Translate\/d literally.]	Twelve/12+somethings(x) are-pencils.|(There are 12 pencils.)
 Netoba/12x pinsi                         [Translate\/d idiomatically.]	There-are+twelve/12 pencils.|(Twelve somethings are pencils.)
+# {29}
 Da jolkeo de di	X/It is/s+a(n)/the+(*clock)(*time)(interval) to/(un)til/between+Y from/since/and+Z.|(From 'jokla ckemo' \= 'clock-time'.)
 Da jolkeo de	X/It is/s+a(n)/the+(*clock)(*time)(interval) to/(un)til+Y.|(When Z is not mentioned, the most recent midnight is assumed.)
 Da jolkeo	X/It is/s+a(n)/the+(*clock)(*time)(interval).|(When Y is not mentioned, the clocktime up to the present is assumed. Whence 'X is the time now.')
+# {34}
 Hu jolkeo	What is/s+the/a+(clock)time?|(What is the time now?)
 Hu jolkeo ti	What is/s+the/a+(clock)time now./to-this(-moment).|(More specific, but it still assumes that the most recent midnight is the beginning of the interval.)
 Hu jolkeo ti le rari midnai              [Translate\/d literally.]	What is/s+the/a+(clock)time to-this(-moment) since/from+the-last-midnight.|(Fully specific. 'Midnai' is from 'midju natli', of course.)

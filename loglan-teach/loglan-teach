@@ -58,6 +58,8 @@ GetOptions(
     'state=s',
     'derivs=s',
     'no-derivs' => sub { $opt{noderivs} = 1 },
+    'lessons=s',
+    'random',
     'reset',
     'status',
     'tables',
@@ -112,6 +114,24 @@ my @records   = load_records($data_file, $opt{field});
 die "No usable records in $data_file\n" unless @records;
 my %by_word = map { $_->{loglan} => $_ } @records;
 add_sibling_bases(\%by_word);
+
+# A sentence list with lessons marked in it (utts: "# {7}" before the
+# sentence lesson 7 goes with) is taught as MacTeach 1 taught it: the new
+# sentences come in order, and each lesson is shown before the first new
+# sentence it goes with.  The lessons are in m1-text, beside the list or in
+# the data directory.  --random drills the list as any other, without them.
+my %lesson;
+my $in_order = 0;
+if (!$opt{random} && grep { $_->{lessons} } @records) {
+    my ($file) = grep { defined && -f } $opt{lessons}, dirname($data_file) . '/m1-text',
+                                         (defined $state_dir ? "$state_dir/m1-text" : undef);
+    if ($file) {
+        %lesson   = load_lessons($file);
+        $in_order = 1;
+    } else {
+        warn "No m1-text for this list's lessons; drilling it at random (see --lessons).\n";
+    }
+}
 
 my $state = load_state($state_file, $data_file);
 if ($opt{reset}) {
@@ -217,9 +237,14 @@ sub parse_words ($lines, $field) {
     # Row layout: <loglan> \t <affix> \t <gloss> \t <place-notes>
     # or, for utterance files, just <loglan> \t <english>.
     # A line starting with '#' is commented out.
-    my @out;
+    my (@out, @lessons);
     for my $line (@$lines) {
         next unless length $line;
+        # "# {7}": lesson 7 of m1-text goes before the next sentence.
+        if ($line =~ /^\s*#\s*\{(\d+)\}\s*\z/) {
+            push @lessons, $1;
+            next;
+        }
         next if $line =~ /^\s*#/;
         my @f = split /\t/, $line;
         my ($loglan, $affix, $gloss) = @f >= 3 ? @f[0, 1, 2] : ($f[0], undef, $f[1]);
@@ -230,9 +255,33 @@ sub parse_words ($lines, $field) {
         next unless defined $answer && length $answer && $answer ne '-';
         # Two-column rows are sentences, written in MacTeach's notation for
         # alternatives (see the MacTeach section below).
-        push @out, { loglan => $loglan, answer => $answer, sentence => (@f < 3) };
+        # Progress is kept by the Loglan word -- or, for a sentence, by the
+        # Loglan and the English together, since some sentences come twice,
+        # with a literal and an idiomatic English (Tu he: "You are what?",
+        # "How are you?"), and each is a card of its own.
+        my $sentence = @f < 3;
+        push @out, { loglan => $loglan, answer => $answer, sentence => $sentence,
+                     key => ($sentence ? "$loglan\t$answer" : $loglan),
+                     index => scalar @out, (@lessons ? (lessons => [@lessons]) : ()) };
+        @lessons = ();
     }
     return @out;
+}
+
+# m1-text: "{n}" on a line of its own starts lesson n.  The '#' lines at the
+# top are its header.
+sub load_lessons ($file) {
+    open my $fh, '<:encoding(UTF-8)', $file or die "open $file: $!";
+    my (%text, $n);
+    while (my $line = <$fh>) {
+        $line =~ s/\r?\n\z//;
+        if ($line =~ /^\{(\d+)\}\s*\z/) { $n = $1; $text{$n} = ''; next }
+        next unless defined $n;
+        $text{$n} .= "$line\n";
+    }
+    close $fh;
+    s/\s+\z/\n/ for values %text;
+    return %text;
 }
 
 # ---- MacTeach sentence notation ----
@@ -427,7 +476,7 @@ sub item_state ($state, $prompt) {
 sub pick_record ($state, $records) {
     my @weights;
     for my $r (@$records) {
-        my $s      = $state->{items}{ $r->{loglan} };   # read without autoviv
+        my $s      = $state->{items}{ $r->{key} };   # read without autoviv
         my $rung   = $s ? $s->{rung}     : 1;
         my $in_err = $s ? $s->{in_error} : 0;
         # Error-box items get top weight; ladder items weighted toward
@@ -463,7 +512,9 @@ sub drill_loop ($state, $records) {
     local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
 
     while (1) {
-        my $r         = pick_record($state, $records);
+        my ($r, $kind) = $in_order ? next_in_order($state, $records)
+                                   : (pick_record($state, $records), '');
+        show_lessons($state, $records, $r) if $kind eq 'new';
         my $direction = choose_direction();
         my ($prompt, $expected) =
             $direction eq 'recognition'
@@ -490,6 +541,13 @@ sub drill_loop ($state, $records) {
             $reply =~ s/^\s+|\s+$//g;
             # ':q' and ':s' are taken however they are capitalised.
             $reply = lc $reply if $reply =~ /\A:/;
+            # ':l' shows the last lesson again, then the same card.
+            if ($reply eq ':l') {
+                my @last = @{ $state->{last_lessons} // [] };
+                if (@last) { show_lesson($_) for @last }
+                else       { say "  (no lesson yet)" }
+                next;
+            }
             last unless $reply eq ':s';
             show_status($state, $records);
         }
@@ -497,7 +555,7 @@ sub drill_loop ($state, $records) {
 
         if ($reply eq ':q') { last }
 
-        my $s = item_state($state, $r->{loglan});
+        my $s = item_state($state, $r->{key});
         $s->{seen}++;
         $asked++;
 
@@ -505,8 +563,12 @@ sub drill_loop ($state, $records) {
         # way round is there a Loglan word to read the -e adjectives off.
         my $glossed = $direction eq 'recognition' ? $r->{loglan} : undef;
 
-        my $right = $r->{sentence} ? mt_match($reply, $expected, !$loglan_prompt)
-                                   : match_answer($reply, $expected, $glossed);
+        # A sentence with no translation -- ungrammatical, its English just
+        # "-" and a note why (Tu nirne ho) -- is answered with a "-".
+        my $none  = $r->{sentence} && (mt_split_note($expected))[0] =~ /\A\s*-\s*\z/;
+        my $right = $none            ? $reply eq '-'
+                  : $r->{sentence}   ? mt_match($reply, $expected, !$loglan_prompt)
+                  :                    match_answer($reply, $expected, $glossed);
         if ($reply eq '') {
             demote($s);
         }
@@ -519,7 +581,15 @@ sub drill_loop ($state, $records) {
             say "     no";
             demote($s);
         }
-        if ($r->{sentence}) {
+        after_in_order($state, $r, $kind, $right && $reply ne '') if $in_order;
+        if ($none) {
+            # The answer, and the note on why there is none to give.
+            my (undef, $why) = mt_split_note($expected);
+            $why =~ s/\A\s*\((.*)\)\s*\z/$1/s;
+            say "     - (no translation)";
+            say "     ($why)" if length $why;
+        }
+        elsif ($r->{sentence}) {
             my $e = mt($expected, !$loglan_prompt);
             say "     $e->{show}";
             say "     ($e->{note})" if length $e->{note} && !$loglan_prompt;
@@ -533,6 +603,65 @@ sub drill_loop ($state, $records) {
     }
     save_state($state_file, $state);
     say "\nSaved.";
+}
+
+# Before the next sentence in order, every lesson up to it not yet shown, in
+# the order the list has them -- for a new learner, just the ones that go
+# with it.  Each is shown once.
+sub show_lessons ($state, $records, $r) {
+    my @due = grep { !$state->{lessons_shown}{$_} }
+              map { @{ $_->{lessons} // [] } } @$records[ 0 .. $r->{index} ];
+    return unless @due;
+    for my $n (@due) {
+        show_lesson($n);
+        $state->{lessons_shown}{$n} = 1;
+        print "  (Enter to go on) ";
+        my $go = <STDIN>;
+        last unless defined $go;
+    }
+    $state->{last_lessons} = \@due;
+    save_state($state_file, $state);
+}
+
+# In order, as MacTeach 1 went: every sentence in its turn.  One you miss
+# goes on a retry list, which is gone through -- until each is right --
+# before the next lesson begins and at the end of the list; after the end,
+# it starts again from the top.  Returns the card and whether it is the
+# next new one ('new') or a retry.
+sub next_in_order ($state, $records) {
+    my $q = $state->{order} //= { next => 0, retry => [], pass => 1 };
+    my %by_key = map { $_->{key} => $_ } @$records;
+    @{ $q->{retry} } = grep { $by_key{$_} } @{ $q->{retry} };   # the list may have changed
+    my $n = $q->{next};
+    if (@{ $q->{retry} } && ($n > $#$records || $records->[$n]{lessons})) {
+        say "\n  (going over the ones missed, before going on)" unless $q->{retrying}++;
+        return ($by_key{ $q->{retry}[0] }, 'retry');
+    }
+    delete $q->{retrying};
+    if ($n > $#$records) {
+        $q->{next} = $n = 0;
+        $q->{pass}++;
+        say "\n  ---- That was all ${\ scalar @$records}; from the top again (time $q->{pass}) ----";
+    }
+    return ($records->[$n], 'new');
+}
+
+sub after_in_order ($state, $r, $kind, $right) {
+    my $q = $state->{order};
+    my @retry = grep { $_ ne $r->{key} } @{ $q->{retry} };
+    if ($kind eq 'new') {
+        $q->{next}++;
+        push @retry, $r->{key} unless $right;
+    } elsif (!$right) {
+        push @retry, $r->{key};          # to the back of the line
+    }
+    $q->{retry} = \@retry;
+}
+
+sub show_lesson ($n) {
+    say "";
+    say "  ---- Lesson $n ----";
+    print map { "  $_\n" } split /\n/, $lesson{$n} // "(not in the lessons file)\n";
 }
 
 # "ladza", "ladze", "ladzi" and "ladzu" were all coined from "ladzo", so the
@@ -645,7 +774,7 @@ sub show_status ($state, $records) {
     my $err = 0;
     my $grad = 0;
     for my $r (@$records) {
-        my $s = $state->{items}{$r->{loglan}};
+        my $s = $state->{items}{$r->{key}};
         if (!$s)                 { $hist{new}++; next }
         if ($s->{in_error})      { $err++;  next }
         if ($s->{rung} > $opt{rungs}) { $grad++; next }
@@ -660,6 +789,11 @@ sub show_status ($state, $records) {
     }
     say sprintf("    graduated %5d", $grad);
     say sprintf("    total     %5d", scalar @$records);
+    if ($in_order) {
+        my $q = $state->{order} // { next => 0, retry => [], pass => 1 };
+        say sprintf("    in order: next is %d of %d (time %d through); %d to go over again",
+                    $q->{next} + 1, scalar @$records, $q->{pass}, scalar @{ $q->{retry} });
+    }
 }
 
 sub usage {
@@ -693,6 +827,16 @@ Derivations:
                      [default 'derivs' beside the data file]
   --no-derivs      do not show derivations
 
+Lessons (utts):
+  A sentence list with lessons marked in it ("# {7}" before a sentence) is
+  taught as MacTeach 1 taught it: every sentence in its turn, from the top,
+  each lesson of m1-text shown before the sentences it goes with.  A sentence
+  you miss is asked again, until you have it, before the next lesson starts.
+  --lessons FILE   the lessons [default m1-text beside the list, or in
+                     \$LOGLAN_STATE_DIR]
+  --random         drill the list on the ladder instead, at random, without
+                     the lessons
+
 State:
   --state FILE     path to state file  [default \$LOGLAN_STATE_DIR (or ~/.loglan)
                      /<data-file>.state.json]
@@ -705,6 +849,9 @@ In-drill commands:
   <answer>+Enter   grade your answer
   Enter alone      give up on this card (counts as a miss)
   :s               status
+  :l               show the last lesson again
+  -                for a sentence with no translation (ungrammatical), the
+                     answer
   :q               quit and save
 
 USAGE
