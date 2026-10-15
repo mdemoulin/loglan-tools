@@ -1,0 +1,165 @@
+# ethnic -- the ethnic declension sets (-a language, -e territory, -i person, -o culture), for loglan-teach: word<TAB>affixes<TAB>gloss<TAB>notes.
+# Drawn from Lavinia Randall Holmes's Loglan-to-English dictionary; a member no source has is formed by rule.
+# All rights reserved by The Loglan Center, Inc. (the Idaho corporation which has superseded the Florida corporation).
+# Included with the permission of The Loglan Center (Lavinia Randall Holmes, October 2026).
+# This file is not covered by the GPL that covers the code in this repository.
+amslana	-	Ameslan-language/Ameslan	is the Ameslan language, a sign language of the deaf.
+amslane	-	Ameslan-district/Ameslan-territory/Ameslan	is a place where -s live (formed by rule)
+amslani	-	Ameslan-person/Ameslan	is a user of Ameslan, a sign language of the deaf.
+amslano	-	Ameslan-culture/Ameslan	is part of - culture (formed by rule)
+arba	-	Arabic-language/Arab/Arabic	is the Arab language.
+arbe	-	Arabic-district/Arabic-territory/Arabic/Arab	is an Arabic place/territory, a region inhabited by Arabs.
+arbi	-	Arabic-person/Arab/Arabic	is an Arab, person of Arabic descent.
+arbo	-	Arabic-culture/Arab/Arabic	pertains to the Arab culture.
+brita	-	British-language/British	is the British language.
+brite	-	British-district/British-territory/British	is a British locale, a region inhabited by British.
+briti	-	British-person/British	is a British person.
+brito	-	British-culture/British	is British culture.
+daska	-	Danish-language/Danish	is an element/instance of the Danish language.
+daske	-	Danish-district/Danish-territory/Danish	is an Danish place/territory, a region inhabited by Danes.
+daski	-	Danish-person/Dane/Danish/Danes	is a Dane, a Danish person.
+dasko	-	Danish-culture/Danish/Danish blue	is an element/instance of Danish culture.
+dotca	doc	German-language/German	is an element/feature/expression of the German language.
+dotce	doc	German-district/German-territory/German	is a German place/territory, a region inhabited by Germans.
+dotci	doc	German-person/German/Germanic	is German, a German person.
+dotco	doc	German-culture/German	is an element/feature/expression of the German culture.
+eurpa	-	European-language/European	is a European language.
+eurpe	-	European-district/European-territory/European	is a European place/territory, a region inhabited by Europeans.
+eurpi	-	European-person/European	is a European person.
+eurpo	-	European-culture/European	is a European culture.
+farsa	-	Persian-language/Persian/Iranian	is Persian/Iranian language.
+farse	-	Persian-district/Persian-territory/Iranian/Persian	is an Iranian place/territory, a region inhabited by Iranians.
+farsi	-	Persian-person/Persian/Iranian	is Persian/ an Iranian person.
+farso	-	Persian-culture/Persian/Iranian	is/are Persian/Iranian culture.
+frasa	-	French-language/French	is an element/feature/expression of the French language.
+frase	-	French-district/French-territory/French	is a French place/territory, a region inhabited by French.
+frasi	-	French-person/French/Frenchman/Frenchwoman	is a French person/Frenchman/Frenchwoman.
+fraso	-	French-culture/French/French horn	is an element/feature/expression of the French culture.
+frika	-	African-language/African	are African language(s).
+frike	-	African-district/African-territory/African	is an African place/territory, a region inhabited by Africans.
+friki	-	African-person/African	are African person(s).
+friko	-	African-culture/African	are African culture(s).
+gleca	gle	English-language/English	is an element/feature/expression of the English language.
+glece	gle	English-district/English-territory/English	is an English place/territory, a region inhabited by English.
+gleci	gle	English-person/English	is an English person/English:man/woman.
+gleco	gle	English-culture/English	is an element/feature/expression of the English culture.
+hadja	-	Asian-language/Asian	are Asian languages, from the Orient.
+hadje	-	Asian-district/Asian-territory/Asian	are Asian localities, regions where Orientals settle.
+hadji	-	Asian-person/Asian	are Asian people, from the Orient.
+hadjo	-	Asian-culture/Asian	is Asian culture, from the Orient.
+hebra	-	Hebrew-language/Hebrew/Jewish	is Hebrew, of the Hebrew language.
+hebre	-	Hebrew-district/Hebrew-territory/Hebrew/Jewish	is a Hebrew/Jewish place/territory, a region inhabited by Jews.
+hebri	-	Hebrew-person/Jew/Hebrew/Jewish	is a Jew, of Jewish descent.
+hebro	-	Hebrew-culture/Jewish/Hebrew	is Jewish, of Jewish culture.
+helna	-	Greek-language/Greek	is a Greek word/speechsound/expression, the Greek language.
+helne	-	Greek-district/Greek-territory/Greek	is a Greek place/territory, a region inhabited by Greeks.
+helni	-	Greek-person/Greek	is a Greek (person).
+helno	-	Greek-culture/Greek	is Greek, cultural aspect as custom/artform/artifact.
+helva	-	Swiss-language/Swiss	is an element/feature/expression of Swiss/one of the languages spoken in Switzerland.
+helve	-	Swiss-district/Swiss-territory/Swiss	is a Swiss place/territory, a region inhabited by Swiss.
+helvi	-	Swiss-person/Swiss	is a Swiss, a Swiss person.
+helvo	-	Swiss-culture/Swiss	is an element/feature/expression of the Swiss culture.
+hinda	hin	Hindi-language/Hindi/India/Indian	is an instance of Hindi, the major language of India.
+hinde	hin	Hindi-district/Hindi-territory/Indian/Hindi	is an (east) Indian place/territory, a region inhabited by (east) Indians.
+hindi	hin	Hindi-person/Indian/Indians/Hindi	is an (asiatic) Indian.
+hindo	hin	Hindi-culture/Indian/Hindi	is an element/feature/expression of the Indian culture.
+inhuita	-	Inuit-language/Inuit	is the Inuit language.
+inhuite	-	Inuit-district/Inuit-territory/Inuit	is an Inuit place/territory, a region inhabited by Inuit.
+inhuiti	-	Inuit-person/Inuit	is an Inuit person.
+inhuito	-	Inuit-culture/Inuit	is an artefact/item/instance of Inuit culture.
+junga	-	Chinese-language/Chinese	is an element/feature/expression of mandarin Chinese.
+junge	-	Chinese-district/Chinese-territory/Chinese	is a Chinese place/territory, a region inhabited by Chinese.
+jungi	-	Chinese-person/Chinese	is a Chinese person.
+jungo	-	Chinese-culture/Chinese	is an element/feature/expression of Chinese culture.
+kanda	-	Canadian-language/Canadian	is an element/feature/expression of the Canadian language, the dialects of French and English spoken in Canada.
+kande	-	Canadian-district/Canadian-territory/Canadian	is a Canadian place/territory, a region inhabited by Canadians.
+kandi	-	Canadian-person/Canadian	is Canadian, a Canadian person.
+kando	-	Canadian-culture/Canadian	is an element/feature/expression of the Canadian culture.
+kubha	-	Cuban-language/Cuban	is the Cuban (language).
+kubhe	-	Cuban-district/Cuban-territory/Cuban/Cubans	is a Cuban place/territory, a region inhabited by Cubans.
+kubhi	-	Cuban-person/Cuban	is a Cuban (person).
+kubho	-	Cuban-culture/Cuban	is an instance of Cuban (culture).
+logla	log	Loglan-language/Loglan	is an element/feature/expression of Loglan.
+logle	-	Loglan-district/Loglan-territory/Loglandic/Loglan	is an Loglandic place/territory, a region inhabited by Loglanders.
+logli	-	Loglan-person/Loglan speaker/Loglander/Loglan/Loglanders	is an Loglan speaker/Loglander.
+loglo	-	Loglan-culture/Loglandic/Loglan	is an element/feature/expression of the Loglandic culture.
+marza	-	Martian-language/Martian	is an/some element(s) of the Martian language.
+marze	-	Martian-district/Martian-territory/Martian	is a locality in which Martian(s) are found.
+marzi	-	Martian-person/Martian	is a Martian, an inhabitant of Mars.
+marzo	-	Martian-culture/Martian	is an element of the Martian culture.
+meksa	-	Mexican-language/Mexican	is some Mexican language, the dialect spoken in Mexico.
+mekse	-	Mexican-district/Mexican-territory/Mexican	is a Mexican locality, a place where Mexicans live.
+meksi	-	Mexican-person/Mexican	is a Mexican, a Mexican person.
+mekso	-	Mexican-culture/Mexican	is Mexican, an aspect of Mexican culture.
+merka	-	American-language/American	is an element/feature/expression of the American (US) language.
+merke	-	American-district/American-territory/American	is an American place/territory, a region inhabited by Americans.
+merki	-	American-person/American/Americans	is an American (person).
+merko	-	American-culture/American	is an element/feature/expression of the American (US) culture.
+misra	-	Egyptian-language/Egyptian	is the Egyptian dialect of Arabic.
+misre	-	Egyptian-district/Egyptian-territory/Egyptians/Egyptian	is a district/territory inhabited by Egyptians.
+misri	-	Egyptian-person/Egyptian	is an Egyptian person.
+misro	-	Egyptian-culture/Egyptian	is an instance of Egyptian culture.
+nedla	-	Dutch-language/Dutch	is the Dutch language.
+nedle	-	Dutch-district/Dutch-territory/Dutch	is a Dutch place/territory, a region inhabited by Dutch.
+nedli	-	Dutch-person/Dutch	is a Dutch (person).
+nedlo	-	Dutch-culture/Dutch	is an instance of Dutch (culture).
+norsa	nos	Norwegian-language/Norwegian	is an inst. of Norwegian language.
+norse	nos	Norwegian-district/Norwegian-territory/Norwegian/Norwegian areas	is a region of Norwegian people/culture.
+norsi	-	Norwegian-person/Norwegian/Norwegians	is a Norwegian person.
+norso	-	Norwegian-culture/Norwegian	is an element/inst. of Norwegian culture.
+ostrrela	-	Australian-Aboriginal-language/Australian aboriginal	is an Australian aboriginal language.
+ostrrele	-	Australian-Aboriginal-district/Australian-Aboriginal-territory/Australian-Aboriginal	is a place where -s live (formed by rule)
+ostrreli	-	Australian-Aboriginal-person/Australian aboriginal	is an Australian aboriginalperson.
+ostrrelo	-	Australian-Aboriginal-culture/Australian aboriginal	is an Australian aboriginal culture.
+polka	pok	Polish-language/Polish	is an element/instance of the Polish language.
+polke	pok	Polish-district/Polish-territory/Polish	is a Polish place/territory, a region inhabited by Poles.
+polki	pok	Polish-person/Polish	is Polish, a Polish person.
+polko	pok	Polish-culture/Polish	is Polish, of Polish culture.
+ponja	-	Japanese-language/Japanese	is an element/feature/expression of the Japanese language.
+ponje	-	Japanese-district/Japanese-territory/Japanese	is a Japanese place/territory, a region inhabited by Japanese.
+ponji	-	Japanese-person/Japanese	is a Japanese (person).
+ponjo	-	Japanese-culture/Japanese	is an element/feature/expression of the Japanese culture.
+proisa	-	Prussian-language/Prussian	is Prussian language (dialect).
+proise	-	Prussian-district/Prussian-territory/Prussian	is a Prussian place/territory, a region inhabited by Prussians.
+proisi	-	Prussian-person/Prussian	is a Prussian person.
+proiso	-	Prussian-culture/Prussian	is an instance of Prussian culture.
+rinda	-	Amerind-language/American Indian/Amerind/Indian	is an element/feature/expression of an American Indian/Amerind language.
+rinde	-	Amerind-district/Amerind-territory/Amerind	is an Amerind place/territory, a region inhabited by Amerinds.
+rindi	-	Amerind-person/American Indian/Amerind/Indian	is an American Indian/Amerind (person).
+rindo	-	Amerind-culture/American Indian/Amerind/Indian	is an element/feature/expression of an American Indian/Amerind culture.
+romhana	-	Romany-language/gypsy/Romany	is the gypsy language.
+romhane	-	Romany-district/Romany-territory/Romany/gypsy	is a place where -s live (formed by rule)
+romhani	-	Romany-person/gypsy/Romany	is a gypsy person.
+romhano	-	Romany-culture/gypsy/Romany	is gypsy culture.
+romna	rom	Roman-language/Latin/Roman	is an element/instance of Latin, the Roman language.
+romne	rom	Roman-district/Roman-territory/Roman/Latin	is a Roman place/territory, a region inhabited by Romans.
+romni	rom	Roman-person/Roman/Romans/Latin	is a person/citizen of Roman origin.
+romno	rom	Roman-culture/Roman/Latin	is Roman, of the Roman culture.
+ruska	ruk	Russian-language/Russian	is an element/feature/expression of the Russian language.
+ruske	ruk	Russian-district/Russian-territory/Russian	is a Russian place/territory, a region inhabited by Russians.
+ruski	ruk	Russian-person/Russian/Russians	is a Russian person/Russian:man/woman.
+rusko	ruk	Russian-culture/Russian	is an element/feature/expression of the Russian culture.
+skaca	-	Scottish-language/Scottish	is an element/feature/expression of the Scottish language.
+skace	-	Scottish-district/Scottish-territory/Scottish	is a Scottish place/territory, a region inhabited by Scots.
+skaci	-	Scottish-person/Scot/Scottish/Scots	is a Scot/Scottish person/Scots:man/woman.
+skaco	-	Scottish-culture/Scottish	is an element/feature/expression of the Scottish culture.
+spana	-	Spanish-language/Spanish	is an element/feature/expression of the Spanish language.
+spane	-	Spanish-district/Spanish-territory/Spanish	is a Spanish place/territory, a region inhabited by Spanish.
+spani	-	Spanish-person/Spanish/Spaniard	is a Spanish person/Spaniard.
+spano	-	Spanish-culture/Spanish	is an element/feature/expression of the Spanish culture.
+svena	sve	Swedish-language/Swedish	is an element/feature/expression of the Swedish language.
+svene	sve	Swedish-district/Swedish-territory/Swedish	is a region/territory inhabited by or named for Swedish.
+sveni	sve	Swedish-person/Swede/Swedish/Swedes	is a Swede, a Swedish person.
+sveno	sve	Swedish-culture/Swedish	is an element/feature/expression of the Swedish culture.
+talna	-	Italian-language/Italian	is an element/feature/expression of the Italian language.
+talne	-	Italian-district/Italian-territory/Italian	is an Italian place/territory, a region inhabited by Italians.
+talni	-	Italian-person/Italian/Italians	is an Italian person/Italian:man/woman.
+talno	-	Italian-culture/Italian	is an element/feature/expression of the Italian culture.
+tibta	-	Tibetan-language/Tibetan	is the Tibetan language.
+tibte	-	Tibetan-district/Tibetan-territory/Tibetan	is an Tibetan place/territory, a region inhabited by Tibetans.
+tibti	-	Tibetan-person/Tibetan	is a Tibetan person.
+tibto	-	Tibetan-culture/Tibetan	is an element/feature/expression of Tibetan culture.
+tuerka	-	Turkish-language/Turkish	is the Turkish language.
+tuerke	-	Turkish-district/Turkish-territory/Turkish	is a Turkish place/territory, a region inhabited by Turks.
+tuerki	-	Turkish-person/Turk/Turkish	is a Turk/Turkish person.
+tuerko	-	Turkish-culture/Turkish	is an instance of Turkish culture.

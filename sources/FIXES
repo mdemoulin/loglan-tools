@@ -1,0 +1,12 @@
+# Corrections loglan-update makes to the originals when it copies them into
+# ~/.loglan/src.  The originals here, and the ones it downloads, are never
+# changed themselves.
+#
+# One correction per line, tab-separated:
+#
+#     path<TAB>text as published<TAB>text to put in its place
+#
+# The path is as in MANIFEST.  Every occurrence is replaced; \t and \n stand
+# for a tab and a newline, \\ for a backslash.  A correction whose text is no
+# longer found -- fixed upstream, perhaps -- is reported and otherwise
+# ignored.
