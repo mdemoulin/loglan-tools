@@ -24,7 +24,8 @@
 
 # install.sh -- put the loglan-teach commands somewhere on your PATH.
 #
-#   ./install.sh                  ask where
+#   ./install.sh                  install where they are now, or ask where
+#   ./install.sh --ask            ask where, even if they are installed
 #   ./install.sh DIR              install into DIR without asking
 #
 # Installs loglan-teach (the drill), loglan-update (keeps the Loglan sources
@@ -45,8 +46,24 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 tools=(loglan-teach loglan-update mk-utility loglan-coin loglan-lookup loglan-parse new-words-html.py loglan-fetch)
 
+ask=
+if [ "${1:-}" = --ask ]; then
+    ask=1
+    shift
+fi
+
+# Already installed?  Then the same place again, unless --ask.
+prev=
+if [ -z "$ask" ] && p=$(command -v loglan-teach 2>/dev/null); then
+    prev=$(cd "$(dirname "$p")" && pwd)
+    [ "$prev" = "$here/loglan-teach" ] && prev=
+fi
+
 if [ $# -gt 0 ]; then
     dest=$1
+elif [ -n "$prev" ]; then
+    dest=$prev
+    echo "Installing into $dest, where they are now (./install.sh --ask to choose)."
 else
     echo "Install ${tools[*]} into:"
     echo "  1) $HOME/.local/bin"

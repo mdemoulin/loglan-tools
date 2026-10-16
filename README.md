@@ -18,7 +18,8 @@ Institute's old MacTeach and LoglanTeach programs: a ladder of rungs that a
 word climbs as you answer it correctly, and an error box it must answer its
 way out of when you miss.
 
-    ./install.sh          # pick ~/.local/bin, ~/bin, /usr/local/bin or your own
+    ./install.sh          # pick ~/.local/bin, ~/bin, /usr/local/bin or your own;
+                          # later runs reinstall there (--ask to pick again)
     loglan-teach core     # drill
 
 `install.sh` copies the Loglan sources that ship with the tools into
