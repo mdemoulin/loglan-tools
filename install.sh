@@ -182,6 +182,15 @@ Coin a word (needs Python 3):
        loglan-coin check kangydzoduo     # a word?  of what kind?  clashes?
        loglan-coin make kangu dzoru durzo # every complex from a metaphor
 
+   check and make only show you words; neither writes anything.  To add
+   one to your own dictionary ($data/new-words.json), checked first:
+
+       loglan-coin --add --loglan=kaurhafbao --english='B is a doghouse for dog D'
+       loglan-coin --add --set=animal --loglan=hamsiteru --english=hamster
+
+   The lists are rebuilt in the background, and the word is in the coined
+   list (and, for --set, in animals or ethnic) the next time you drill.
+
 Look a word up, either direction (needs Python 3):
 
        loglan-lookup kliri               # the Loglan word
