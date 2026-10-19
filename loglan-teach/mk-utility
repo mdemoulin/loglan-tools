@@ -406,11 +406,13 @@ my %animal_ending = (a => 'female', o => 'male', i => 'baby');
 # dictionary tells sets apart in the definition rather than the keyword: three
 # of them are keyworded plain "elephant".  A set may also be named here to add
 # an everyday short form the dictionary keyword leaves out -- "chimp" -- so the
-# drill takes it for every ending of the set.  As with the ethnic labels, the
-# first alternative is the one the cheat-sheet row is headed with.
+# drill takes it for every ending of the set -- or to leave out one that would
+# mislead: humnu is "human", not "man", which is humno.  As with the ethnic
+# labels, the first alternative is the one the cheat-sheet row is headed with.
 my %animal_label = (
     cimp => 'chimpanzee / chimp',  elhefant => 'elephant',
     hath => 'Asian-elephant',      temb     => 'African-elephant',
+    humn => 'human / human being / humanity',
 );
 # The everyday English names for a single member of a set that neither the
 # declension nor the dictionary keyword gives -- tigri is a "tiger cub", kasna a
@@ -480,7 +482,10 @@ sub dict_animal_word ($st, $v) {
     my @alt  = $v eq 'u' ? @name
              : $v eq 'e' ? map { "$_-like" } @name
              :             map { "$animal_ending{$v}-$_" } @name;
-    push @alt, grep { keyword_earns_its_place($_, $v, @name) } @{ $dict{$w}{kw} };
+    # A set named in %animal_label is named there in full: its -u word takes
+    # nothing more from the dictionary.
+    push @alt, grep { keyword_earns_its_place($_, $v, @name) } @{ $dict{$w}{kw} }
+        unless $v eq 'u' && $animal_label{$st};
     my $gloss = dedup_gloss(@alt);
     my $note  = dict_note($w);
     return {

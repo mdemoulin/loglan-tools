@@ -93,11 +93,11 @@ horma	hoa hor	female-horse/mare	is a mare/female horse, Equus caballus.
 hormo	-	male-horse/stallion/stud/gelding	is a stallion/stud/gelding, any male horse.
 hormi	-	baby-horse/colt/foal/filly	is a colt, an infant horse.
 horme	-	horse-like/equine	is equine/horse like, pertains to horses.
-humnu	-	human being/humanity/man/mankind	is a human being, generic term.
-humna	-	female-human being/female-humanity/female-man/female-mankind/woman	is a female human.
-humno	-	male-human being/male-humanity/male-man/male-mankind/man	is a male human.
-humni	hum hun	baby-human being/baby-humanity/baby-man/baby-mankind/baby/infant/child	is a/the baby of S.
-humne	-	human being-like/humanity-like/man-like/mankind-like	is human/human like, pertains to a human.
+humnu	-	human/human being/humanity	is a human being, generic term.
+humna	-	female-human/female-human being/female-humanity/woman	is a female human.
+humno	-	male-human/male-human being/male-humanity/man	is a male human.
+humni	hum hun	baby-human/baby-human being/baby-humanity/baby/infant/child	is a/the baby of S.
+humne	-	human-like/human being-like/humanity-like	is human/human like, pertains to a human.
 kangu	kau	dog	is a dog, unspecific.
 kanga	-	female-dog/bitch	is a bitch/female dog.
 kango	-	male-dog	is a male dog.
