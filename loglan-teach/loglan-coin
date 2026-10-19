@@ -638,15 +638,17 @@ def keyword_hint(lex, token):
 
 # A declension set: its endings, the one the rest derive from, and the
 # definitions its members are given.  {art} {name} is "a gopher" or "an
-# English"; each is a draft for you to correct in new-words.json.
+# English"; each is a draft for you to correct in new-words.json.  The key
+# meaning names the member itself -- {female gopher}, as the dictionary has
+# {female deer} -- since the drill lists take their glosses from it as it is.
 SETS = {
     'animal': {
         'endings': 'uaoie', 'base': 'u',
         'defs': {
             'u': '(2n) B is any {{{name}}} of region/range S. [B-S]',
-            'a': '(2n) B is a female {{{name}}} of region/range S. [B-S]',
-            'o': '(2n) B is a male {{{name}}} of region/range S. [B-S]',
-            'i': '(2n) B is a baby {{{name}}} of region/range S. [B-S]',
+            'a': '(2n) B is a {{female {name}}} of region/range S. [B-S]',
+            'o': '(2n) B is a {{male {name}}} of region/range S. [B-S]',
+            'i': '(2n) B is a {{baby {name}}} of region/range S. [B-S]',
             'e': '(2a) G is more {{{name} like}} than J. [G-J]',
         },
     },
@@ -654,7 +656,7 @@ SETS = {
         'endings': 'aeio', 'base': 'a',
         'defs': {
             'a': '(1n) N is an element/feature/expression of the {{{name} language}}. [N-]',
-            'e': '(1a) B is {art} {{{name} place}}/territory, a region inhabited by {name} people. [B-]',
+            'e': '(1a) B is {art} {{{name} place}}/{{{name} territory}}, a region inhabited by {name} people. [B-]',
             'i': '(1n) B is {art} {{{name} person}}. [B-]',
             'o': '(1n) N is an element/feature/expression of the {{{name} culture}}. [N-]',
         },
@@ -759,15 +761,18 @@ def render_words(data):
 
 def add(g, lex, args):
     if not os.path.exists(NEW_WORDS):
-        data = {'_README': ['Words coined locally, i.e. words that are NOT in the Loglan dictionary.'],
+        data = {'_README': ['Words coined locally, i.e. words that are NOT in the Loglan dictionary.',
+                            'Add them with loglan-coin --add, which checks each word and, with --set,',
+                            'adds every member of an animal or ethnic set; then correct the drafts here.',
+                            'A set put in by hand is easily left short of a member.'],
                 'words': []}
     else:
         with open(NEW_WORDS, encoding='utf-8') as fh:
             raw = fh.read()
         data = json.loads(raw)
         if render_words(data) != raw:
-            fail('%s is not laid out the way loglan-coin writes it; '
-                 'add the word by hand' % NEW_WORDS)
+            fail('%s is not laid out the way loglan-coin writes it (one field to a line), '
+                 'so it is left alone; put it back in that layout and run this again' % NEW_WORDS)
     word = args.loglan.strip()
     year = time.strftime('%Y')
     author = args.author or tec_author(data['words'])

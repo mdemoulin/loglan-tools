@@ -112,8 +112,6 @@ my %deriv = load_derivs($derivs_file);
 
 my @records   = load_records($data_file, $opt{field});
 die "No usable records in $data_file\n" unless @records;
-my %by_word = map { $_->{loglan} => $_ } @records;
-add_sibling_bases(\%by_word);
 
 # A sentence list with lessons marked in it (utts: "# {7}" before the
 # sentence lesson 7 goes with) is taught as MacTeach 1 taught it: the new
@@ -399,34 +397,6 @@ sub mt_match ($reply, $text, $loglan) {
     return mt_fold($reply, $loglan) =~ mt($text, $loglan)->{re};
 }
 
-# Every card of an animal set but the generic names the animal: kasna is
-# "cow/female-cow", kasni "baby-cow", kasne "cowlike".  The generic need not --
-# kasnu is glossed "cattle/kine" -- so take the wording its siblings are built
-# on and accept that for the generic too.  Only sets the data file actually
-# carries are looked at, and a base the gloss already covers is left alone.
-sub add_sibling_bases ($by_word) {
-    state $qualifier = qr/(?:female|male|baby|infant|young|immature|juvenile)/i;
-    for my $r (values %$by_word) {
-        my ($stem) = $r->{loglan} =~ /^(.{2,})u\z/ or next;
-        my %vote;
-        for my $v (qw(a o i e)) {
-            my $sib = $by_word->{"$stem$v"} or next;
-            for my $alt (split m{[/|]}, $sib->{answer}) {
-                my $n = normalize($alt);
-                my ($base) = $v eq 'e' ? $n =~ /^(.+?) ?like\z/i
-                                       : $n =~ /^$qualifier (.+)\z/;
-                $vote{ lc $base }++ if defined $base;
-            }
-        }
-        next unless %vote;
-        # What the set agrees on; alphabetical breaks a tie the same way twice.
-        my ($base) = sort { $vote{$b} <=> $vote{$a} || $a cmp $b } keys %vote;
-        my $k = match_key($base);
-        next if grep { $k eq match_key($_) } accepted_answers($r->{answer}, $r->{loglan});
-        $r->{answer} .= "/$base";
-    }
-}
-
 # <word> \t <the word it came from, or '-'> \t <the natural-language words
 # that one was built from, or '-'>, as written by mk-utility.  A missing
 # table just means no derivations are shown.
@@ -538,6 +508,9 @@ sub drill_loop ($state, $records) {
             $reply = <STDIN>;
             last unless defined $reply;
             chomp $reply;
+            # A backslash is never part of an answer, only a slip of the
+            # finger beside Enter; drop it before anything else looks.
+            $reply =~ tr/\\//d;
             $reply =~ s/^\s+|\s+$//g;
             # ':q' and ':s' are taken however they are capitalised.
             $reply = lc $reply if $reply =~ /\A:/;
@@ -559,16 +532,12 @@ sub drill_loop ($state, $records) {
         $s->{seen}++;
         $asked++;
 
-        # The gloss is the prompt in the recall direction, so only the other
-        # way round is there a Loglan word to read the -e adjectives off.
-        my $glossed = $direction eq 'recognition' ? $r->{loglan} : undef;
-
         # A sentence with no translation -- ungrammatical, its English just
         # "-" and a note why (Tu nirne ho) -- is answered with a "-".
         my $none  = $r->{sentence} && (mt_split_note($expected))[0] =~ /\A\s*-\s*\z/;
         my $right = $none            ? $reply eq '-'
                   : $r->{sentence}   ? mt_match($reply, $expected, !$loglan_prompt)
-                  :                    match_answer($reply, $expected, $glossed);
+                  :                    match_answer($reply, $expected);
         if ($reply eq '') {
             demote($s);
         }
@@ -595,7 +564,7 @@ sub drill_loop ($state, $records) {
             say "     ($e->{note})" if length $e->{note} && !$loglan_prompt;
         }
         else {
-            say "     ", join ' / ', accepted_answers($expected, $glossed);
+            say "     ", join ' / ', accepted_answers($expected);
             show_derivation($r->{loglan});
         }
 
@@ -696,15 +665,9 @@ sub demote ($s) {
 }
 
 # Every spelling the drill will take for $expected, which is also what it
-# lists back after each card.  $loglan (the word being glossed, if known)
-# lets the -e prim forms accept the plain English adjective alongside the
-# "X-like" the gloss spells out: "sheepish", "fishy", "lousy", "horsy".
-# Any "female X" or "male X" also takes the English "she-X" or "he-X":
-# lupsa "she-wolf", gotco "he-goat".  Any "baby X" also takes "young X" and
-# "infant X": berci "young sheep", tigri "infant tiger".
-sub accepted_answers ($expected, $loglan = undef) {
-    my $ish = defined $loglan && $loglan =~ /e\z/i;
-    my (@gloss, @derived, %seen);
+# lists back after each card: what the list says, and nothing made up here.
+sub accepted_answers ($expected) {
+    my (@gloss, %seen);
     for my $a (split m{[/|]}, $expected) {
         $a =~ s/^\s+|\s+$//g;
         next unless length $a;
@@ -713,29 +676,14 @@ sub accepted_answers ($expected, $loglan = undef) {
             next unless length $n;
             # "sheep like", "sheeplike" and "sheep-like" are one answer.
             push @gloss, $n unless $seen{ match_key($n) }++;
-            if ($n =~ /^(fe)?male (.+)\z/i) {
-                my $sex = ($1 ? 'she' : 'he') . " $2";
-                push @derived, $sex unless $seen{ match_key($sex) }++;
-            }
-            if ($n =~ /^baby (.+)\z/i) {
-                push @derived, grep { !$seen{ match_key($_) }++ } "young $1", "infant $1";
-            }
-            next unless $ish && $n =~ /^(.+?) ?like\z/i;
-            my $stem = $1;
-            # No stem ending in e takes -ish, but plenty take -y, and the
-            # silent e drops first: louse/lousy, snake/snaky.
-            my @adj = ("${stem}y");
-            unshift @adj, "${stem}ish"                 unless $stem =~ /e\z/i;
-            push    @adj, $stem =~ s/e\z//ir . 'y'     if     $stem =~ /e\z/i;
-            push @derived, grep { !$seen{ match_key($_) }++ } @adj;
         }
     }
-    return (@gloss, @derived);   # what the gloss says first, then the -e forms
+    return @gloss;
 }
 
-sub match_answer ($reply, $expected, $loglan = undef) {
+sub match_answer ($reply, $expected) {
     my $k = match_key(normalize($reply));
-    return scalar grep { $k eq match_key($_) } accepted_answers($expected, $loglan);
+    return scalar grep { $k eq match_key($_) } accepted_answers($expected);
 }
 
 # Neither case nor spacing counts, so a gloss written one way ("fish-like")

@@ -202,7 +202,7 @@ Parse a sentence (needs Python 3):
        man loglan-parse                  # its commands, batch files and output
 
 Everything is kept in $data: the lists, your progress
-(<list>.state.json), the sources, and cheatsheet.html -- open that in a
+(<list>.state.json), the sources, and vocab-cheatsheet.html -- open that in a
 browser.  To add words of your own, see "Adding your own entries"
 in README.md.
 EOF

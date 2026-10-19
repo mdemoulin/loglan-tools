@@ -28,12 +28,12 @@ updates](#sources-and-updates)); nothing has to be downloaded.  In a
 drill, type your answer and press Enter; a blank line shows the answer (and
 counts as a miss), `:s` shows your progress, and `:q` saves and quits.  Any
 one of a gloss's alternatives ("box/crate/carton") counts as right.  Open
-`~/.loglan/cheatsheet.html` in a browser for the declension tables.
+`~/.loglan/vocab-cheatsheet.html` in a browser for the declension tables.
 
 | Command | What it does |
 |---|---|
 | `loglan-update` | Brings the sources up to date -- from the copies shipped with the tools, and from the web when they have changed there -- and builds every list from them.  `loglan-teach` and `loglan-coin` run it in the background once a day |
-| `mk-utility` | Run by `loglan-update`: builds `cheatsheet.html` (the ethnic and animal declensions, and every primitive used in *Loglan 1*) and the `l1prims` and `derivs` lists |
+| `mk-utility` | Run by `loglan-update`: builds `vocab-cheatsheet.html` (the ethnic and animal declensions, and every primitive used in *Loglan 1*) and the `l1prims` and `derivs` lists |
 | `loglan-lookup WORD` | Looks a word up in the dictionary, either direction: `kliri` or `clear`; `-p` for every headword containing it.  The English side is made from the keywords the definitions mark; your auxiliary words are found too, and coined words with `--words FILE` |
 | `new-words-html.py` | Makes a Loglan-to-English page of your coined words (see [Your own words](#your-own-words)): by default the ones not yet submitted, `--submitted DATE` for a batch already sent, `--all` for every one |
 | `loglan-parse` | Randall Holmes's parser, `omnibus.py`, in its own interactive loop: type a Loglan utterance and see how it parses (`?` for its commands, `...` to leave).  It runs in `~/.loglan/parse`, where its scratch files and anything it saves land; `man loglan-parse` documents its commands, batch files and output |
@@ -69,8 +69,8 @@ the sources has formed by the declension rule and marked `(formed by
 rule)`.  Every word in them also goes into `prims` and `affsets` (and into
 `affs`, if it has affixes), and the cheat sheet's declension tables are
 drawn from them.  A list of your own dropped into `~/.loglan/aux/` is
-treated the same way.  (Whoever maintains the tools can work the two lists
-out afresh from the dictionary with `mk-utility --aux lists/aux`.)
+treated the same way.  The two lists were first worked out from the
+dictionary, and are edited by hand since.
 
 Each line is tab-separated: `word`, `affixes` (or `-`), `gloss`, `notes`.
 The gloss is the keywords of the word's first definition, and any one of
@@ -123,10 +123,11 @@ for the same word, and the rest are added; nothing ever writes to a
 `.added` file.  Additions to `prims` and `affs` also go into `affsets`, and
 additions to an auxiliary list go wherever its words go.
 
-An animal the list lacks can be started from its generic *-u* word in
-`animals.added`: `loglan-update` forms the rest of the set (*-a*, *-o*,
-*-i*, *-e*) by rule, and puts the whole set into `prims` and `affsets`.
-Check a new word with `loglan-coin` first.
+An animal in `animals.added` goes in as a whole set -- *-u*, *-a*, *-o*,
+*-i* and *-e*, a line each -- and the whole set goes into `prims` and
+`affsets`.  Nothing is formed by rule: a set left short of a member is
+reported by `loglan-update`.  A word you are coining belongs in
+`new-words.json` instead, by `loglan-coin --add --set=animal`.
 
     kavhu	-	guinea-pig/cavy	is any -, a rodent of the genus Cavia, of region/range..
 
@@ -144,16 +145,19 @@ top of the file describe it in full.  With it there:
 - `loglan-update` makes the `coined` drill list from it, and rebuilds the
   lists whenever the file changes; a word with a `set` goes into that
   auxiliary list as well (and so into `prims`, and `core` by its type),
-  glossed by the declension, and any other primitive into `prims` (and
-  `core`, if it is a C-, D-, I-, L- or O-Prim).  Complexes and borrowings
-  stay in `coined`;
+  glossed by its key meanings as written (`{female hamster}/{she-hamster}`
+  is `female-hamster/she-hamster`), and any other primitive into `prims`
+  (and `core`, if it is a C-, D-, I-, L- or O-Prim).  Complexes and
+  borrowings stay in `coined`;
 - `loglan-lookup` finds the words, either direction;
 - `loglan-coin` checks new words against them as against the dictionary;
 - `new-words-html.py` renders them as a page for submission.
 
-`loglan-coin --add` puts a word in for you, once it has passed the checks
-below, filling in a draft of what you have not given -- correct anything
-in the file that is not right:
+Add words with `loglan-coin --add` rather than by hand.  It puts a word in
+once it has passed the checks below, filling in a draft of what you have
+not given -- correct anything in the file that is not right -- and with
+`--set` it puts in every member of an animal or ethnic set; a set left
+short of a member is reported by `loglan-update`, and nothing fills it in:
 
     loglan-coin --add --loglan=kaurhafbao --english='B is a doghouse for dog D'
     loglan-coin --add --loglan=brokolie --english=broccoli --origin='It. broccoli'

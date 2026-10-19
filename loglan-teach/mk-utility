@@ -28,8 +28,8 @@ use open ':std', ':encoding(UTF-8)';
 
 use Getopt::Long qw(:config bundling no_ignore_case);
 
-# Builds a practice cheat-sheet (cheatsheet.html) plus two drill files for
-# loglan-teach -- l1prims and derivs -- from the prims list, the auxiliary
+# Builds a practice cheat-sheet (vocab-cheatsheet.html) plus two drill files
+# for loglan-teach -- l1prims and derivs -- from the prims list, the auxiliary
 # ethnic and animals lists, Loglan 1 and Lavinia Randall Holmes's
 # Loglan-to-English dictionary, all of which loglan-update puts in the data
 # directory (it runs this script itself).  l1prims is the set of primitives
@@ -37,38 +37,30 @@ use Getopt::Long qw(:config bundling no_ignore_case);
 # book definitions.  derivs is the word-origin table loglan-teach shows after
 # each answer.
 #
-# The ethnic and animals lists ship with the tools (lists/aux), curated.  They
-# were first made, and can be made again, by --aux DIR: the ethnic and animal
-# declensions run wider than the prims list -- borrowings and later coinages
-# are in the dictionary only -- so the sets are collected from both, and the
-# members none of the sources has are formed by rule.
+# The ethnic and animals lists ship with the tools (lists/aux), curated by
+# hand; everything here about the declension sets is read from them.
 
 my %opt;
-GetOptions(\%opt, 'dir=s', 'replace-links', 'aux=s', 'help|h') or die "Try --help\n";
+GetOptions(\%opt, 'dir=s', 'replace-links', 'help|h') or die "Try --help\n";
 if ($opt{help}) {
     print <<"END";
 Usage: mk-utility [--dir DIR] [--replace-links]
-       mk-utility --aux OUTDIR [--dir DIR]
 
-Builds cheatsheet.html and the l1prims and derivs drill lists in DIR (default
-\$LOGLAN_STATE_DIR, else ~/.loglan) from what loglan-update put there.  A list
-that is a symlink is left alone unless --replace-links is given.
-
---aux OUTDIR is for whoever maintains the tools: it works the ethnic and
-animals lists out afresh from the dictionary and writes them to OUTDIR (the
-repository's lists/aux), leaving everything in DIR as it was.
+Builds vocab-cheatsheet.html and the l1prims and derivs drill lists in DIR
+(default \$LOGLAN_STATE_DIR, else ~/.loglan) from what loglan-update put
+there.  A list that is a symlink is left alone unless --replace-links is
+given.
 END
     exit 0;
 }
 my $dir = $opt{dir} // $ENV{LOGLAN_STATE_DIR} // "$ENV{HOME}/.loglan";
-my $gen = defined $opt{aux};
 
 my $prims_file = "$dir/prims";
 my $l1_dir     = "$dir/src/Loglan1";
 my $appb_file  = "$l1_dir/app-b.html";
 my @chapters   = map { "$l1_dir/chap$_.html" } 1 .. 7;
 my $dict_file  = "$dir/src/Dictionary/L-to-E-TDR.html";
-my @aux_files  = $gen ? () : map { "$dir/aux/$_" } qw(ethnic animals);
+my @aux_files  = map { "$dir/aux/$_" } qw(ethnic animals);
 for ($prims_file, $appb_file, $dict_file, @aux_files) {
     die "$_ is missing -- run loglan-update first\n" unless -f;
 }
@@ -77,8 +69,8 @@ for ($prims_file, $appb_file, $dict_file, @aux_files) {
 my %not_loglan = map { $_ => 1 } qw(hindi versa);
 
 # ---- The auxiliary lists: name -> [rows] ----
-# Read whenever they are there, even by --aux: loglan-update adds their words
-# to prims, and those are not to be read back as primitives.
+# loglan-update adds their words to prims, and those are not to be read back
+# as primitives; and the declension sets are taken from them.
 my %aux;
 for my $name (qw(ethnic animals)) {
     my $file = "$dir/aux/$name";
@@ -166,9 +158,8 @@ die "chapter scan found only ${\ scalar @l1_text} primitives\n" unless @l1_text 
 # Every entry carries an origin field: either the natural-language words the
 # Loglan word was scored against ("3/4E louse | 2/3C sh dz | 2/4G laus"), or,
 # for words coined off an existing one -- affixes, CVV little words, the
-# -a/-e/-i/-o/-u ethnic and animal declensions -- that one word.  The rest of
-# each entry -- word class, affix, keywords and first sense -- is what the
-# ethnic declension is built from where the PRIMS file has nothing to say.
+# -a/-e/-i/-o/-u ethnic and animal declensions -- that one word.  %dict says
+# only which words the dictionary has.
 my (%origin, %headword, %dict, @dict_order);
 {
     open my $fh, '<', $dict_file or die "open $dict_file: $!";
@@ -176,10 +167,8 @@ my (%origin, %headword, %dict, @dict_order);
     close $fh;
     my %entity = (lt => '<', gt => '>', amp => '&', nbsp => ' ', zwj => '',
                   mdash => '-', ndash => '-', quot => '"');
-    # Markup comes out of the definitions with no space in its place, so that
-    # "is an <em>Arab</em>, person of.." keeps its comma where it belongs.
-    my $flat = sub ($s, $gap = '') {
-        $s =~ s/<[^>]*>/$gap/g;
+    my $flat = sub ($s) {
+        $s =~ s/<[^>]*>//g;
         $s =~ s/&(\w+);/$entity{$1} \/\/ ' '/ge;
         $s =~ s/&#\d+;/ /g;
         $s =~ s/\s+/ /g;
@@ -191,144 +180,23 @@ my (%origin, %headword, %dict, @dict_order);
     #   &nbsp;&nbsp;&nbsp;(2n) D is a <em class="key">box</em>/... of/containing B. [D-B]<br>
     #   ...</p>
     # -- the affixes, then the origin in angle brackets, then the word class.
-    my %afx_of;      # little-word affixes are listed only as Afx entries
     while ($html =~ m{<b><a name="([^"]+)">[^<]*</a></b>,\s*<br>\s*(.*?)</p>}gs) {
         my ($w, $body) = ($1, $2);
         next if $headword{$w}++;
-        my ($head, @lines) = split /<br>/, $body;
-        my ($class) = $head =~ /\b([A-Z]-Prim|Afx|[123]-Cpx|Cpd|Bor\.|LW|Name)(?!\w)/;
-        my ($affix) = $head =~ m{^\s*<em class="origin">([a-z ]+)</em>};
-        my ($sense) = grep { /^\s*(?:&nbsp;)*\s*\(\d[a-z]*\)/ } @lines;
-        ($sense)    = grep { /^\s*(?:&nbsp;)*\s*\([a-z]+\)/ } @lines unless defined $sense;
-        my $rest = join ' ', @lines;
-        my (@kw, %seen);
-        push @kw, $flat->($1) while $rest =~ m{<em class="key">(.*?)</em>}gs;
-        $dict{$w} = {
-            class => $class // '',
-            affix => $affix // '-',
-            sense => defined $sense ? $flat->($sense) : '',
-            kw    => [ grep { length && !$seen{lc $_}++ } @kw ],
-            text  => $flat->($body, ' '),                # for sense-sniffing
-        };
+        $dict{$w} = 1;
+        my ($head) = split /<br>/, $body;
         my ($o) = $head =~ m{<em class="origin">&lt;(.*?)&gt;</em>}s or next;
         $o = $flat->($o);
         next unless length $o;
         $origin{$w} = $o;
         push @dict_order, $w;
-        push @{ $afx_of{ $o =~ tr/()//dr } }, $w if $class && $class eq 'Afx' && $o =~ /^[a-z()]+$/;
-    }
-    for my $base (keys %afx_of) {
-        my $d = $dict{$base} or next;
-        my @have = grep { $_ ne '-' } split ' ', $d->{affix};
-        for my $a (@{ $afx_of{$base} }) { push @have, $a unless grep { $_ eq $a } @have }
-        $d->{affix} = @have ? join(' ', @have) : '-';
     }
 }
 die "dictionary parse failed: $dict_file\n" unless @dict_order > 5000;
 
-# ---- Ethnic declension ----
-# The first alternative is the one the built glosses below are worded from.
-my %ethnic_label = (
-    amslan => 'Ameslan',           arb  => 'Arabic / Arab',
-    brit   => 'British',           dask => 'Danish',
-    dotc   => 'German',            eurp => 'European',
-    fars   => 'Persian / Iranian', fras => 'French',
-    frik   => 'African',           glec => 'English',
-    hadj   => 'Asian',             hebr => 'Hebrew / Jewish',
-    heln   => 'Greek',             helv => 'Swiss',
-    hind   => 'Hindi / Indian',    inhuit => 'Inuit',
-    jung   => 'Chinese',           kand => 'Canadian',
-    kubh   => 'Cuban',             logl => 'Loglan',
-    marz   => 'Martian',           meks => 'Mexican',
-    merk   => 'American',          misr => 'Egyptian',
-    nedl   => 'Dutch',             nors => 'Norwegian',
-    ostrrel => 'Australian-Aboriginal', polk => 'Polish',
-    ponj   => 'Japanese',          prois => 'Prussian',
-    rind   => 'Amerind',           romhan => 'Romany / gypsy',
-    romn   => 'Roman / Latin',     rusk => 'Russian',
-    skac   => 'Scottish',          span => 'Spanish',
-    sven   => 'Swedish',           taln => 'Italian',
-    tibt   => 'Tibetan',           tuerk => 'Turkish',
-);
-my %ethnic_stem;
-for my $w (keys %prims) {
-    next unless $w =~ /^(\w{4})a$/;
-    my $st = $1;
-    next unless $prims{$w}{gloss} =~ /language/i;
-    next unless $prims{"${st}i"} && $prims{"${st}i"}{gloss} =~ /person/i;
-    $ethnic_stem{$st} = 'prims';
-}
-for my $e (@l1) {
-    next unless $e->[0] =~ /^(\w{4})a$/;
-    my $st = $1;
-    next unless $e->[2] =~ /language/i && $l1{"${st}i"};
-    $ethnic_stem{$st} //= 'l1';
-}
-# Most of the declension is in neither list: borrowings (romhani, tuerki) and
-# primitives the Institute dropped (briti, hebri) live only in the dictionary.
-# A set there is a primitive or a borrowing with an -a form and no -u form --
-# that ending would make it the animal declension -- at least two of -a/-e/-i/-o
-# attested, and at least two of the four senses the endings carry spelled out.
-my %ethnic_sense_re = (
-    a => qr/language|dialect/i,
-    e => qr/territory|district|region|locality|place/i,
-    i => qr/person|people|native|inhabitant|speaker|user of/i,
-    o => qr/culture|cultural/i,
-);
-for my $w (sort keys %dict) {
-    next unless $w =~ /^(\w{2,})a$/;
-    my $st = $1;
-    next unless $dict{$w}{class} =~ /^(?:[A-Z]-Prim|Bor\.)/;
-    next if $dict{"${st}u"};
-    next unless 2 <= grep { $dict{"$st$_"} } qw(a e i o);
-    my $senses = grep { $dict{"$st$_"} && $dict{"$st$_"}{text} =~ $ethnic_sense_re{$_} }
-                 qw(a e i o);
-    next unless $senses >= 2;
-    $ethnic_stem{$st} //= 'dict';
-}
-if ($gen) {
-    for my $st (sort keys %ethnic_stem) {
-        die "no English label for ethnic stem $st\n" unless $ethnic_label{$st};
-    }
-}
-
-# What an ending means, for the glosses built below.
-my %ethnic_gloss_sense = (a => 'language', e => 'district', i => 'person', o => 'culture');
-
 # Case, hyphens and spaces do not tell two glosses apart, the drill matching
-# answers the same way, so they do not count when alternatives are deduplicated.
+# answers the same way.
 sub gloss_key ($s) { return lc($s) =~ s/[-\s]//gr }
-
-sub dedup_gloss (@alt) {
-    my %seen;
-    return join '/', grep { length && !$seen{ gloss_key($_) }++ } @alt;
-}
-
-# "(1n) B is a gypsy person. [B - ]" -> "is a gypsy person.", the shape the
-# PRIMS place notes are in.
-sub dict_note ($w) {
-    my $note = $dict{$w}{sense};
-    $note =~ s/^\([^()]*\)\s*//;
-    $note =~ s/\s*\[[^\]]*\]\s*\z//;
-    $note =~ s/^[A-Z] //;
-    return $note;
-}
-
-# A dictionary-only ethnic word gets the gloss the declension gives it -- the
-# English name plus what the ending means -- ahead of the entry's own keywords,
-# and the entry's first sense for the place notes.
-sub dict_ethnic_row ($st, $v) {
-    my $w = "$st$v";
-    my @label = map { s/^\s+|\s+$//gr } split m{/}, $ethnic_label{$st};
-    my @alt   = ("$label[0]-$ethnic_gloss_sense{$v}");
-    push @alt, "$label[0]-territory" if $v eq 'e';
-    # "gypsy language", "Australian aboriginalperson": the ending's own sense
-    # is already said, so the keyword contributes just the name.
-    push @alt, map { s/\s*(?:language|person|culture|locality|territor(?:y|ies))\z//ir }
-               @{ $dict{$w}{kw} };
-    push @alt, @label;
-    return join "\t", $w, $dict{$w}{affix}, dedup_gloss(@alt), dict_note($w);
-}
 
 # ---- Your own additions ----
 # <list>.added beside a list holds entries of your own, in the list's own
@@ -336,7 +204,6 @@ sub dict_ethnic_row ($st, $v) {
 # is written, an added entry replaces the built one for the same word, and the
 # rest are appended.  Nothing here ever writes to a .added file.
 sub read_added ($name) {
-    return () if $gen;              # the shipped lists are everyone's
     my $file = "$dir/$name.added";
     return () unless -f $file;
     open my $fh, '<', $file or die "open $file: $!";
@@ -355,183 +222,23 @@ sub merge_added ($name, $rows) {
     return \@out;
 }
 
-# ---- Animal declension ----
-my %animal_stem;
-for my $w (keys %prims) {
-    next unless $w =~ /^(\w{4})u$/;
-    my $st = $1;
-    next unless $prims{$w}{notes} =~ /generic/;
-    next unless 4 == grep { $prims{"$st$_"} } qw(a e i o);
-    $animal_stem{$st} = 1;
+# ---- The declension sets, as the auxiliary lists have them ----
+# Which sets there are, and every word in them.  A member formed by rule is
+# drawn as one.
+my %ethnic_stem;
+for (@{ $aux{ethnic} }) {
+    my ($w) = split /\t/;
+    $ethnic_stem{$1} = 'aux' if $w =~ /^(\w+)[aeio]\z/;
 }
-# As with the ethnic sets, the dictionary has declensions the PRIMS file does
-# not: borrowings (elhefantu, testhudu), post-1991 coinages (raknu, pardu), and
-# sets PRIMS carries without their generic -u form (pandu).  A set there is a
-# primitive or a borrowing in -u with at least two of -a/-e/-i/-o attested and
-# at least two of the five senses the endings carry spelled out.
-my %animal_sense_re = (
-    u => qr/generic|non[- ]?specific/i,
-    a => qr/female|\bcow\b|\bhen\b|\bewe\b|\bmare\b|\bsow\b|\bbitch\b|\bdoe\b|\bqueen\b/i,
-    o => qr/\bmale|\bbull\b|\bram\b|\bstallion\b|\brooster\b|\bcock\b|\bboar\b|\bbuck\b|\btom\b|\bdrone\b/i,
-    i => qr/infant|juvenile|immature|young|baby|larva|\bcalf\b|\bfoal\b|\blamb\b|\bchick\b|\bcub\b|\bkitten\b|\bpup\b/i,
-    e => qr/\blike\b|resembl|pertains/i,
-);
-for my $w (sort keys %dict) {
-    next unless $w =~ /^(\w{2,})u$/;
-    my $st = $1;
-    next unless $dict{$w}{class} =~ /^(?:[A-Z]-Prim|Bor\.)/;
-    next unless 2 <= grep { $dict{"$st$_"} } qw(a e i o);
-    my $senses = grep { $dict{"$st$_"} && $dict{"$st$_"}{text} =~ $animal_sense_re{$_} }
-                 qw(u a o i e);
-    next unless $senses >= 2;
-    $animal_stem{$st} //= 1;
-}
-
-# An animal the dictionary lacks altogether starts with its -u word in
-# animals.added (kavhu); the rest of its set is formed by rule.
-my %added_animal;
-for my $line (read_added('animals')) {
-    my @f = split /\t/, $line;
-    next unless @f >= 3 && $f[0] =~ /^(\w{2,})u$/;
-    my $st = $1;
-    next if $dict{ $f[0] };
-    $animal_stem{$st} //= 1;
-    $added_animal{ $f[0] } = { affix => $f[1], gloss => $f[2], notes => $f[3] // '', line => $line };
-}
-
-# What the endings mean, for the glosses built below.
-my %animal_ending = (a => 'female', o => 'male', i => 'baby');
-
-# The animal's English name is the keyword of its -u form, except where the
-# dictionary tells sets apart in the definition rather than the keyword: three
-# of them are keyworded plain "elephant".  A set may also be named here to add
-# an everyday short form the dictionary keyword leaves out -- "chimp" -- so the
-# drill takes it for every ending of the set -- or to leave out one that would
-# mislead: humnu is "human", not "man", which is humno.  As with the ethnic
-# labels, the first alternative is the one the cheat-sheet row is headed with.
-my %animal_label = (
-    cimp => 'chimpanzee / chimp',  elhefant => 'elephant',
-    hath => 'Asian-elephant',      temb     => 'African-elephant',
-    humn => 'human / human being / humanity',
-);
-# The everyday English names for a single member of a set that neither the
-# declension nor the dictionary keyword gives -- tigri is a "tiger cub", kasna a
-# "cow" -- added after its gloss so the drill takes them too.
-my %animal_common = (
-    balna => 'whale cow/cow whale',          balno => 'whale bull/bull whale',
-    camli => 'camel calf',                   catri => 'otter pup',
-    cervo => 'buck',                         elhefanta => 'elephant cow/cow elephant',
-    elhefanto => 'elephant bull/bull elephant', elhefanti => 'elephant calf',
-    falko => 'tiercel',                      falki => 'eyas',
-    ficli => 'fingerling',                   flaki => 'maggot',
-    gotca => 'nanny',                        gotco => 'billy',
-    hasna => 'jenny/jennet',                 hasno => 'jack/jackass',
-    hatha => 'Asian-elephant cow',           hatho => 'Asian-elephant bull',
-    hathi => 'Asian-elephant calf',          henji => 'chick',
-    hormi => 'foal/filly',                   humna => 'woman',
-    humno => 'man',                          humni => 'baby/infant/child',
-    kasna => 'cow',                          kasno => 'bull',
-    katmo => 'tom',                          manti => 'ant larva',
-    marsa => 'walrus cow',                   marso => 'walrus bull',
-    marsi => 'walrus calf',                  moski => 'mosquito larva/wriggler',
-    musmi => 'mouse pup',                    nirdi => 'chick/nestling/fledgling/hatchling',
-    pardi => 'leopard cub/leopard kitten',   pavhi => 'peachick',
-    rakni => 'spiderling',                   ranhi => 'froglet/polliwog',
-    ratci => 'rat pup',                      simbi => 'lion cub',
-    temba => 'African-elephant cow',         tembo => 'African-elephant bull',
-    tembi => 'African-elephant calf',        testhudi => 'hatchling',
-    tigri => 'tiger cub',                    zebra => 'zebra mare',
-    zebro => 'zebra stallion',               zebri => 'zebra foal',
-);
-if ($gen) {
-    for my $w (sort keys %animal_common) {
-        die "common name given for $w, which is in no animal set\n"
-            unless $w =~ /^(\w+)[uaoie]\z/ && $animal_stem{$1};
-    }
-    for my $st (sort keys %animal_stem) {
-        next if $prims{"${st}u"} || $animal_label{$st} || $added_animal{"${st}u"};
-        die "no English name for animal stem $st\n" unless @{ $dict{"${st}u"}{kw} };
-    }
-}
-
-# The declension gives a dictionary-only animal word its gloss -- the animal's
-# name, and what the ending does to it -- and the entry's own keyword goes in
-# after it where that keyword is a word in its own right: gander, gosling,
-# squab, peahen, corvine.  The bare name again would not say which ending this
-# is, and for -e the built "X-like" has the keyword covered.
-# "gander", "gosling", "squab", "whale calf", "corvine" say something the built
-# gloss does not; "elephant" under Asian-elephant, or a keyword that is just the
-# animal's name, only blurs which ending the word carries.  A keyword with a
-# slash in it -- "baby/infant turtle" -- would read as two alternatives, and the
-# pair it stands for is already there; for -e the built "X-like" has it covered.
-sub keyword_earns_its_place ($kw, $v, @name) {
-    return 0 if $kw =~ m{/};
-    return 0 if $kw =~ /^(?:female|male|baby|infant|young|immature|juvenile)$/i;   # the ending said it
-    return 0 if $v eq 'e' && $kw =~ /\blike\b/i;
-    return 0 if grep { index(gloss_key($_), gloss_key($kw)) >= 0 } @name;
-    # A set named for one kind of an animal takes nothing that drops the kind:
-    # hathe is "Asian-elephant-like", not "elephantine".
-    return 0 if grep { /-(\w+)\z/ && $kw =~ /^\Q$1\E/i } @name;
-    return 1;
-}
-
-sub dict_animal_word ($st, $v) {
-    my $w    = "$st$v";
-    my @name = map { s/^\s+|\s+$//gr }
-               split m{/}, $animal_label{$st} // join '/', @{ $dict{"${st}u"}{kw} };
-    my @alt  = $v eq 'u' ? @name
-             : $v eq 'e' ? map { "$_-like" } @name
-             :             map { "$animal_ending{$v}-$_" } @name;
-    # A set named in %animal_label is named there in full: its -u word takes
-    # nothing more from the dictionary.
-    push @alt, grep { keyword_earns_its_place($_, $v, @name) } @{ $dict{$w}{kw} }
-        unless $v eq 'u' && $animal_label{$st};
-    my $gloss = dedup_gloss(@alt);
-    my $note  = dict_note($w);
-    return {
-        affix => $dict{$w}{affix},
-        gloss => $gloss,
-        notes => $note,
-        line  => join("\t", $w, $dict{$w}{affix}, $gloss, $note),
-        dict  => !$prims{$w},       # the cheat sheet's "dictionary only" mark
-    };
-}
-
-# Every word of every set, glossed by the declension from the dictionary: the
-# prims list is built from the dictionary's keywords, which name the animal
-# without the ending ("walrus" for marsa, marso and marsi alike).
-my %animal_word;
-for my $st (sort keys %animal_stem) {
-    for my $v (qw(u a o i e)) {
-        my $w = "$st$v";
-        $animal_word{$w} = $dict{$w}         ? dict_animal_word($st, $v)
-                         : $added_animal{$w} ? $added_animal{$w}
-                         : $prims{$w}        ? $prims{$w}
-                         : undef;
-    }
-}
-
-# ---- The sets as the auxiliary lists have them ----
-# What is worked out above is what --aux writes; otherwise the curated lists
-# loglan-update installed are the word: which sets there are, and every word
-# in them.  A member formed by rule is drawn as one.
-unless ($gen) {
-    %ethnic_stem = ();
-    for (@{ $aux{ethnic} }) {
-        my ($w) = split /\t/;
-        $ethnic_stem{$1} = 'aux' if $w =~ /^(\w+)[aeio]\z/;
-    }
-    %animal_stem = ();
-    %animal_word = ();
-    for (@{ $aux{animals} }) {
-        my ($w, $affix, $gloss, $notes) = split /\t/;
-        $notes //= '';
-        next unless $w =~ /^(\w+)([uaoie])\z/;
-        $animal_stem{$1} = 1 if $2 eq 'u';
-        next if $notes =~ /\(formed by rule\)\z/;
-        $animal_word{$w} = { affix => $affix, gloss => $gloss, notes => $notes, line => $_,
-                             dict => (!$prims{$w} && $dict{$w} ? 1 : 0) };
-    }
+my (%animal_stem, %animal_word);
+for (@{ $aux{animals} }) {
+    my ($w, $affix, $gloss, $notes) = split /\t/;
+    $notes //= '';
+    next unless $w =~ /^(\w+)([uaoie])\z/;
+    $animal_stem{$1} = 1 if $2 eq 'u';
+    next if $notes =~ /\(formed by rule\)\z/;
+    $animal_word{$w} = { affix => $affix, gloss => $gloss, notes => $notes, line => $_,
+                         dict => (!$prims{$w} && $dict{$w} ? 1 : 0) };
 }
 
 # ---- Words in Loglan 1 that are no longer in PRIMS ----
@@ -571,79 +278,6 @@ sub write_drill ($name, $rows) {
     close $fh;
     say "$name: ", scalar(@$rows), " items";
     return $rows;
-}
-
-# --aux: the ethnic and animals lists, written for shipping, and nothing else.
-if ($gen) {
-my @ethnic_rows;
-for my $st (sort keys %ethnic_stem) {
-    for my $v (qw(a e i o)) {
-        my $w = "$st$v";
-        # As with the animals, the declension's gloss says which ending this is.
-        if ($dict{$w})     { push @ethnic_rows, dict_ethnic_row($st, $v) }
-        elsif ($prims{$w}) { push @ethnic_rows, $prims{$w}{line} }
-        elsif ($l1{$w})    { push @ethnic_rows, join "\t", $w, $l1{$w}[1], $orphan_gloss{$w}, $l1{$w}[2] }
-        else               { push @ethnic_rows, rule_ethnic_row($st, $v) }
-    }
-}
-
-
-my @animal_rows;
-for my $st (sort keys %animal_stem) {
-    push @animal_rows, map { $animal_word{"$st$_"} ? $animal_word{"$st$_"}{line}
-                                                   : rule_animal_row($st, $_) } qw(u a o i e);
-}
-for (@animal_rows) {
-    my @f = split /\t/, $_, -1;
-    my $common = $animal_common{ $f[0] } // next;
-    $f[2] = dedup_gloss(split(m{/}, $f[2]), split(m{/}, $common));
-    $_ = join "\t", @f;
-}
-# Each opens with the rights statement The Loglan Center asked for: the lists
-# are drawn from its dictionary.
-my %what = (ethnic  => 'the ethnic declension sets (-a language, -e territory, -i person, -o culture)',
-            animals => 'the animal declension sets (-u any, -a female, -o male, -i young, -e -like)');
-for my $list (['ethnic', \@ethnic_rows], ['animals', \@animal_rows]) {
-    my ($name, $rows) = @$list;
-    my $file = "$opt{aux}/$name";
-    open my $fh, '>', $file or die "open $file: $!";
-    print $fh <<"END";
-# $name -- $what{$name}, for loglan-teach: word<TAB>affixes<TAB>gloss<TAB>notes.
-# Drawn from Lavinia Randall Holmes's Loglan-to-English dictionary; a member no source has is formed by rule.
-# All rights reserved by The Loglan Center, Inc. (the Idaho corporation which has superseded the Florida corporation).
-# Included with the permission of The Loglan Center (Lavinia Randall Holmes, October 2026).
-# This file is not covered by the GPL that covers the code in this repository.
-END
-    print $fh "$_\n" for @$rows;
-    close $fh;
-    say "$file: ", scalar(@$rows), " items";
-}
-exit 0;
-}
-
-# A member of a set that none of the sources has is still a word -- the
-# declension forms it -- so the drill gets it too, glossed and noted by the
-# rule the cheat sheet gives for its ending.
-sub rule_ethnic_row ($st, $v) {
-    my @label = map { s/^\s+|\s+$//gr } split m{/}, $ethnic_label{$st};
-    my @alt   = ("$label[0]-$ethnic_gloss_sense{$v}");
-    push @alt, "$label[0]-territory" if $v eq 'e';
-    my %note  = (a => 'is part of the - language', e => 'is a place where -s live',
-                 i => 'is a - person',             o => 'is part of - culture');
-    return join "\t", "$st$v", '-', dedup_gloss(@alt, @label), "$note{$v} (formed by rule)";
-}
-
-sub rule_animal_row ($st, $v) {
-    my @name = map { s/^\s+|\s+$//gr }
-               split m{/}, $animal_label{$st} // join '/', @{ $dict{"${st}u"}{kw} // [] };
-    @name = split m{/}, ($added_animal{"${st}u"} // $prims{"${st}u"})->{gloss}
-        if !@name && ($added_animal{"${st}u"} || $prims{"${st}u"});
-    my @alt  = $v eq 'u' ? @name
-             : $v eq 'e' ? map { "$_-like" } @name
-             :             map { "$animal_ending{$v}-$_" } @name;
-    my %note = (u => 'is any -', a => 'is a female -', o => 'is a male -',
-                i => 'is an infant -', e => 'is more - like than..');
-    return join "\t", "$st$v", '-', dedup_gloss(@alt), "$note{$v} (formed by rule)";
 }
 
 # Current affix and gloss from PRIMS where the word survives; book definition as notes.
@@ -743,13 +377,16 @@ for my $st (sort keys %ethnic_stem) {
         elsif ($dict{$w})  { push @cells, "<td><b>$w</b><sup>&Dagger;</sup></td>" }
         else               { push @cells, "<td class=rule>$w<sup>*</sup></td>" }
     }
-    # A set of your own (coined, or in ethnic.added) has no label here: the
-    # name in its language word's gloss ("Klingon-language") will do, else
-    # the stem.
+    # The row is headed by the names in the language word's gloss -- the one
+    # in "X-language" first, then the rest: "Arabic-language/Arab/Arabic" is
+    # "Arabic / Arab" -- else by the stem.
     my ($aux_a) = grep { /^\Q$st\Ea\t/ } @{ $aux{ethnic} // [] };
-    my ($from_gloss) = (split /\t/, $aux_a // '')[2] // '';
-    $from_gloss =~ s/-language\b.*//;
-    $ethnic_html .= "<tr><th>" . ($ethnic_label{$st} // ($from_gloss =~ s/-/ /gr || $st))
+    my @alt = split m{/}, (split /\t/, $aux_a // '')[2] // '';
+    my ($lang) = map { /^(.+)-language\z/ ? $1 : () } @alt;
+    my %seen;
+    my @names = grep { !$seen{ gloss_key($_) }++ }
+                 grep { length } $lang // (), grep { !/-language\z/ } @alt;
+    $ethnic_html .= "<tr><th>" . h(@names ? join(' / ', @names) : $st)
                   . "</th>@cells</tr>\n";
 }
 
@@ -795,7 +432,9 @@ my $n_l1 = @l1_text;
 my $n_eth = keys %ethnic_stem;
 my $n_ani = keys %animal_stem;
 
-my $sheet = out_file('cheatsheet.html') // exit 0;
+# It was cheatsheet.html once; the old one, built here, would only mislead.
+unlink "$dir/cheatsheet.html" if -f "$dir/cheatsheet.html" && !-l "$dir/cheatsheet.html";
+my $sheet = out_file('vocab-cheatsheet.html') // exit 0;
 open my $out, '>', $sheet or die "open $sheet: $!";
 print $out <<"HTML";
 <html><head><title>Loglan Vocabulary Cheat Sheet</title>
@@ -865,4 +504,4 @@ $l1_html</div>
 </html>
 HTML
 close $out;
-say "cheatsheet.html: $n_eth ethnic stems, $n_ani animal stems, $n_l1 primitives";
+say "vocab-cheatsheet.html: $n_eth ethnic stems, $n_ani animal stems, $n_l1 primitives";

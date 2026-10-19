@@ -53,8 +53,9 @@ use Time::Local    qw(timegm);
 #   3. installs the auxiliary lists (lists/aux: ethnic, animals) into DIR/aux,
 #      with your <list>.added entries;
 #   4. builds coined from your own words, in DIR/new-words.json, and puts the
-#      members of your declension sets into the auxiliary lists and your
-#      other primitives into prims and core;
+#      members of your declension sets into the auxiliary lists (and names
+#      any set that lacks a member) and your other primitives into prims
+#      and core;
 #   5. builds prims, core, affs and affsets from the dictionary, adds your .added
 #      entries and every word of the auxiliary lists that is not already
 #      there, and runs mk-utility for the rest (l1prims, derivs, the cheat
@@ -285,14 +286,13 @@ sub gloss_notes ($sense) {
 # ---- your coined words ----
 # Every word in new-words.json goes into coined, a list of its own.  A member
 # of a declension set ("set": "animal" or "ethnic") goes into that auxiliary
-# list as well, glossed by the declension (female-gopher, Klingon-person) as
-# the shipped sets are; any other primitive into prims, and into core by its
-# type.  Complexes and borrowings stay in coined.
+# list as well, glossed as written: its key meanings, as for a dictionary word
+# -- {female gopher} is "female-gopher".  Any other primitive goes into prims,
+# and into core by its type.  Complexes and borrowings stay in coined.
 my (@coined, @coined_prims, %coined_type, %coined_set);
 if (-f $new_words) {
     my $words = eval { decode_json(read_bytes($new_words))->{words} };
     if (ref $words eq 'ARRAY') {
-        my %name = set_names($words);
         for my $w (@$words) {
             my $def = $w->{defs}[0] // next;
             my ($type) = ($w->{tec} // '') =~ /^(\S+)/;
@@ -304,8 +304,6 @@ if (-f $new_words) {
             $html =~ s{\{([^{}]*)\}}{<em class="key">$1</em>}g;
             my ($gloss, $notes) = gloss_notes($html);
             my $set = $w->{set} // '';
-            $gloss = set_gloss($set, $w->{word}, $name{$set}{ substr $w->{word}, 0, -1 })
-                if $set =~ /^(?:animal|ethnic)\z/ && $name{$set}{ substr $w->{word}, 0, -1 };
             my $row = join "\t", $w->{word}, $w->{affix} || '-', $gloss, $notes;
             push @coined, $row;
             if    ($set eq 'animal')           { push @{ $coined_set{animals} }, $row }
@@ -320,8 +318,8 @@ if (-f $new_words) {
 
 # ---- the auxiliary lists ----
 # As shipped, with your coined set members (which put real definitions where
-# the rule had formed a word), then your .added entries, then -- for animals
-# -- whatever members are still missing, formed by rule.
+# the rule had formed a word), then your .added entries.  Nothing is formed
+# here: a set with a member missing is only reported.
 my $aux = "$dir/aux";
 make_path($aux);
 for my $file (glob "$dist/lists/aux/*") {
@@ -335,7 +333,7 @@ for my $file (glob "$dist/lists/aux/*") {
     }
     my @rows = merge_rows([read_rows($file)], $coined_set{$name} // []);
     @rows = merge_added($name, \@rows);
-    @rows = add_rule_sets(@rows) if $name eq 'animals';
+    warn_incomplete_sets($name, @rows);
     write_list("$aux/$name", \@rows, 1);
 }
 
@@ -560,59 +558,22 @@ sub merge_rows ($rows, $add) {
     return (@out, grep { !$done{ (split /\t/)[0] } } @$add);
 }
 
-# set -> stem -> the English names of each coined set: the key meanings of
-# its base word (-u for animals, -a for ethnic) -- the first run of them,
-# {guinea pig}/{cavy} -- less the word an ending adds ("Klingon language" ->
-# Klingon).
-sub set_names ($words) {
-    my %name;
-    for my $w (@$words) {
-        my $set = $w->{set} // next;
-        my ($run) = ($w->{defs}[0] // '') =~ m{(\{[^{}]*\}(?:/\{[^{}]*\})*)} or next;
-        my @names = map { s/\s+(?:language|place|person|culture|like)\z//r } $run =~ /\{([^{}]*)\}/g;
-        my $stem = substr $w->{word}, 0, -1;
-        my $base = substr($w->{word}, -1) eq ($set eq 'animal' ? 'u' : 'a');
-        $name{$set}{$stem} = \@names if $base || !defined $name{$set}{$stem};
-    }
-    return %name;
-}
 
-# What the declension makes of the names, as the shipped lists gloss them:
-# female-guinea-pig/female-cavy.
-sub set_gloss ($set, $word, $names) {
-    my $v = substr $word, -1;
-    my @out;
-    for my $n (map { s/\s+/-/gr } @$names) {
-        my %animal = (u => $n, a => "female-$n", o => "male-$n",
-                      i => "baby-$n", e => "$n-like");
-        my %ethnic = (a => "$n-language", e => "$n-territory/$n-place",
-                      i => "$n-person", o => "$n-culture");
-        push @out, ($set eq 'animal' ? $animal{$v} : $ethnic{$v}) // $n;
-    }
-    return join '/', @out;
-}
-
-# An animal the list lacks can be started from its generic -u word in
-# animals.added (kavhu); the rest of its set -- female -a, male -o, young -i
-# and -like -e -- is formed by rule.
-sub add_rule_sets (@rows) {
+# A set is all its members or none: an animal -u a o i e, an ethnic set
+# -a e i o.  A set that lacks some -- one put into new-words.json or a .added
+# file by hand, say -- is named, so the missing words can be written in
+# (loglan-coin --add --set adds a whole set to new-words.json).
+sub warn_incomplete_sets ($name, @rows) {
+    my $endings = { animals => 'uaoie', ethnic => 'aeio' }->{$name} // return;
     my %have = map { (split /\t/)[0] => 1 } @rows;
-    my @out = @rows;
-    my %ending = (a => 'female', o => 'male', i => 'baby');
-    my %note = (a => 'is a female -', o => 'is a male -',
-                i => 'is an infant -', e => 'is more - like than..');
-    for my $row (@rows) {
-        my ($w, $aff, $gloss) = split /\t/, $row;
-        next unless defined $gloss && $w =~ /^(\w{2,})u$/;
-        my $st = $1;
-        my @name = split m{/}, $gloss;
-        for my $v (qw(a o i e)) {
-            next if $have{"$st$v"}++;
-            my @alt = $v eq 'e' ? map { "$_-like" } @name : map { "$ending{$v}-$_" } @name;
-            push @out, join "\t", "$st$v", '-', join('/', @alt), "$note{$v} (formed by rule)";
-        }
+    my %stem;
+    for (keys %have) { $stem{$1} = 1 if /^(\w{2,})[$endings]\z/ }
+    for my $st (sort keys %stem) {
+        my @miss = map { "$st$_" } grep { !$have{"$st$_"} } split //, $endings;
+        next unless @miss;
+        warn "$name: the ${st}- set lacks @miss; add ", (@miss > 1 ? 'them' : 'it'),
+             " to new-words.json (loglan-coin --add --set) or $name.added\n";
     }
-    return @out;
 }
 
 # Written beside the target and renamed into place, so a half-written list is
@@ -670,8 +631,8 @@ Brings the Loglan sources in DIR/src up to date -- from the copies shipped
 with the tools and, if the copy online has changed, from
 randall-holmes.github.io -- and builds the lists in DIR from them: prims,
 core, affs, affsets, the auxiliary lists in DIR/aux (ethnic, animals),
-l1prims, derivs and cheatsheet.html; and coined, from your own words in
-DIR/new-words.json.
+l1prims, derivs and vocab-cheatsheet.html; and coined, from your own words
+in DIR/new-words.json.
 
   --dir DIR         the data directory (default \$LOGLAN_STATE_DIR, else ~/.loglan)
   --offline         do not look online; use the copies here
