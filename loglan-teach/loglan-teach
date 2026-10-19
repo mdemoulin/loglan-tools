@@ -700,7 +700,8 @@ sub demote ($s) {
 # lets the -e prim forms accept the plain English adjective alongside the
 # "X-like" the gloss spells out: "sheepish", "fishy", "lousy", "horsy".
 # Any "female X" or "male X" also takes the English "she-X" or "he-X":
-# lupsa "she-wolf", gotco "he-goat".
+# lupsa "she-wolf", gotco "he-goat".  Any "baby X" also takes "young X" and
+# "infant X": berci "young sheep", tigri "infant tiger".
 sub accepted_answers ($expected, $loglan = undef) {
     my $ish = defined $loglan && $loglan =~ /e\z/i;
     my (@gloss, @derived, %seen);
@@ -715,6 +716,9 @@ sub accepted_answers ($expected, $loglan = undef) {
             if ($n =~ /^(fe)?male (.+)\z/i) {
                 my $sex = ($1 ? 'she' : 'he') . " $2";
                 push @derived, $sex unless $seen{ match_key($sex) }++;
+            }
+            if ($n =~ /^baby (.+)\z/i) {
+                push @derived, grep { !$seen{ match_key($_) }++ } "young $1", "infant $1";
             }
             next unless $ish && $n =~ /^(.+?) ?like\z/i;
             my $stem = $1;

@@ -9,8 +9,8 @@ anso	-	male-goose/gander	is a gander, an male anseridine bird of species F.
 ansi	-	baby-goose/gosling	is a gosling, an immature goose of species F.
 anse	-	goose-like	is goose like.
 balnu	-	whale	is any whale from S, generic form.
-balna	-	female-whale	is a female whale from S.
-balno	-	male-whale	is a male whale from S.
+balna	-	female-whale/whale cow/cow whale	is a female whale from S.
+balno	-	male-whale/whale bull/bull whale	is a male whale from S.
 balni	-	baby-whale/whale calf	is a whale calf from S, an infant whale.
 balne	-	whale-like	is more whale like than J.
 bercu	-	sheep	is a sheep, a general term for an ovine creature.
@@ -21,16 +21,16 @@ berce	-	sheep-like/ovine/sheepish	is ovine/sheepish, like a sheep.
 camlu	-	camel	is a camel, non specific term.
 camla	-	female-camel	is a female camel.
 camlo	-	male-camel	is a male camel.
-camli	-	baby-camel	is an infant camel.
+camli	-	baby-camel/camel calf	is an infant camel.
 camle	-	camel-like	is camel like/dromedary like, pertaining to an artiodactyl mammal of genus Camelus.
 catru	-	otter	is an otter, non specific of region/range S.
 catra	-	female-otter	is a female otter of region/range S.
 catro	-	male-otter	is a male otter of region/range S.
-catri	-	baby-otter	is an infant otter of region/range S.
+catri	-	baby-otter/otter pup	is an infant otter of region/range S.
 catre	-	otter-like	is otter like.
 cervu	-	deer	is a deer, a member of the Cervidae, of region S.
 cerva	-	female-deer/doe/hind	is a doe/hind/female deer of region/range S.
-cervo	-	male-deer/hart/stag	is a hart/stag/male deer of region/range S.
+cervo	-	male-deer/hart/stag/buck	is a hart/stag/male deer of region/range S.
 cervi	-	baby-deer/fawn	is an fawn/infant deer of region/range S.
 cerve	-	deer-like	is more cervine/deer like than J.
 cimpu	-	chimpanzee/chimp	is a chimpanzee (generic term).
@@ -44,44 +44,44 @@ dralo	-	male-dragon	is a male dragon.
 drali	-	baby-dragon	is an infant dragon.
 drale	-	dragon-like	is more dragon like than J.
 elhefantu	-	elephant	is an elephant.
-elhefanta	-	female-elephant	is a female elephant.
-elhefanto	-	male-elephant	is a male elephant.
-elhefanti	-	baby-elephant	is an infant elephant.
+elhefanta	-	female-elephant/elephant cow/cow elephant	is a female elephant.
+elhefanto	-	male-elephant/elephant bull/bull elephant	is a male elephant.
+elhefanti	-	baby-elephant/elephant calf	is an infant elephant.
 elhefante	-	elephant-like/elephantine	is more elephantine/elephant like than J.
 falku	-	falcon	is a falcon, generic term for a bird of the genus Falco.
 falka	-	female-falcon	is a female falcon.
-falko	-	male-falcon/hawk	is a male hawk/falcon, a bird of the genus Falcon.
-falki	-	baby-falcon/falcon chick/infant falcon	is a falcon chick/infant falcon.
+falko	-	male-falcon/hawk/tiercel	is a male hawk/falcon, a bird of the genus Falcon.
+falki	-	baby-falcon/falcon chick/infant falcon/eyas	is a falcon chick/infant falcon.
 falke	-	falcon-like	is more falcon like than J.
 ficlu	-	fish	is a fish, non specific term.
 ficla	-	female-fish	is a female fish.
 ficlo	-	male-fish	is a male fish.
-ficli	fic	baby-fish/fry/minnow	is a fry/minnow, an infant fish.
+ficli	fic	baby-fish/fry/minnow/fingerling	is a fry/minnow, an infant fish.
 ficle	-	fish-like/fishy	is fishy/fish like, pertains to fish.
 flaku	-	fly	is a fly, non specific term.
 flaka	-	female-fly	is a female fly.
 flako	-	male-fly	is a male fly.
-flaki	-	baby-fly/fly maggot/fly larva	is a fly maggot/fly larva.
+flaki	-	baby-fly/fly maggot/fly larva/maggot	is a fly maggot/fly larva.
 flake	-	fly-like	is fly/fly like, pertaining to flies.
 gotcu	-	goat	is a goat, non specific term.
-gotca	goa	female-goat/nanny goat	is a female goat/nanny goat, a ruminant mammal of genus Capra.
-gotco	-	male-goat/billy goat	is a male goat/billy goat.
+gotca	goa	female-goat/nanny goat/nanny	is a female goat/nanny goat, a ruminant mammal of genus Capra.
+gotco	-	male-goat/billy goat/billy	is a male goat/billy goat.
 gotci	-	baby-goat/kid	is a kid/baby goat.
 gotce	-	goat-like/caprine	is goat like/caprine, pertains to goats.
 hasnu	-	ass/donkey	is an ass/donkey, the generic term for this equine quadruped.
-hasna	-	female-ass/female-donkey	is a female ass/donkey, an equine quadruped.
-hasno	-	male-ass/male-donkey	is a male ass/donkey.
+hasna	-	female-ass/female-donkey/jenny/jennet	is a female ass/donkey, an equine quadruped.
+hasno	-	male-ass/male-donkey/jack/jackass	is a male ass/donkey.
 hasni	-	baby-ass/baby-donkey/foal	is an infant ass/donkey/foal.
 hasne	-	ass-like/donkey-like	is ass/donkey like.
 hathu	-	Asian-elephant	is an Asian elephant.
-hatha	-	female-Asian-elephant	is a female Asian elephant.
-hatho	-	male-Asian-elephant	is a male Asian elephant.
-hathi	-	baby-Asian-elephant	is an infant Asian elephant.
-hathe	-	Asian-elephant-like/elephantine	is more elephantine/elephant like than J.
+hatha	-	female-Asian-elephant/Asian-elephant cow	is a female Asian elephant.
+hatho	-	male-Asian-elephant/Asian-elephant bull	is a male Asian elephant.
+hathi	-	baby-Asian-elephant/Asian-elephant calf	is an infant Asian elephant.
+hathe	-	Asian-elephant-like	is more elephantine/elephant like than J.
 henju	-	chicken	is a chicken, a common gallaceous fowl, general term.
 henja	-	female-chicken/hen	is a hen, a female gallaceous fowl.
 henjo	-	male-chicken/cock/rooster	is a cock/rooster, a male gallaceous fowl.
-henji	-	baby-chicken	is a chick, an infant gallaceous fowl.
+henji	-	baby-chicken/chick	is a chick, an infant gallaceous fowl.
 henje	-	chicken-like	is chicken/chickenlike in characteristic N.
 hitlu	-	butterfly	is a butterfly, non specific term.
 hitla	-	female-butterfly	is a female butterfly.
@@ -91,12 +91,12 @@ hitle	-	butterfly-like	is butterfly like, pertaining to butterflies.
 hormu	-	horse	is any horse, non specific term.
 horma	hoa hor	female-horse/mare	is a mare/female horse, Equus caballus.
 hormo	-	male-horse/stallion/stud/gelding	is a stallion/stud/gelding, any male horse.
-hormi	-	baby-horse/colt	is a colt, an infant horse.
+hormi	-	baby-horse/colt/foal/filly	is a colt, an infant horse.
 horme	-	horse-like/equine	is equine/horse like, pertains to horses.
 humnu	-	human being/humanity/man/mankind	is a human being, generic term.
-humna	-	female-human being/female-humanity/female-man/female-mankind	is a female human.
-humno	-	male-human being/male-humanity/male-man/male-mankind	is a male human.
-humni	hum hun	baby-human being/baby-humanity/baby-man/baby-mankind	is a/the baby of S.
+humna	-	female-human being/female-humanity/female-man/female-mankind/woman	is a female human.
+humno	-	male-human being/male-humanity/male-man/male-mankind/man	is a male human.
+humni	hum hun	baby-human being/baby-humanity/baby-man/baby-mankind/baby/infant/child	is a/the baby of S.
 humne	-	human being-like/humanity-like/man-like/mankind-like	is human/human like, pertains to a human.
 kangu	kau	dog	is a dog, unspecific.
 kanga	-	female-dog/bitch	is a bitch/female dog.
@@ -104,13 +104,13 @@ kango	-	male-dog	is a male dog.
 kangi	-	baby-dog/puppy/pup	is a puppy/pup, an infant dog.
 kange	-	dog-like/canine	is more canine/dog like than J.
 kasnu	-	cow/bull/cattle/oxen	is a/some cow/bull/cattle/oxen, non specific.
-kasna	-	female-cow/female-bull/female-cattle/female-oxen	is a cow, a female bovine.
-kasno	-	male-cow/male-bull/male-cattle/male-oxen	is a bull, a male bovine.
+kasna	-	female-cow/female-bull/female-cattle/female-oxen/cow	is a cow, a female bovine.
+kasno	-	male-cow/male-bull/male-cattle/male-oxen/bull	is a bull, a male bovine.
 kasni	-	baby-cow/baby-bull/baby-cattle/baby-oxen/calf	is a calf, an infant cow.
 kasne	-	cow-like/bull-like/cattle-like/oxen-like/bovine	is more bovine/cow like than J.
 katmu	-	cat	is a cat, non specific.
 katma	-	female-cat/queen/tabby/feline	is a queen/tabby, a female domestic cat/feline.
-katmo	-	male-cat/tomcat/domestic cat/feline	is a tomcat, a male domestic cat/feline.
+katmo	-	male-cat/tomcat/domestic cat/feline/tom	is a tomcat, a male domestic cat/feline.
 katmi	-	baby-cat/kitten/domestic cat/feline	is a kitten, an infant domestic cat/feline.
 katme	-	cat-like/feline	is more feline/cat like than J.
 kolbu	-	dove/pigeon	is a dove/pigeon, non specific.
@@ -146,7 +146,7 @@ lupse	-	wolf-like/lupine	is lupine/wolf like, pertaining to wolves.
 mantu	-	ant	is any ant, non specific term.
 manta	-	female-ant	is a female ant.
 manto	-	male-ant	is a male ant.
-manti	-	baby-ant	is an ant larva of hill/colony F.
+manti	-	baby-ant/ant larva	is an ant larva of hill/colony F.
 mante	-	ant-like/formic	is formic/ant like, pertains to ants.
 marpu	-	snake/serpent	is any snake/serpent, non specific term.
 marpa	-	female-snake/female-serpent	is a female snake/serpent.
@@ -154,14 +154,14 @@ marpo	-	male-snake/male-serpent	is a male snake/serpent.
 marpi	-	baby-snake/baby-serpent	is an infant snake/serpent.
 marpe	-	snake-like/serpent-like/serpentine	is snake like/serpentine, pertains to or resembles serpents.
 marsu	-	walrus	is any walrus, non specific term.
-marsa	-	female-walrus	is a female walrus, a marine carnivore.
-marso	-	male-walrus	is a male walrus.
-marsi	-	baby-walrus	is an infant walrus.
+marsa	-	female-walrus/walrus cow	is a female walrus, a marine carnivore.
+marso	-	male-walrus/walrus bull	is a male walrus.
+marsi	-	baby-walrus/walrus calf	is an infant walrus.
 marse	-	walrus-like	is walrus like, pertains to or resembles a walrus.
 mosku	-	mosquito	is any mosquito, non specific term.
 moska	-	female-mosquito	is a female mosquito.
 mosko	-	male-mosquito	is a male mosquito.
-moski	-	baby-mosquito	is a mosquito larva, an insect larva of various Spp. particularly Culex, Aedes &Anopheles.
+moski	-	baby-mosquito/mosquito larva/wriggler	is a mosquito larva, an insect larva of various Spp. particularly Culex, Aedes &Anopheles.
 moske	-	mosquito-like	is mosquito like, pertains to mosquitos.
 murku	-	monkey	is a monkey, a small primate, non specific.
 murka	-	female-monkey	is a female monkey, a small primate.
@@ -171,12 +171,12 @@ murke	-	monkey-like/monkeyish/simian	is monkey like/monkeyish/simian.
 musmu	-	mouse	is a mouse, a rodent of the genus Mus.
 musma	-	female-mouse	is a female mouse.
 musmo	-	male-mouse	is a male mouse.
-musmi	-	baby-mouse	is an infant mouse.
+musmi	-	baby-mouse/mouse pup	is an infant mouse.
 musme	-	mouse-like/murine	is murine/mouse like, pertaining to mice.
 nirdu	-	bird	is any bird, non specific term.
 nirda	-	female-bird	is a female bird.
 nirdo	-	male-bird	is a male bird.
-nirdi	-	baby-bird	is an infant bird.
+nirdi	-	baby-bird/chick/nestling/fledgling/hatchling	is an infant bird.
 nirde	-	bird-like/avian	is avian/bird like, pertaining to or resembling birds.
 pandu	-	panda	is a panda, the non specific term.
 panda	-	female-panda	is a female panda.
@@ -186,12 +186,12 @@ pande	-	panda-like	is panda like, pertaining to pandas.
 pardu	-	leopard	is a leopard, the non specific term.
 parda	-	female-leopard	is a female leopard.
 pardo	-	male-leopard	is a male leopard.
-pardi	-	baby-leopard	is a leopard kitten, an infant leopard.
+pardi	-	baby-leopard/leopard cub/leopard kitten	is a leopard kitten, an infant leopard.
 parde	-	leopard-like	is leopard like, pertaining to leopards.
 pavhu	-	peafowl	is any peafowl from S, generic term.
 pavha	-	female-peafowl/peahen	is a peahen, a female peafowl from S.
 pavho	-	male-peafowl/peacock	is a peacock, a male peafowl from S.
-pavhi	-	baby-peafowl/peafowl chick	is a peafowl chick, a baby peafowl from S.
+pavhi	-	baby-peafowl/peafowl chick/peachick	is a peafowl chick, a baby peafowl from S.
 pavhe	-	peafowl-like	is more peafowl like than J.
 porju	poj	pig/hog/swine	is a/some pig/hog/swine, an omnivorous mammal, genus Sus.
 porja	-	female-pig/female-hog/female-swine/sow	is a sow/female hog.
@@ -201,17 +201,17 @@ porje	-	pig-like/hog-like/swine-like/porcine	is more porcine/pig like than J.
 raknu	-	spider/arachnid	is a spider/arachnid, generic term.
 rakna	-	female-spider/female-arachnid	is a female spider.
 rakno	-	male-spider/male-arachnid	is a male spider/arachnid.
-rakni	-	baby-spider/baby-arachnid	is an infant spider/arachnid.
+rakni	-	baby-spider/baby-arachnid/spiderling	is an infant spider/arachnid.
 rakne	-	spider-like/arachnid-like/spidery	is spidery/spider like.
 ranhu	-	frog	is any frog, an amphibian of Spp. Rana.
 ranha	-	female-frog	is a female frog, an amphibian of Spp. Rana.
 ranho	-	male-frog	is a male frog, an amphibian of Spp. Rana.
-ranhi	-	baby-frog/tadpole	is a tadpole/baby frog, an amphibian of Spp. Rana.
+ranhi	-	baby-frog/tadpole/froglet/polliwog	is a tadpole/baby frog, an amphibian of Spp. Rana.
 ranhe	-	frog-like	is more frog like than J.
 ratcu	rau	rat	is a rat, a rodent of genus Rattus, non specific.
 ratca	-	female-rat	is a female rat.
 ratco	-	male-rat	is a male rat.
-ratci	-	baby-rat	is an infant rat.
+ratci	-	baby-rat/rat pup	is an infant rat.
 ratce	-	rat-like/ratty	is ratty/rat like, pertains to or resembles rats.
 sektu	-	insect	is any insect.
 sekta	sek	female-insect	is an insect.
@@ -221,22 +221,22 @@ sekte	-	insect-like	is more insect like than J.
 simbu	-	lion	is any lion, non specific term.
 simba	-	female-lion/lioness	is a female lion/lioness, Felis leo, a carnivorous mammal.
 simbo	-	male-lion	is a male lion.
-simbi	-	baby-lion	is an infant lion.
+simbi	-	baby-lion/lion cub	is an infant lion.
 simbe	-	lion-like/leonine	is leonine/lion like, resembles or pertains to lions.
 tembu	-	African-elephant	is an African elephant, generic word.
-temba	-	female-African-elephant	is a female African elephant.
-tembo	-	male-African-elephant	is a male African elephant.
-tembi	-	baby-African-elephant	is an infant African elephant.
-tembe	-	African-elephant-like/elephantine	is more elephantine/elephant like than J.
+temba	-	female-African-elephant/African-elephant cow	is a female African elephant.
+tembo	-	male-African-elephant/African-elephant bull	is a male African elephant.
+tembi	-	baby-African-elephant/African-elephant calf	is an infant African elephant.
+tembe	-	African-elephant-like	is more elephantine/elephant like than J.
 testhudu	-	turtle/tortoise	is a generic turtle/tortoise, a member of the order Testudines.
 testhuda	-	female-turtle/female-tortoise	is a female turtle/ tortoise.
 testhudo	-	male-turtle/male-tortoise	is a male turtle/ tortoise.
-testhudi	-	baby-turtle/baby-tortoise/infant turtle	is a baby/infant turtle/ tortoise.
+testhudi	-	baby-turtle/baby-tortoise/infant turtle/hatchling	is a baby/infant turtle/ tortoise.
 testhude	-	turtle-like/tortoise-like	is like a turtle/ tortoise.
 tigru	-	tiger	is any tiger, non specific term.
 tigra	-	female-tiger/tigress	is a female tiger/tigress, a carnivorous mammal, Felis tigris.
 tigro	-	male-tiger	is a male tiger.
-tigri	-	baby-tiger	is an infant tiger.
+tigri	-	baby-tiger/tiger cub	is an infant tiger.
 tigre	-	tiger-like	is tiger like, resembling or pertaining to tigers.
 turdu	-	thrush	is any thrush, bird of Spp. Turdus.
 turda	-	female-thrush	is a female thrush, bird of Spp. Turdus.
@@ -244,7 +244,7 @@ turdo	-	male-thrush	is a male thrush, bird of Spp. Turdus.
 turdi	-	baby-thrush	is a baby thrush, bird of Spp. Turdus.
 turde	-	thrush-like	is more thrush like than J.
 zebru	-	zebra	is a zebra, non specific term.
-zebra	-	female-zebra	is a female zebra.
-zebro	-	male-zebra	is a male zebra.
-zebri	-	baby-zebra	is a zebra foal, an infant zebra.
+zebra	-	female-zebra/zebra mare	is a female zebra.
+zebro	-	male-zebra/zebra stallion	is a male zebra.
+zebri	-	baby-zebra/zebra foal	is a zebra foal, an infant zebra.
 zebre	-	zebra-like/zebran	is zebran, resembling or pertaining to a zebra.

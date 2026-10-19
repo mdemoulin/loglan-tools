@@ -412,7 +412,40 @@ my %animal_label = (
     cimp => 'chimpanzee / chimp',  elhefant => 'elephant',
     hath => 'Asian-elephant',      temb     => 'African-elephant',
 );
+# The everyday English names for a single member of a set that neither the
+# declension nor the dictionary keyword gives -- tigri is a "tiger cub", kasna a
+# "cow" -- added after its gloss so the drill takes them too.
+my %animal_common = (
+    balna => 'whale cow/cow whale',          balno => 'whale bull/bull whale',
+    camli => 'camel calf',                   catri => 'otter pup',
+    cervo => 'buck',                         elhefanta => 'elephant cow/cow elephant',
+    elhefanto => 'elephant bull/bull elephant', elhefanti => 'elephant calf',
+    falko => 'tiercel',                      falki => 'eyas',
+    ficli => 'fingerling',                   flaki => 'maggot',
+    gotca => 'nanny',                        gotco => 'billy',
+    hasna => 'jenny/jennet',                 hasno => 'jack/jackass',
+    hatha => 'Asian-elephant cow',           hatho => 'Asian-elephant bull',
+    hathi => 'Asian-elephant calf',          henji => 'chick',
+    hormi => 'foal/filly',                   humna => 'woman',
+    humno => 'man',                          humni => 'baby/infant/child',
+    kasna => 'cow',                          kasno => 'bull',
+    katmo => 'tom',                          manti => 'ant larva',
+    marsa => 'walrus cow',                   marso => 'walrus bull',
+    marsi => 'walrus calf',                  moski => 'mosquito larva/wriggler',
+    musmi => 'mouse pup',                    nirdi => 'chick/nestling/fledgling/hatchling',
+    pardi => 'leopard cub/leopard kitten',   pavhi => 'peachick',
+    rakni => 'spiderling',                   ranhi => 'froglet/polliwog',
+    ratci => 'rat pup',                      simbi => 'lion cub',
+    temba => 'African-elephant cow',         tembo => 'African-elephant bull',
+    tembi => 'African-elephant calf',        testhudi => 'hatchling',
+    tigri => 'tiger cub',                    zebra => 'zebra mare',
+    zebro => 'zebra stallion',               zebri => 'zebra foal',
+);
 if ($gen) {
+    for my $w (sort keys %animal_common) {
+        die "common name given for $w, which is in no animal set\n"
+            unless $w =~ /^(\w+)[uaoie]\z/ && $animal_stem{$1};
+    }
     for my $st (sort keys %animal_stem) {
         next if $prims{"${st}u"} || $animal_label{$st} || $added_animal{"${st}u"};
         die "no English name for animal stem $st\n" unless @{ $dict{"${st}u"}{kw} };
@@ -434,6 +467,9 @@ sub keyword_earns_its_place ($kw, $v, @name) {
     return 0 if $kw =~ /^(?:female|male|baby|infant|young|immature|juvenile)$/i;   # the ending said it
     return 0 if $v eq 'e' && $kw =~ /\blike\b/i;
     return 0 if grep { index(gloss_key($_), gloss_key($kw)) >= 0 } @name;
+    # A set named for one kind of an animal takes nothing that drops the kind:
+    # hathe is "Asian-elephant-like", not "elephantine".
+    return 0 if grep { /-(\w+)\z/ && $kw =~ /^\Q$1\E/i } @name;
     return 1;
 }
 
@@ -551,6 +587,12 @@ my @animal_rows;
 for my $st (sort keys %animal_stem) {
     push @animal_rows, map { $animal_word{"$st$_"} ? $animal_word{"$st$_"}{line}
                                                    : rule_animal_row($st, $_) } qw(u a o i e);
+}
+for (@animal_rows) {
+    my @f = split /\t/, $_, -1;
+    my $common = $animal_common{ $f[0] } // next;
+    $f[2] = dedup_gloss(split(m{/}, $f[2]), split(m{/}, $common));
+    $_ = join "\t", @f;
 }
 # Each opens with the rights statement The Loglan Center asked for: the lists
 # are drawn from its dictionary.
