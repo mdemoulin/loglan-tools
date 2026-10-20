@@ -28,7 +28,8 @@ updates](#sources-and-updates)); nothing has to be downloaded.  In a
 drill, type your answer and press Enter; a blank line shows the answer (and
 counts as a miss), `:s` shows your progress, `:r` asks the card before
 again (graded, then back to this one), and `:q` saves and quits.  Any
-one of a gloss's alternatives ("box/crate/carton") counts as right.  Open
+one of a gloss's alternatives ("box/crate/carton") counts as right.  On
+Android, see [On Android](#on-android).  Open
 `~/.loglan/vocab-cheatsheet.html` in a browser for the declension tables.
 
 | Command | What it does |
@@ -46,6 +47,19 @@ under `src/`, the lists, the auxiliary lists under `aux/`, and a
 `~/.loglan/prims` (or `~/.loglan/aux/prims`) from any directory; a list of
 your own can be given by path.  `loglan-fetch`, the old name of
 `loglan-update`, still works.
+
+### Progress on more than one machine
+
+If `~/.loglan` is a Subversion working copy -- has a `.svn` directory of its
+own, checked out from a repository of yours, with the built files in
+`svn:ignore` -- `loglan-teach` keeps the list's progress in step: it runs `svn update` on the state file before the
+drill and commits it when you quit.  Progress made on two machines before
+either was synced is merged word by word, each word as the copy that has
+seen it more often has it.  When the repository cannot be reached it says
+so once, drills from the copy here, and commits it the next time.  ssh is
+never asked for a passphrase, so the key must be in your agent.
+`--no-sync` or `LOGLAN_NO_SYNC=1` turns this off.  Your other files there
+(`new-words.json`, `*.added`) are left for you to commit.
 
 ### The lists
 
@@ -291,3 +305,17 @@ corporation).  That material is not covered by the GPL.
   `new-words-html.py` (standard library only)
 - for the online check (optional: the tools work from the shipped sources
   without it), HTTPS: Perl's `IO::Socket::SSL`, or `curl`
+
+### On Android
+
+The tools run in [Termux](https://termux.dev), a Linux terminal for
+Android (install it from F-Droid, as Termux recommends):
+
+    pkg install perl python git curl
+    git clone https://github.com/mdemoulin/loglan-tools
+    cd loglan-tools && ./install.sh
+    loglan-teach core
+
+There `install.sh` offers Termux's own bin directory (`$PREFIX/bin`) first;
+it is already on your PATH, and needs no sudo.  For the manual page,
+`pkg install man`.

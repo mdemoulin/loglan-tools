@@ -65,26 +65,37 @@ elif [ -n "$prev" ]; then
     dest=$prev
     echo "Installing into $dest, where they are now (./install.sh --ask to choose)."
 else
+    # Termux, on Android, has no /usr/local or sudo; its own bin directory
+    # is on PATH and yours to write, so it is the one offered first there.
+    if [ -n "${TERMUX_VERSION:-}" ] && [ -d "${PREFIX:-}/bin" ]; then
+        dirs=("$PREFIX/bin" "$HOME/.local/bin" "$HOME/bin")
+        notes=("" "" "")
+    else
+        dirs=("$HOME/.local/bin" "$HOME/bin" /usr/local/bin)
+        notes=("" "" "   (needs sudo)")
+    fi
     echo "Install ${tools[*]} into:"
-    echo "  1) $HOME/.local/bin"
-    echo "  2) $HOME/bin"
-    echo "  3) /usr/local/bin   (needs sudo)"
+    for i in 0 1 2; do
+        echo "  $((i + 1))) ${dirs[i]}${notes[i]}"
+    done
     echo "  4) somewhere else"
     read -r -p "Choice [1]: " choice
     case ${choice:-1} in
-        1) dest=$HOME/.local/bin ;;
-        2) dest=$HOME/bin ;;
-        3) dest=/usr/local/bin ;;
+        [123]) dest=${dirs[${choice:-1} - 1]} ;;
         4) read -r -p "Directory: " dest
            dest=${dest/#\~/$HOME} ;;
         *) echo "install.sh: no such choice: $choice" >&2; exit 1 ;;
     esac
 fi
 
+# sudo only where the directory -- or, if it is not there yet, the nearest
+# one above it that is -- is not yours to write: a new ~/.local/bin needs none.
 sudo=
-if [ -d "$dest" ] && [ ! -w "$dest" ] || [ ! -d "$dest" ] && [ ! -w "$(dirname "$dest")" ]; then
-    sudo=sudo
-fi
+top=$dest
+while [ ! -d "$top" ]; do
+    top=$(dirname "$top")
+done
+[ -w "$top" ] || sudo=sudo
 $sudo mkdir -p "$dest"
 for t in "${tools[@]}"; do
     $sudo install -m 755 "$here/loglan-teach/$t" "$dest/$t"

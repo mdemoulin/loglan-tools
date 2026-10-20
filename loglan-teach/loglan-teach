@@ -61,6 +61,7 @@ GetOptions(
     'lessons=s',
     'random',
     'reset',
+    'no-sync'    => sub { $opt{nosync} = 1 },
     'status',
     'tables',
     'help|h',
@@ -129,6 +130,18 @@ if (!$opt{random} && grep { $_->{lessons} } @records) {
     } else {
         warn "No m1-text for this list's lessons; drilling it at random (see --lessons).\n";
     }
+}
+
+# Progress kept in Subversion: brought up to date before the drill, and
+# committed when it ends (see sync_in).
+my $sync = !$opt{nosync} && !$ENV{LOGLAN_NO_SYNC} && defined $state_dir && -d "$state_dir/.svn"
+        && dirname($state_file) eq $state_dir;
+my $state_saved = 0;
+my $sync_unreachable = 0;
+sync_in($state_file) if $sync;
+END {
+    local $?;           # the exit status is the drill's, not svn's
+    sync_out($state_file) if $sync && $state_saved;
 }
 
 my $state = load_state($state_file, $data_file);
@@ -433,6 +446,103 @@ sub save_state ($file, $state) {
     print $fh JSON::PP->new->canonical->pretty->encode($state);
     close $fh;
     rename $tmp, $file or die "rename $tmp $file: $!";
+    $state_saved = 1;
+}
+
+# ---- Progress kept in Subversion ----
+# When ~/.loglan (or $LOGLAN_STATE_DIR) is a Subversion working copy -- has a
+# .svn of its own, checked out from a repository of yours -- the drill brings it up to date before
+# it starts and commits it when you quit, so your progress goes with you
+# from one machine to the next.  Where the copy here and the repository's
+# have both changed, they are merged word by word.  No connection (away
+# from the server's network, say) only means the drill goes on with the copy
+# here, which is committed the next time it can be.  ssh never asks for a
+# passphrase: the key has to be in your agent.  LOGLAN_NO_SYNC=1 or
+# --no-sync turns it off.
+
+# Runs svn, never interactively; returns whether it worked, and what it said.
+sub svn (@args) {
+    local $ENV{SVN_SSH} = $ENV{SVN_SSH} // 'ssh -o BatchMode=yes -o ConnectTimeout=5';
+    my $pid = open(my $fh, '-|') // return (0, "svn: cannot fork: $!");
+    if (!$pid) {
+        open STDERR, '>&', \*STDOUT;
+        exec('svn', '--non-interactive', @args) or _exit(127);
+    }
+    my $out = do { local $/; <$fh> } // '';
+    close $fh;
+    return ($? == 0, $out);
+}
+
+sub sync_note ($what, $out) {
+    $sync_unreachable = 1;
+    my ($why) = reverse grep { /^svn: E\d/ } split /\n/, $out;
+    $why //= $out =~ /\S/ ? (split /\n/, $out)[-1] : 'svn not found';
+    warn "(progress not $what -- $why; the copy here is kept, and committed next time)\n";
+}
+
+sub sync_in ($file) {
+    my ($ok, $st) = svn('status', $file);
+    return sync_note('brought up to date', $st) unless $ok;
+    # Changed here (or not yet committed at all): set it aside, take the
+    # repository's, and merge the two -- a text merge of two JSON files
+    # need not be JSON.
+    my $mine;
+    if ($st =~ /^[MAC?]/m && -f $file) {
+        $mine = "$file.local";
+        rename $file, $mine or die "rename $file $mine: $!";
+        svn('revert', '-q', $file);
+        unlink $file if $st =~ /^[A?]/m;
+    }
+    my ($up, $out) = svn('update', '-q', '--accept', 'theirs-full', $file);
+    if (!$up) {
+        rename $mine, $file if defined $mine;
+        return sync_note('brought up to date', $out);
+    }
+    return unless defined $mine;
+    if (-f $file) {
+        my $merged = merge_states(load_state($mine, $file), load_state($file, $file));
+        my $had = $state_saved;
+        save_state($file, $merged);
+        $state_saved = $had;
+        unlink $mine;
+    } else {
+        rename $mine, $file;
+    }
+}
+
+sub sync_out ($file) {
+    return if $sync_unreachable;    # said so at the start; tried again next time
+    for my $try (1, 2) {
+        my ($ok, $st) = svn('status', $file);
+        return sync_note('committed', $st) unless $ok;
+        return unless $st =~ /^[MA?]/m;
+        svn('add', '-q', $file) if $st =~ /^\?/m;
+        my $host = (POSIX::uname())[1];
+        my ($done, $out) = svn('commit', '-q', '-m', basename($file) . " from $host", $file);
+        return if $done;
+        # Committed from somewhere else meanwhile: merge that in, and again.
+        return sync_note('committed', $out) unless $try == 1 && $out =~ /out of date|E155011|E160028|E170004/i;
+        sync_in($file);
+    }
+}
+
+# Two copies of one list's progress, as one: each word as the copy that has
+# seen it more often has it (this one's, on a tie); the lessons either has
+# shown; and the place in an in-order list that is further on.
+sub merge_states ($mine, $theirs) {
+    my %m = %$theirs;
+    $m{$_} = $mine->{$_} for grep { $_ ne 'items' } keys %$mine;
+    my ($a, $b) = ($mine->{items} // {}, $theirs->{items} // {});
+    $m{items} = { %$b, map {
+        my $t = $b->{$_};
+        ($_ => (!$t || ($a->{$_}{seen} // 0) >= ($t->{seen} // 0)) ? $a->{$_} : $t)
+    } keys %$a };
+    $m{lessons_shown} = { %{ $theirs->{lessons_shown} // {} }, %{ $mine->{lessons_shown} // {} } }
+        if $mine->{lessons_shown} || $theirs->{lessons_shown};
+    my ($om, $ot) = ($mine->{order}, $theirs->{order});
+    $m{order} = $ot if $om && $ot
+        && (($ot->{pass} // 1) <=> ($om->{pass} // 1) || ($ot->{next} // 0) <=> ($om->{next} // 0)) > 0;
+    return \%m;
 }
 
 # ---- Drill ----
@@ -819,6 +929,9 @@ State:
   --state FILE     path to state file  [default \$LOGLAN_STATE_DIR (or ~/.loglan)
                      /<data-file>.state.json]
   --reset          wipe progress for this data file
+  --no-sync        when the state file is in a Subversion working copy, do
+                     not update it first or commit it after (as
+                     LOGLAN_NO_SYNC=1)
   --status         print progress histogram and exit
   --tables         list the lists in \$LOGLAN_STATE_DIR, their sizes, and
                      which have progress saved (no data-file needed)
