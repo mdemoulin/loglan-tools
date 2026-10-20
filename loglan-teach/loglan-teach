@@ -145,7 +145,7 @@ exit 0 if $opt{status};
 say "Loglan drill: ", basename($data_file),
     "  (", scalar(@records), " items, ",
     "$opt{rungs} rungs, escape=$opt{escape}, dir=$opt{dir})";
-say "Type the answer and press Enter.  Blank line = show answer.  :q = quit.  :s = status.";
+say "Type the answer and press Enter.  Blank line = show answer.  :q = quit.  :s = status.  :r = ask the last one again.";
 say "";
 
 drill_loop($state, \@records);
@@ -481,11 +481,18 @@ sub drill_loop ($state, $records) {
     my $asked = 0;
     local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
 
+    # ':r' asks the card before this one again, then this one: both wait
+    # here, each as it was asked.
+    my (@ahead, $prev);
     while (1) {
-        my ($r, $kind) = $in_order ? next_in_order($state, $records)
-                                   : (pick_record($state, $records), '');
-        show_lessons($state, $records, $r) if $kind eq 'new';
-        my $direction = choose_direction();
+        my ($r, $kind, $direction);
+        if (@ahead) { ($r, $kind, $direction) = @{ shift @ahead } }
+        else {
+            ($r, $kind) = $in_order ? next_in_order($state, $records)
+                                    : (pick_record($state, $records), '');
+            show_lessons($state, $records, $r) if $kind eq 'new';
+            $direction = choose_direction();
+        }
         my ($prompt, $expected) =
             $direction eq 'recognition'
             ? ($r->{loglan}, $r->{answer})
@@ -512,21 +519,27 @@ sub drill_loop ($state, $records) {
             # finger beside Enter; drop it before anything else looks.
             $reply =~ tr/\\//d;
             $reply =~ s/^\s+|\s+$//g;
-            # ':q' and ':s' are taken however they are capitalised.
+            # The commands are taken however they are capitalised.
             $reply = lc $reply if $reply =~ /\A:/;
-            # ':l' shows the last lesson again, then the same card.
-            if ($reply eq ':l') {
-                my @last = @{ $state->{last_lessons} // [] };
-                if (@last) { show_lesson($_) for @last }
-                else       { say "  (no lesson yet)" }
-                next;
-            }
-            last unless $reply eq ':s';
-            show_status($state, $records);
+            last unless $reply =~ /\A:/;
+            last if $reply eq ':q' || ($reply eq ':r' && $prev);
+            # ':l' shows the lesson this card goes with, then the same card;
+            # ':1' is taken for it, the two look so alike.
+            if ($reply eq ':l' || $reply eq ':1') { show_card_lessons($records, $r) }
+            elsif ($reply eq ':s') { show_status($state, $records) }
+            elsif ($reply eq ':r') { say "  (nothing asked before this one yet)" }
+            # Anything else after a ':' is a slip, not an answer.
+            else { say "  $_" for '(not a command:', '  :s  status', '  :l  the lesson this card goes with',
+                                  '  :r  ask the card before this one again', '  :q  quit and save)' }
         }
         last unless defined $reply;
 
         if ($reply eq ':q') { last }
+        if ($reply eq ':r') {
+            unshift @ahead, $prev, [ $r, $kind, $direction ];
+            undef $prev;
+            next;
+        }
 
         my $s = item_state($state, $r->{key});
         $s->{seen}++;
@@ -551,6 +564,9 @@ sub drill_loop ($state, $records) {
             demote($s);
         }
         after_in_order($state, $r, $kind, $right && $reply ne '') if $in_order;
+        # Asked again, it is graded again, as one gone over: right takes it
+        # off the in-order retry list, wrong puts it at the back.
+        $prev = [ $r, $kind eq 'new' ? 'retry' : $kind, $direction ];
         if ($none) {
             # The answer, and the note on why there is none to give.
             my (undef, $why) = mt_split_note($expected);
@@ -588,8 +604,18 @@ sub show_lessons ($state, $records, $r) {
         my $go = <STDIN>;
         last unless defined $go;
     }
-    $state->{last_lessons} = \@due;
     save_state($state_file, $state);
+}
+
+# The lesson a card goes with: the nearest one marked at or before it.
+sub show_card_lessons ($records, $r) {
+    return say "  (this list has no lessons)" unless %lesson;
+    for my $i (reverse 0 .. $r->{index}) {
+        my $l = $records->[$i]{lessons} or next;
+        show_lesson($_) for @$l;
+        return;
+    }
+    say "  (no lesson comes before this card)";
 }
 
 # In order, as MacTeach 1 went: every sentence in its turn.  One you miss
@@ -801,7 +827,8 @@ In-drill commands:
   <answer>+Enter   grade your answer
   Enter alone      give up on this card (counts as a miss)
   :s               status
-  :l               show the last lesson again
+  :l               show the lesson this card goes with (:1 works too)
+  :r               ask the card before this one again, graded, then this one
   -                for a sentence with no translation (ungrammatical), the
                      answer
   :q               quit and save

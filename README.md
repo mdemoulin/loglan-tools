@@ -26,7 +26,8 @@ way out of when you miss.
 `~/.loglan` and builds the lists from them (see [Sources and
 updates](#sources-and-updates)); nothing has to be downloaded.  In a
 drill, type your answer and press Enter; a blank line shows the answer (and
-counts as a miss), `:s` shows your progress, and `:q` saves and quits.  Any
+counts as a miss), `:s` shows your progress, `:r` asks the card before
+again (graded, then back to this one), and `:q` saves and quits.  Any
 one of a gloss's alternatives ("box/crate/carton") counts as right.  Open
 `~/.loglan/vocab-cheatsheet.html` in a browser for the declension tables.
 
@@ -104,7 +105,8 @@ asked in its turn, from the top of the file, and each lesson is shown once,
 before the sentences it goes with -- the first six, on pronunciation and the
 kinds of word, before the very first.  A sentence you miss is asked again,
 until you have it, before the next lesson begins; after the last sentence
-it starts again from the top.  `:l` shows the last lesson again, `:s` says
+it starts again from the top.  `:l` shows the lesson the card goes with
+again, `:s` says
 where you are, and `--random` drills the list on the ladder instead,
 without the lessons.  A sentence that comes twice with two Englishes (a
 literal and an idiomatic one) is two cards, each with its own progress, and
