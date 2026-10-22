@@ -92,8 +92,9 @@ show_tables($state_dir), exit 0 if $opt{tables};
 # here.
 my $data_file = shift @ARGV;
 if (!-e $data_file && defined $state_dir && $data_file !~ m{/}) {
-    ($data_file) = grep { -f } "$state_dir/$data_file", "$state_dir/aux/$data_file"
-        or die "No such list: $data_file\n";
+    my $name = $data_file;
+    ($data_file) = grep { -f } "$state_dir/$name", "$state_dir/aux/$name"
+        or die "No such list: $name\n";
 }
 die "No such file: $data_file\n" unless -f $data_file;
 
