@@ -801,7 +801,8 @@ sub demote ($s) {
 }
 
 # Every spelling the drill will take for $expected, which is also what it
-# lists back after each card: what the list says, and nothing made up here.
+# lists back after each card: what the list says, and, for an "X-like" (the
+# -e of an animal), "Xish" -- nothing else is made up here.
 sub accepted_answers ($expected) {
     my (@gloss, %seen);
     for my $a (split m{[/|]}, $expected) {
@@ -812,6 +813,10 @@ sub accepted_answers ($expected) {
             next unless length $n;
             # "sheep like", "sheeplike" and "sheep-like" are one answer.
             push @gloss, $n unless $seen{ match_key($n) }++;
+            if ($n =~ /^(.+) like\z/i) {
+                my $ish = "$1ish";
+                push @gloss, $ish unless $seen{ match_key($ish) }++;
+            }
         }
     }
     return @gloss;
