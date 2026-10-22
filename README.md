@@ -4,11 +4,13 @@ Tools for learning and working with [Loglan](https://www.loglan.org/), the logic
 James Cooke Brown began in 1955.
 
 > **Not everything here is under the GPL.**  The programs are free software
-> (GPL version 3 or later; see [COPYING](COPYING)).  The Loglan material
-> they ship and work from -- the dictionary, *Loglan 1* and `omnibus.py` in
-> `sources/`, the lists in `lists/`, and the page template inside
-> `new-words-html.py` -- is owned by **The Loglan Center, Inc.**, which
-> reserves all rights to it, and is used with its permission.
+> (GPL version 3 or later; see [COPYING](COPYING)) -- all except the parser,
+> `omnibus.py`, which is Randall Holmes's and belongs to The Loglan Center.
+> It and the rest of the Loglan material the programs ship and work from --
+> the dictionary and *Loglan 1* in `sources/`, the lists in `lists/`, and
+> the page template inside `new-words-html.py` -- are owned by **The Loglan
+> Center, Inc.**, which reserves all rights to them, and are used with its
+> permission.
 > [COPYING-TLC](COPYING-TLC) says exactly which files are whose.
 
 ## loglan-teach
@@ -338,9 +340,9 @@ commit.
 
 ## Sources and licensing
 
-The code here is Copyright (C) 2026 Michael A. Demoulin, licensed under the
-GNU General Public License, version 3 or (at your option) any later version;
-see [COPYING](COPYING).
+The code here, except the parser `omnibus.py`, is Copyright (C) 2026
+Michael A. Demoulin, licensed under the GNU General Public License, version
+3 or (at your option) any later version; see [COPYING](COPYING).
 
 The dictionary, *Loglan 1* and the parser `omnibus.py` in `sources/`, the
 sentences in `lists/utts`, the ethnic and animals lists in `lists/aux`
