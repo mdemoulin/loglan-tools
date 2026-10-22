@@ -59,9 +59,62 @@ drill and commits it when you quit.  Progress made on two machines before
 either was synced is merged word by word, each word as the copy that has
 seen it more often has it.  When the repository cannot be reached it says
 so once, drills from the copy here, and commits it the next time.  ssh is
-never asked for a passphrase, so the key must be in your agent.
+never asked for a passphrase, so the key must be in your agent, or have
+none (see below).
 `--no-sync` or `LOGLAN_NO_SYNC=1` turns this off.  Your other files there
 (`new-words.json`, `*.added`) are left for you to commit.
+
+To set it up, on the machine that keeps the repository (here `server`,
+with the repository in `/svn/loglan-state`):
+
+    svnadmin create /svn/loglan-state
+    svn mkdir -m 'loglan progress' file:///svn/loglan-state/trunk
+    svn checkout file:///svn/loglan-state/trunk ~/.loglan
+
+and on each machine, check `~/.loglan` out *before* running `install.sh`,
+which builds the lists into it (run it again if `~/.loglan` came after).
+On the server the checkout is by `file://`, as above, and needs no ssh;
+elsewhere it is by `svn+ssh://`.  The two can be mixed, as long as every
+commit is made as the same user, or by users of one group that can write
+the repository.  Have svn ignore what `install.sh` and `loglan-update`
+build, so that only your own files are kept:
+
+    cd ~/.loglan
+    printf '%s\n' src dist cache aux core prims affs affsets animals ethnic \
+        l1prims derivs utts parse coined m1-text vocab-cheatsheet.html \
+        update.log UPDATED .update.lock > /tmp/ignore
+    svn propset svn:ignore -F /tmp/ignore . && svn commit -m 'ignore built files' .
+
+A built file that was committed before it was ignored comes out with
+`svn rm --keep-local FILE` and a commit.  On every other machine, move that
+file aside before the next `svn update` and back after it, or the update
+ends in a tree conflict.
+
+For the ssh, give each machine a key of its own with no passphrase, so the
+drill never waits on an agent, and let that key do nothing but svn.  On
+the machine:
+
+    ssh-keygen -t ed25519 -N '' -f ~/.ssh/loglan_sync -C "loglan-sync $(hostname)"
+
+and in its `~/.ssh/config`:
+
+    Host server-loglan
+        HostName server.local
+        User you
+        IdentityFile ~/.ssh/loglan_sync
+        IdentitiesOnly yes
+
+On the server, add `~/.ssh/loglan_sync.pub` to `~/.ssh/authorized_keys`
+with a restriction in front of it:
+
+    command="svnserve -t -r /svn",restrict ssh-ed25519 AAAA... loglan-sync laptop
+
+`-r /svn` makes `/svn` the root, so it drops out of the URL:
+
+    svn checkout svn+ssh://server-loglan/loglan-state/trunk ~/.loglan
+
+A working copy checked out by another URL is moved with `svn relocate
+NEW-URL ~/.loglan`.
 
 ### The lists
 
@@ -307,17 +360,39 @@ corporation).  That material is not covered by the GPL.
   `new-words-html.py` (standard library only)
 - for the online check (optional: the tools work from the shipped sources
   without it), HTTPS: Perl's `IO::Socket::SSL`, or `curl`
+- for progress on more than one machine (optional), Subversion, and ssh
+  to reach the repository
 
 ### On Android
 
 The tools run in [Termux](https://termux.dev), a Linux terminal for
 Android (install it from F-Droid, as Termux recommends):
 
-    pkg install perl python git curl
+    pkg install perl python git curl subversion openssh
     git clone https://github.com/mdemoulin/loglan-tools
     cd loglan-tools && ./install.sh
     loglan-teach core
 
 There `install.sh` offers Termux's own bin directory (`$PREFIX/bin`) first;
 it is already on your PATH, and needs no sudo.  For the manual page,
-`pkg install man`.
+`pkg install man`.  (`subversion` and `openssh` are only for [progress on
+more than one machine](#progress-on-more-than-one-machine); for that,
+check `~/.loglan` out before running `install.sh`.)
+
+Termux cannot look up `.local` names, so in its `~/.ssh/config` the
+server's `HostName` is its address, `192.168.0.245` say.  Give the server
+a reserved address on your router (its DHCP reservation, by the server's
+MAC address), or a static one, so that the address stays the same.  Away
+from that network the drill says it cannot reach the repository, and
+syncs the next time it can.
+
+To work in Termux from your computer, over the USB cable: in Termux, run
+`sshd` (port 8022; it runs until Termux is stopped, or `pkill sshd`), and
+put your computer's public key in Termux's `~/.ssh/authorized_keys`.  Then,
+on the computer, with USB debugging on:
+
+    adb forward tcp:8022 tcp:8022
+    ssh -p 8022 localhost
+
+Termux ignores the user name.  `adb shell` itself is no use for this: it
+runs as Android's `shell` user, which cannot get into Termux's files.
