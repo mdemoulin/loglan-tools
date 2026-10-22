@@ -30,7 +30,7 @@ counts as a miss), `:s` shows your progress, `:r` asks the card before
 again (graded, then back to this one), and `:q` saves and quits.  Any
 one of a gloss's alternatives ("box/crate/carton") counts as right, and
 an "X-like" -- the *-e* of an animal -- takes "Xish" as well (*kange*,
-"dog-like", takes "dogish").  On
+"dog-like", takes "doggish").  On
 Android, see [On Android](#on-android).  Open
 `~/.loglan/vocab-cheatsheet.html` in a browser for the declension tables.
 

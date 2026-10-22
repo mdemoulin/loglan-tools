@@ -815,7 +815,7 @@ sub accepted_answers ($expected) {
             # "sheep like", "sheeplike" and "sheep-like" are one answer.
             push @gloss, $n unless $seen{ match_key($n) }++;
             if ($n =~ /^(.+) like\z/i) {
-                my $ish = "$1ish";
+                my $ish = ish($1);
                 push @gloss, $ish unless $seen{ match_key($ish) }++;
             }
         }
@@ -831,6 +831,16 @@ sub match_answer ($reply, $expected) {
 # Neither case nor spacing counts, so a gloss written one way ("fish-like")
 # takes a reply written the other ("Fishlike").
 sub match_key ($s) { return lc($s) =~ s/ //gr }
+
+# "X" + "ish", spelled as English spells it: a silent e goes ("horsish"),
+# and the last consonant of a one-syllable word ending in one vowel and one
+# consonant is doubled ("rattish", "guinea piggish"), but not w, x or y
+# ("cowish").
+sub ish ($x) {
+    $x =~ s/(?<=[^e])e\z//i
+        or $x =~ s/(?:^|(?<= ))[^aeiou ]*[aeiou]\K([b-df-hj-np-tvz])\z/$1$1/i;
+    return "${x}ish";
+}
 
 # Hyphens, underscores and runs of whitespace all count as one word break,
 # so "lion cub" matches "lion-cub" and "lion like" matches "lion_like".
