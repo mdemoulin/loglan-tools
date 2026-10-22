@@ -29,7 +29,7 @@
     loglan-coin make PIECE PIECE...     every complex the pieces can make,
                                         best first, each checked as above
 
-The word grammar is Randall Holmes's own: her PEG parser, omnibus.py, ships
+The word grammar is Lavinia Randall Holmes's own: her PEG parser, omnibus.py, ships
 with these tools and loglan-update keeps it current, and this script asks its word classes whether a string
 is a little word, a name, a borrowing or a complex, and how a complex
 splits into its parts.  What the parser cannot know -- the dictionary --

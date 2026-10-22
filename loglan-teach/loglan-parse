@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# loglan-parse: Randall Holmes's Loglan parser, interactively.
+# loglan-parse: Lavinia Randall Holmes's Loglan parser, interactively.
 # Part of loglan-tools <https://github.com/mdemoulin/loglan-tools>.
 # Copyright (C) 2026  Michael A. Demoulin <35350967+mdemoulin@users.noreply.github.com>
 #
@@ -22,9 +22,10 @@
 # The Loglan Center, Inc., which reserves all rights to it, and is used with
 # its permission.  See COPYING-TLC.
 
-# loglan-parse -- Randall Holmes's PEG parser for Loglan, omnibus.py, in its
-# own interactive loop: type a Loglan utterance and see how it parses.  See
-# the parser's own help (type ? at its prompt) for its commands; ... leaves.
+# loglan-parse -- Lavinia Randall Holmes's PEG parser for Loglan, omnibus.py,
+# in its own interactive loop: type a Loglan utterance and see how it parses.
+# See the parser's own help (type ? at its prompt) for its commands; ...
+# leaves.
 #
 #   loglan-parse              the interactive loop
 #   loglan-parse -i           the same, staying in Python afterwards
