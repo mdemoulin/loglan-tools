@@ -87,12 +87,19 @@ if (defined $state_dir) {
 
 show_tables($state_dir), exit 0 if $opt{tables};
 
+# Is the list directory a Subversion working copy whose files go with you
+# from one machine to the next (see sync_in)?
+my $svn_dir = !$opt{nosync} && !$ENV{LOGLAN_NO_SYNC} && defined $state_dir && -d "$state_dir/.svn";
+
 # A bare list name -- "prims", "animals" -- is one of the lists there (or
 # among the auxiliary lists, in aux/), unless a file by that name is right
-# here.
+# here.  A list of one's own committed from another machine, and not here
+# yet, is fetched from the repository first.
 my $data_file = shift @ARGV;
 if (!-e $data_file && defined $state_dir && $data_file !~ m{/}) {
     my $name = $data_file;
+    svn('update', '-q', "$state_dir/$name")
+        if $svn_dir && !grep { -f } "$state_dir/$name", "$state_dir/aux/$name";
     ($data_file) = grep { -f } "$state_dir/$name", "$state_dir/aux/$name"
         or die "No such list: $name\n";
 }
@@ -102,6 +109,19 @@ my $state_file = $opt{state}
               // (defined $state_dir
                     ? "$state_dir/" . basename($data_file) . '.state.json'
                     : "$data_file.state.json");
+
+# Progress kept in Subversion: brought up to date before the drill, and
+# committed when it ends (see sync_in); a list of one's own there likewise
+# brought up to date before it is read (list_in).
+my $sync = $svn_dir && dirname($state_file) eq $state_dir;
+my $state_saved = 0;
+my $sync_unreachable = 0;
+sync_in($state_file) if $sync;
+list_in($data_file) if $sync && !$sync_unreachable && dirname($data_file) eq $state_dir;
+END {
+    local $?;           # the exit status is the drill's, not svn's
+    sync_out($state_file) if $sync && $state_saved;
+}
 
 # The derivs table normally sits beside the data file; fall back to the state
 # directory so a list of one's own still gets derivations.
@@ -131,18 +151,6 @@ if (!$opt{random} && grep { $_->{lessons} } @records) {
     } else {
         warn "No m1-text for this list's lessons; drilling it at random (see --lessons).\n";
     }
-}
-
-# Progress kept in Subversion: brought up to date before the drill, and
-# committed when it ends (see sync_in).
-my $sync = !$opt{nosync} && !$ENV{LOGLAN_NO_SYNC} && defined $state_dir && -d "$state_dir/.svn"
-        && dirname($state_file) eq $state_dir;
-my $state_saved = 0;
-my $sync_unreachable = 0;
-sync_in($state_file) if $sync;
-END {
-    local $?;           # the exit status is the drill's, not svn's
-    sync_out($state_file) if $sync && $state_saved;
 }
 
 my $state = load_state($state_file, $data_file);
@@ -458,8 +466,9 @@ sub save_state ($file, $state) {
 # have both changed, they are merged word by word.  No connection (away
 # from the server's network, say) only means the drill goes on with the copy
 # here, which is committed the next time it can be.  ssh never asks for a
-# passphrase: the key has to be in your agent.  LOGLAN_NO_SYNC=1 or
-# --no-sync turns it off.
+# passphrase: the key has to be in your agent.  A list of one's own kept
+# there is brought up to date the same way (list_in), and fetched when it is
+# not here yet.  LOGLAN_NO_SYNC=1 or --no-sync turns it off.
 
 # Runs svn, never interactively; returns whether it worked, and what it said.
 sub svn (@args) {
@@ -476,9 +485,13 @@ sub svn (@args) {
 
 sub sync_note ($what, $out) {
     $sync_unreachable = 1;
+    warn "(progress not $what -- ", svn_why($out), "; the copy here is kept, and committed next time)\n";
+}
+
+# The line of what svn said that says why it failed.
+sub svn_why ($out) {
     my ($why) = reverse grep { /^svn: E\d/ } split /\n/, $out;
-    $why //= $out =~ /\S/ ? (split /\n/, $out)[-1] : 'svn not found';
-    warn "(progress not $what -- $why; the copy here is kept, and committed next time)\n";
+    return $why // ($out =~ /\S/ ? (split /\n/, $out)[-1] : 'svn not found');
 }
 
 sub sync_in ($file) {
@@ -509,6 +522,16 @@ sub sync_in ($file) {
     } else {
         rename $mine, $file;
     }
+}
+
+# A list of one's own kept in the repository (the built ones are ignored) is
+# brought up to date as well, before it is read -- unless it has been
+# changed here and not committed, when it is left as it is.
+sub list_in ($file) {
+    my ($ok, $st) = svn('status', $file);
+    return unless $ok && $st !~ /^[MACDR?I!~]/m;
+    my ($up, $out) = svn('update', '-q', '--accept', 'theirs-full', $file);
+    warn "(list not brought up to date -- ", svn_why($out), ")\n" unless $up;
 }
 
 sub sync_out ($file) {
@@ -946,8 +969,8 @@ State:
                      /<data-file>.state.json]
   --reset          wipe progress for this data file
   --no-sync        when the state file is in a Subversion working copy, do
-                     not update it first or commit it after (as
-                     LOGLAN_NO_SYNC=1)
+                     not update it (or a list of your own there) first or
+                     commit it after (as LOGLAN_NO_SYNC=1)
   --status         print progress histogram and exit
   --tables         list the lists in \$LOGLAN_STATE_DIR, their sizes, and
                      which have progress saved (no data-file needed)

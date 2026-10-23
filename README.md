@@ -63,8 +63,11 @@ seen it more often has it.  When the repository cannot be reached it says
 so once, drills from the copy here, and commits it the next time.  ssh is
 never asked for a passphrase, so the key must be in your agent, or have
 none (see below).
+A list of your own kept there -- committed from one machine, say -- is
+brought up to date too, before it is read, and fetched if it is not here
+yet; one you have changed here and not committed is left as it is.
 `--no-sync` or `LOGLAN_NO_SYNC=1` turns this off.  Your other files there
-(`new-words.json`, `*.added`) are left for you to commit.
+(`new-words.json`, `*.added`, a new list) are left for you to commit.
 
 To set it up, on the machine that keeps the repository (here `server`,
 with the repository in `/svn/loglan-state`):
