@@ -694,7 +694,8 @@ sub drill_loop ($state, $records) {
             promote($s);
         }
         else {
-            say "     no";
+            # In reverse video on a terminal, to stand out from the "ok"s.
+            say -t STDOUT && ($ENV{TERM} // 'dumb') ne 'dumb' ? "    \e[7m no \e[m" : "     no";
             demote($s);
         }
         after_in_order($state, $r, $kind, $right && $reply ne '') if $in_order;
