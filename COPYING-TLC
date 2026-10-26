@@ -5,7 +5,8 @@ This repository holds two kinds of file, under different terms.
 
 
 1. LOGLAN MATERIAL -- OWNED BY THE LOGLAN CENTER, INC.
-   NOT covered by the GPL.  All rights reserved by The Loglan Center.
+   NOT covered by the GPL.  All rights reserved by The Loglan Center, which
+   allows and encourages noncommercial use of it by others.
 
     sources/Dictionary/L-to-E-TDR.html
                     Lavinia Randall Holmes's Loglan-to-English dictionary
@@ -40,6 +41,9 @@ This repository holds two kinds of file, under different terms.
        Center, Inc (the Idaho corporation which has superseded the Florida
        corporation).  Our general view is that a language should be used,
        not hoarded."
+
+   The Loglan Center allows and encourages noncommercial use of this
+   material by others (Lavinia Randall Holmes, October 2026).
 
    The originals are published at
    <https://randall-holmes.github.io/Loglan/cefli.html>; sources/MANIFEST

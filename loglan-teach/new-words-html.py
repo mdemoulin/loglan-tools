@@ -93,8 +93,9 @@ def entries(words):
 # The page around the entries: the head and footer of the Loglan-to-English
 # dictionary's LoglanToEnglish.html, less its search box, letter index and
 # fixed bars.  All rights reserved by The Loglan Center, Inc. (the Idaho
-# corporation which has superseded the Florida corporation); used with its
-# permission.  See COPYING-TLC.
+# corporation which has superseded the Florida corporation), which allows and
+# encourages noncommercial use of it by others; used with its permission.
+# See COPYING-TLC.
 HEAD = r'''<!doctype html>
 <html lang="en">
 <head>

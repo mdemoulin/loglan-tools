@@ -18,9 +18,9 @@
 #
 # The Loglan material this program works from -- the dictionary, Loglan 1,
 # omnibus.py, and the word lists drawn from them -- is not covered by the
-# GPL: it is owned by
-# The Loglan Center, Inc., which reserves all rights to it, and is used with
-# its permission.  See COPYING-TLC.
+# GPL: it is owned by The Loglan Center, Inc., which reserves all rights to
+# it, but allows and encourages noncommercial use of it by others; it is used
+# here with its permission.  See COPYING-TLC.
 
 use v5.36;
 use utf8;

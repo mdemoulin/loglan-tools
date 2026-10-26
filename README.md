@@ -9,8 +9,9 @@ James Cooke Brown began in 1955.
 > Center.  It and the rest of the Loglan material the programs ship and work
 > from -- the dictionary and *Loglan 1* in `sources/`, the lists in
 > `lists/`, and the page template inside `new-words-html.py` -- are owned by
-> **The Loglan Center, Inc.**, which reserves all rights to them, and are
-> used with its permission.
+> **The Loglan Center, Inc.**, which reserves all rights to them, but allows
+> and encourages noncommercial use of them by others; they are used here
+> with its permission.
 > [COPYING-TLC](COPYING-TLC) says exactly which files are whose.
 
 ## loglan-teach
@@ -356,7 +357,8 @@ lists them and gives the permission in full.  Lavinia Randall Holmes
 publishes the originals at <https://randall-holmes.github.io/Loglan/cefli.html>.
 **All rights to the Loglan material are reserved by The Loglan Center,
 Inc.** (the Idaho corporation which has superseded the Florida
-corporation).  That material is not covered by the GPL.
+corporation), which allows and encourages noncommercial use of it by
+others.  That material is not covered by the GPL.
 
 ## Requirements
 

@@ -1,6 +1,7 @@
 # animals -- the animal declension sets (-u any, -a female, -o male, -i young, -e -like), for loglan-teach: word<TAB>affixes<TAB>gloss<TAB>notes.
 # Drawn from Lavinia Randall Holmes's Loglan-to-English dictionary; a member no source has is formed by rule.
 # All rights reserved by The Loglan Center, Inc. (the Idaho corporation which has superseded the Florida corporation).
+# The Loglan Center allows and encourages noncommercial use of this material by others.
 # Included with the permission of The Loglan Center (Lavinia Randall Holmes, October 2026).
 # This file is not covered by the GPL that covers the code in this repository.
 ansu	-	goose	is a generic member of the goose family, an anseridine bird of species F.
