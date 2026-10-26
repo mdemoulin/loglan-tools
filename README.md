@@ -31,7 +31,7 @@ updates](#sources-and-updates)); nothing has to be downloaded.  In a
 drill, type your answer and press Enter; a blank line shows the answer (and
 counts as a miss), `:s` shows your progress, `:r` asks the card before
 again (graded, then back to this one; `:r ANSWER` grades it on ANSWER
-without asking), and `:q` saves and quits.  Any
+without asking), `:h` lists the commands, and `:q` saves and quits.  Any
 one of a gloss's alternatives ("box/crate/carton") counts as right, and
 an "X-like" -- the *-e* of an animal -- takes "Xish" as well (*kange*,
 "dog-like", takes "doggish").  On

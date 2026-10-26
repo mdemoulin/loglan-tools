@@ -167,7 +167,7 @@ exit 0 if $opt{status};
 say "Loglan drill: ", basename($data_file),
     "  (", scalar(@records), " items, ",
     "$opt{rungs} rungs, escape=$opt{escape}, dir=$opt{dir})";
-say "Type the answer and press Enter.  Blank line = show answer.  :q = quit.  :s = status.  :r = ask the last one again (:r ANSWER = answer it again).";
+say "Type the answer and press Enter.  Blank line = show answer.  :q = quit.  :s = status.  :r = ask the last one again (:r ANSWER = answer it again).  :h = help.";
 say "";
 
 drill_loop($state, \@records);
@@ -612,6 +612,10 @@ sub choose_direction () {
 }
 
 sub drill_loop ($state, $records) {
+    # What ':h', or a command mistyped, shows.
+    my @drill_commands = ('  :s  status', '  :l  the lesson this card goes with',
+                          '  :r  ask the card before this one again', '  :r ANSWER  answer it again with ANSWER',
+                          '  :h  these commands', '  :q  quit and save)');
     my $asked = 0;
     local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
 
@@ -666,10 +670,10 @@ sub drill_loop ($state, $records) {
             if ($reply eq ':l' || $reply eq ':1') { show_card_lessons($records, $r) }
             elsif ($reply eq ':s') { show_status($state, $records) }
             elsif ($reply eq ':r') { say "  (nothing asked before this one yet)" }
+            # ':h' lists the commands, then the same card.
+            elsif ($reply eq ':h') { say "  $_" for '(commands:', @drill_commands }
             # Anything else after a ':' is a slip, not an answer.
-            else { say "  $_" for '(not a command:', '  :s  status', '  :l  the lesson this card goes with',
-                                  '  :r  ask the card before this one again', '  :r ANSWER  answer it again with ANSWER',
-                                  '  :q  quit and save)' }
+            else { say "  $_" for '(not a command:', @drill_commands }
         }
         last unless defined $reply;
 
@@ -986,6 +990,7 @@ In-drill commands:
   Enter alone      give up on this card (counts as a miss)
   :s               status
   :l               show the lesson this card goes with (:1 works too)
+  :h               list these commands
   :r               ask the card before this one again, graded, then this one
   :r ANSWER        grade the card before this one again on ANSWER, then
                      ask this one
