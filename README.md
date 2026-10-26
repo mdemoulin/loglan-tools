@@ -31,7 +31,9 @@ updates](#sources-and-updates)); nothing has to be downloaded.  In a
 drill, type your answer and press Enter; a blank line shows the answer (and
 counts as a miss), `:s` shows your progress, `:r` asks the card before
 again (graded, then back to this one; `:r ANSWER` grades it on ANSWER
-without asking), `:h` lists the commands, and `:q` saves and quits.  Any
+without asking), `:t` puts the card before
+on your `troublesome` list (an animal or a people with its whole set),
+`:h` lists the commands, and `:q` saves and quits.  Any
 one of a gloss's alternatives ("box/crate/carton") counts as right, and
 an "X-like" -- the *-e* of an animal -- takes "Xish" as well (*kange*,
 "dog-like", takes "doggish").  On
@@ -68,6 +70,8 @@ none (see below).
 A list of your own kept there -- committed from one machine, say -- is
 brought up to date too, before it is read, and fetched if it is not here
 yet; one you have changed here and not committed is left as it is.
+What `:t` adds to `troublesome` is committed when the drill ends, and
+merged with whatever another machine has added to it meanwhile.
 `--no-sync` or `LOGLAN_NO_SYNC=1` turns this off.  Your other files there
 (`new-words.json`, `*.added`, a new list) are left for you to commit.
 

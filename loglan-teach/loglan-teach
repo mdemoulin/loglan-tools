@@ -116,11 +116,13 @@ my $state_file = $opt{state}
 my $sync = $svn_dir && dirname($state_file) eq $state_dir;
 my $state_saved = 0;
 my $sync_unreachable = 0;
+my $troublesome_added = 0;
 sync_in($state_file) if $sync;
 list_in($data_file) if $sync && !$sync_unreachable && dirname($data_file) eq $state_dir;
 END {
     local $?;           # the exit status is the drill's, not svn's
     sync_out($state_file) if $sync && $state_saved;
+    troublesome_out("$state_dir/troublesome") if $svn_dir && !$sync_unreachable;
 }
 
 # The derivs table normally sits beside the data file; fall back to the state
@@ -281,7 +283,7 @@ sub parse_words ($lines, $field) {
         # "How are you?"), and each is a card of its own.
         my $sentence = @f < 3;
         push @out, { loglan => $loglan, answer => $answer, sentence => $sentence,
-                     key => ($sentence ? "$loglan\t$answer" : $loglan),
+                     key => ($sentence ? "$loglan\t$answer" : $loglan), line => $line,
                      index => scalar @out, (@lessons ? (lessons => [@lessons]) : ()) };
         @lessons = ();
     }
@@ -550,6 +552,28 @@ sub sync_out ($file) {
     }
 }
 
+# The list troublesome, changed here (by :t, now or in a drill that could
+# not reach the repository), is committed when the drill ends.  Added to
+# from somewhere else meanwhile, it is brought up to date and what was
+# added here goes on the end again.
+sub troublesome_out ($file) {
+    for my $try (1, 2) {
+        my ($ok, $st) = svn('status', $file);
+        return unless $ok && ($st =~ /^[MA]/m || ($troublesome_added && $st =~ /^\?/m));
+        svn('add', '-q', $file) if $st =~ /^\?/m;
+        my $host = (POSIX::uname())[1];
+        my ($done, $out) = svn('commit', '-q', '-m', "troublesome from $host", $file);
+        return if $done;
+        return warn "(troublesome not committed -- ", svn_why($out), "; committed next time)\n"
+            unless $try == 1 && $out =~ /out of date|E155011|E160028|E170004/i;
+        my @mine = read_lines($file);
+        svn('revert', '-q', $file);
+        unlink $file if $st =~ /^[A?]/m;
+        svn('update', '-q', '--accept', 'theirs-full', $file);
+        append_rows($file, @mine);
+    }
+}
+
 # Two copies of one list's progress, as one: each word as the copy that has
 # seen it more often has it (this one's, on a tie); the lessons either has
 # shown; and the place in an in-order list that is further on.
@@ -615,6 +639,7 @@ sub drill_loop ($state, $records) {
     # What ':h', or a command mistyped, shows.
     my @drill_commands = ('  :s  status', '  :l  the lesson this card goes with',
                           '  :r  ask the card before this one again', '  :r ANSWER  answer it again with ANSWER',
+                          '  :t  put the card before this one on troublesome',
                           '  :h  these commands', '  :q  quit and save)');
     my $asked = 0;
     local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
@@ -670,6 +695,7 @@ sub drill_loop ($state, $records) {
             if ($reply eq ':l' || $reply eq ':1') { show_card_lessons($records, $r) }
             elsif ($reply eq ':s') { show_status($state, $records) }
             elsif ($reply eq ':r') { say "  (nothing asked before this one yet)" }
+            elsif ($reply eq ':t') { $prev ? add_troublesome($prev->[0]) : say "  (nothing asked before this one yet)" }
             # ':h' lists the commands, then the same card.
             elsif ($reply eq ':h') { say "  $_" for '(commands:', @drill_commands }
             # Anything else after a ':' is a slip, not an answer.
@@ -732,6 +758,57 @@ sub drill_loop ($state, $records) {
     }
     save_state($state_file, $state);
     say "\nSaved.";
+}
+
+# ':t': the card before goes on the list troublesome, in the list directory,
+# to be drilled on its own -- an animal or a people with the rest of its set
+# (cervu cerva cervo cervi cerve), as aux/animals and aux/ethnic have it.
+sub add_troublesome ($r) {
+    return say "  (no list directory to keep troublesome in)" unless defined $state_dir;
+    my $file = "$state_dir/troublesome";
+    # Brought up to date first -- fetched, if it is not here yet -- so what
+    # is added goes after what is there.
+    list_in($file) if $svn_dir;
+    my @rows = ($r->{line});
+    my $stem = $r->{loglan} =~ s/[aeiou]\z//r;
+    for my $set (map { "$state_dir/aux/$_" } qw(animals ethnic)) {
+        next if $r->{sentence} || !-f $set;
+        my @set = grep { (split /\t/)[0] =~ /\A\Q$stem\E[aeiou]\z/ } read_lines($set);
+        if (grep { (split /\t/)[0] eq $r->{loglan} } @set) { @rows = @set; last }
+    }
+    my @added = append_rows($file, @rows);
+    $troublesome_added ||= @added > 0;
+    my %new = map { row_key($_) => 1 } @added;
+    my @old = grep { !$new{ row_key($_) } } @rows;
+    say "  (on troublesome now: ", join(' ', map { (split /\t/)[0] } @added), ")" if @added;
+    say "  (on troublesome already: ", join(' ', map { (split /\t/)[0] } @old), ")" if @old;
+}
+
+# A list's lines, without line ends, the comments and blank ones left out.
+sub read_lines ($file) {
+    open my $fh, '<:encoding(UTF-8)', $file or return ();
+    return grep { length && !/^\s*#/ } map { s/\r?\n\z//r } <$fh>;
+}
+
+# What a row is known by: the Loglan word, or a sentence with its English.
+sub row_key ($line) {
+    my @f = map { s/^\s+|\s+$//gr } split /\t/, $line;
+    return join "\t", @f < 3 ? @f[0, 1] : $f[0];
+}
+
+# Adds to a list the rows it has not got yet, making it if need be; returns
+# the ones added.
+sub append_rows ($file, @rows) {
+    my %have = map { row_key($_) => 1 } read_lines($file);
+    my @add  = grep { !$have{ row_key($_) }++ } @rows;
+    return () unless @add;
+    my $new = !-e $file;
+    open my $fh, '>>:encoding(UTF-8)', $file or do { warn "  (cannot write $file: $!)\n"; return () };
+    print $fh "# Cards that keep tripping you up, drilled on their own: loglan-teach troublesome\n",
+              "# Put here by :t in a drill; an animal or a people comes with its whole set.\n" if $new;
+    print $fh "$_\n" for @add;
+    close $fh;
+    return @add;
 }
 
 # Before the next sentence in order, every lesson up to it not yet shown, in
@@ -990,6 +1067,8 @@ In-drill commands:
   Enter alone      give up on this card (counts as a miss)
   :s               status
   :l               show the lesson this card goes with (:1 works too)
+  :t               put the card before this one on the list troublesome,
+                     an animal or a people with its whole set
   :h               list these commands
   :r               ask the card before this one again, graded, then this one
   :r ANSWER        grade the card before this one again on ANSWER, then
