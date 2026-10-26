@@ -167,7 +167,7 @@ exit 0 if $opt{status};
 say "Loglan drill: ", basename($data_file),
     "  (", scalar(@records), " items, ",
     "$opt{rungs} rungs, escape=$opt{escape}, dir=$opt{dir})";
-say "Type the answer and press Enter.  Blank line = show answer.  :q = quit.  :s = status.  :r = ask the last one again.";
+say "Type the answer and press Enter.  Blank line = show answer.  :q = quit.  :s = status.  :r = ask the last one again (:r ANSWER = answer it again).";
 say "";
 
 drill_loop($state, \@records);
@@ -616,11 +616,12 @@ sub drill_loop ($state, $records) {
     local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
 
     # ':r' asks the card before this one again, then this one: both wait
-    # here, each as it was asked.
+    # here, each as it was asked.  With ':r ANSWER' the card before is
+    # graded on ANSWER instead of waiting for one.
     my (@ahead, $prev);
     while (1) {
-        my ($r, $kind, $direction);
-        if (@ahead) { ($r, $kind, $direction) = @{ shift @ahead } }
+        my ($r, $kind, $direction, $given);
+        if (@ahead) { ($r, $kind, $direction, $given) = @{ shift @ahead } }
         else {
             ($r, $kind) = $in_order ? next_in_order($state, $records)
                                     : (pick_record($state, $records), '');
@@ -641,11 +642,12 @@ sub drill_loop ($state, $records) {
 
         # ':s' is a look, not an answer: show the histogram and then ask the
         # same card again instead of moving on to the next one.
-        my $reply;
+        my ($reply, $again);
         while (1) {
             say "";
             say "  $prompt";
             print "  > ";
+            if (defined $given) { say $reply = $given; last }
             $reply = <STDIN>;
             last unless defined $reply;
             chomp $reply;
@@ -653,8 +655,10 @@ sub drill_loop ($state, $records) {
             # finger beside Enter; drop it before anything else looks.
             $reply =~ tr/\\//d;
             $reply =~ s/^\s+|\s+$//g;
-            # The commands are taken however they are capitalised.
-            $reply = lc $reply if $reply =~ /\A:/;
+            # The commands are taken however they are capitalised; an
+            # answer after ':r' is kept as typed.
+            $reply =~ s/\A(:\S*)/lc $1/e;
+            ($reply, $again) = $reply =~ /\A:r\s+([^:].*)\z/ ? (':r', $1) : ($reply, undef);
             last unless $reply =~ /\A:/;
             last if $reply eq ':q' || ($reply eq ':r' && $prev);
             # ':l' shows the lesson this card goes with, then the same card;
@@ -664,13 +668,14 @@ sub drill_loop ($state, $records) {
             elsif ($reply eq ':r') { say "  (nothing asked before this one yet)" }
             # Anything else after a ':' is a slip, not an answer.
             else { say "  $_" for '(not a command:', '  :s  status', '  :l  the lesson this card goes with',
-                                  '  :r  ask the card before this one again', '  :q  quit and save)' }
+                                  '  :r  ask the card before this one again', '  :r ANSWER  answer it again with ANSWER',
+                                  '  :q  quit and save)' }
         }
         last unless defined $reply;
 
         if ($reply eq ':q') { last }
         if ($reply eq ':r') {
-            unshift @ahead, $prev, [ $r, $kind, $direction ];
+            unshift @ahead, [ @$prev, $again ], [ $r, $kind, $direction ];
             undef $prev;
             next;
         }
@@ -982,6 +987,8 @@ In-drill commands:
   :s               status
   :l               show the lesson this card goes with (:1 works too)
   :r               ask the card before this one again, graded, then this one
+  :r ANSWER        grade the card before this one again on ANSWER, then
+                     ask this one
   -                for a sentence with no translation (ungrammatical), the
                      answer
   :q               quit and save
