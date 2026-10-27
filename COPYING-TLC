@@ -66,6 +66,9 @@ This repository holds two kinds of file, under different terms.
     loglan-teach/loglan-update
     loglan-teach/mk-utility
     loglan-teach/new-words-html.py -- all but its page template (above)
+    android/ -- the Android app and its build (the lists it ships are
+        built from the Loglan material, as in ~/.loglan, and are not in
+        the repository)
     man/loglan-parse.1 (documentation of The Loglan Center's parser, but
         written for loglan-tools)
     README.md, COPYING-TLC, sources/MANIFEST, sources/FIXES, .gitattributes

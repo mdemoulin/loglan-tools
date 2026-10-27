@@ -408,3 +408,26 @@ on the computer, with USB debugging on:
 
 Termux ignores the user name.  `adb shell` itself is no use for this: it
 runs as Android's `shell` user, which cannot get into Termux's files.
+
+### The Android app
+
+`android/` holds an Android app of the drill, *Loglan Teach*, which needs
+neither Termux nor a keyboard: tap a list, say which way to be asked, and
+type the answers.  It drills as `loglan-teach` does -- the same rungs and
+error box, the same answers taken, `utts` in order with its lessons, `:r`
+and `:t` as buttons (the commands can be typed too) -- and keeps each
+list's progress in a `<list>.state.json` of the same form.  The lists are
+built by `loglan-update` when the app is built, and go with it; progress
+stays on the phone (there is no syncing yet).
+
+To build it you need a JDK (17 or later) and the Android SDK; with the SDK
+in `~/Android/Sdk` (or `sdk.dir` in `android/local.properties`):
+
+    cd android
+    ./gradlew :app:assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
+    adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+`./gradlew :drill:test` tests the drill against `loglan-teach` itself:
+`drill/golden/make-golden` runs the drill's own subs on every list, and
+the Kotlin drill must read each list, take each answer, and compile each
+sentence the same way.

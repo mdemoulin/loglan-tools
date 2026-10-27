@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- A ladder, for the drill's rungs. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,30h6v48h-6z M64,30h6v48h-6z
+                          M44,36h20v4h-20z M44,46h20v4h-20z M44,56h20v4h-20z M44,66h20v4h-20z" />
+</vector>

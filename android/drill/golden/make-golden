@@ -1,0 +1,123 @@
+#!/usr/bin/env perl
+# make-golden: what loglan-teach makes of the lists, for the Kotlin drill's
+# tests to be held to.
+# Part of loglan-tools <https://github.com/mdemoulin/loglan-tools>.
+# Copyright (C) 2026  Michael A. Demoulin <35350967+mdemoulin@users.noreply.github.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+use v5.36;
+use utf8;
+use open ':std', ':encoding(UTF-8)';
+use JSON::PP ();
+
+# Usage: make-golden LOGLAN-TEACH LISTS-DIR OUT
+#
+# The drill's own subs are taken out of loglan-teach and run here, so the
+# Kotlin drill is tested against what the Perl one does now, not against
+# what it once did: how each list is read, which answers each gloss takes,
+# and what each sentence's MacTeach notation compiles to, with how a set of
+# replies fare against them.
+my ($teach, $lists, $out) = @ARGV;
+die "Usage: make-golden LOGLAN-TEACH LISTS-DIR OUT\n" unless defined $out;
+
+my $code = do {
+    open my $fh, '<:encoding(UTF-8)', $teach or die "open $teach: $!";
+    local $/;
+    <$fh>;
+};
+my @subs = qw(parse_words mt_split_note mt_fold mt_compile mt mt_match accepted_answers
+              match_answer match_key ish normalize expand_optionals row_key);
+my $src = "my %opt = (rungs => 5, escape => 2);\nmy %mt_cache;\n";
+for my $name (@subs) {
+    # A sub of one line, or of many, ending with a "}" of its own.
+    $code =~ /^(sub \Q$name\E \([^\n]*\}\n|sub \Q$name\E \(.*?^\}\n)/ms
+        or die "no sub $name in $teach\n";
+    $src .= $1;
+}
+eval "$src; 1" or die "loading the subs of $teach: $@";
+
+my @files = (map({ [$_, "$lists/$_"] } qw(core prims affs affsets utts l1prims)),
+             map({ [$_, "$lists/aux/$_"] } qw(animals ethnic)));
+
+my (%records, %answers, %sentences);
+for my $f (@files) {
+    my ($name, $file) = @$f;
+    open my $fh, '<:encoding(UTF-8)', $file or die "open $file: $!";
+    my @lines = map { s/\r?\n\z//r } <$fh>;
+    close $fh;
+    for my $field ($name =~ /^affs/ ? qw(gloss affix) : 'gloss') {
+        my @recs = parse_words(\@lines, $field);
+        $records{"$name/$field"} = [ map { {
+            loglan => $_->{loglan}, answer => $_->{answer}, key => $_->{key}, line => $_->{line},
+            sentence => $_->{sentence} ? JSON::PP::true : JSON::PP::false,
+            index => $_->{index}, lessons => [ map { 0 + $_ } @{ $_->{lessons} // [] } ],
+        } } @recs ];
+        for my $r (@recs) {
+            if ($r->{sentence}) {
+                $sentences{"$r->{loglan}\0$r->{answer}"} //= sentence($r);
+            } else {
+                $answers{ $r->{answer} } //= answer($r->{answer});
+                $answers{ $r->{loglan} } //= answer($r->{loglan});
+            }
+        }
+    }
+}
+
+my %ish = map { $_ => ish($_) }
+          (qw(dog cat horse rat fox cow sheep goose bee ape monkey wren cub owl flea hen pig
+              yak gnu emu Ox Dog swan crab bat dove), 'guinea pig', 'sea lion', 'house fly');
+
+open my $fh, '>:encoding(UTF-8)', $out or die "open $out: $!";
+print $fh JSON::PP->new->canonical->encode({
+    records   => \%records,
+    answers   => [ map { $answers{$_} } sort keys %answers ],
+    sentences => [ map { $sentences{$_} } sort keys %sentences ],
+    ish       => \%ish,
+});
+close $fh;
+
+# A gloss: the answers it takes, and how a set of replies made from them fare.
+sub answer ($expected) {
+    my @acc = accepted_answers($expected);
+    my %reply;
+    for my $a (@acc, $expected) {
+        for my $r ($a, uc $a, $a =~ tr/ /-/r, $a =~ s/ //gr, " $a ", $a =~ s/.\z//r,
+                   "${a}s", "${a}_x", $a =~ s/\(|\)//gr) {
+            $reply{$r} = match_answer($r, $expected) ? JSON::PP::true : JSON::PP::false;
+        }
+    }
+    return { expected => $expected, accepted => \@acc, replies => \%reply };
+}
+
+# A sentence, either way round: its note, the pattern it compiles to, how it
+# is shown, and how a set of replies fare against it.
+sub sentence ($r) {
+    my %s = (loglan => $r->{loglan}, english => $r->{answer});
+    for my $side ([loglan => $r->{loglan}, 1], [english => $r->{answer}, 0]) {
+        my ($which, $text, $loglan) = @$side;
+        my ($body, $note) = mt_split_note($text);
+        my ($re, $show) = mt_compile($body, $loglan);
+        my $other = mt($side->[0] eq 'loglan' ? $r->{answer} : $r->{loglan}, !$loglan)->{show};
+        my %reply;
+        for my $try ($show, uc $show, $show =~ s/[[:punct:]]//gr, $show =~ s/^\S+\s*//r,
+                     $show =~ s/\s*\S+\z//r, "$show x", $other, $text, '') {
+            $reply{$try} = mt_match($try, $text, $loglan) ? JSON::PP::true : JSON::PP::false;
+        }
+        $s{$which} = { text => $text, body => $body, note => $note,
+                       pattern => "$re" =~ s/\A\(\?\^u?:\\A//r =~ s/\\z\)\z//r,
+                       show => $show, fold => mt_fold($show, $loglan), replies => \%reply };
+    }
+    return \%s;
+}
