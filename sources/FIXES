@@ -11,7 +11,8 @@
 # longer found -- fixed upstream, perhaps -- is reported and otherwise
 # ignored.
 
-# hadja hadje hadji hadjo: written as a composite with every score left at 0/0 (and
-# "si" for the dictionary's own "syi"); cited as the other ethnic N-Prims are, by
-# the name they come from.
-Dictionary/L-to-E-TDR.html	&lt;0/0C ya si ya; &nbsp;0/0J Ajiya; &nbsp;0/0E Asia&gt;	&lt;J Ajia&gt;
+# hadja hadje hadji hadjo: a composite of C ya syi ya (亞細亞), J Ajiya and E Asia,
+# coined as adja and given its h- when vowel-initial predicates went; the scores
+# were never filled in (0/0) and are left so.  The Chinese is spelled "si" where
+# the dictionary's own romanization has "syi".
+Dictionary/L-to-E-TDR.html	&lt;0/0C ya si ya;	&lt;0/0C ya syi ya;
