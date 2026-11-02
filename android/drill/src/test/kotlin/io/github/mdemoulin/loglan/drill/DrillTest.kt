@@ -192,14 +192,43 @@ class DrillTest {
         val d = drill(words.drop(1).take(1), library = lib)
         assertEquals(listOf("(nothing asked before this one yet)"), assertIs<Outcome.Said>(d.reply(":t")).lines)
         d.reply("dog")
-        assertEquals(listOf("(on troublesome now: kangu kanga kango kangi kange)"),
+        assertEquals(listOf("(on words-troublesome now: kangu kanga kango kangi kange)"),
                      assertIs<Outcome.Said>(d.reply(":t")).lines)
-        assertEquals(listOf("(on troublesome already: kangu kanga kango kangi kange)"),
+        assertEquals(listOf("(on words-troublesome already: kangu kanga kango kangi kange)"),
                      assertIs<Outcome.Said>(d.reply(":t")).lines)
-        val rows = listLines(lib.troublesome.readLines())
-        assertEquals(5, rows.size)
-        assertTrue(lib.troublesome.readText().startsWith("# Cards that keep tripping you up"))
-        assertEquals(Library.Table("troublesome", 5, false), lib.tables().single { it.name == "troublesome" })
+        val file = lib.troublesome("t")
+        assertEquals(5, listLines(file.readLines()).size)
+        assertTrue(file.readText().startsWith("# Cards that keep tripping you up"))
+        assertEquals(Library.Table("words-troublesome", 5, false),
+                     lib.tables().single { it.name == "words-troublesome" })
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun eachPartHasItsOwnTroublesome() {
+        assertEquals("utts-troublesome", Library.troublesomeFor("utts"))
+        assertEquals("utts-troublesome", Library.troublesomeFor("utts-troublesome"))
+        assertEquals("affixes-troublesome", Library.troublesomeFor("affs"))
+        assertEquals("affixes-troublesome", Library.troublesomeFor("affsets"))
+        assertEquals("affixes-troublesome", Library.troublesomeFor("affixes-troublesome"))
+        for (w in listOf("core", "prims", "l1prims", "animals", "ethnic", "coined", "words-troublesome"))
+            assertEquals("words-troublesome", Library.troublesomeFor(w))
+    }
+
+    @Test
+    fun theOldTroublesomeIsSplitIntoUttsAndWords() {
+        val dir = Files.createTempDirectory("loglan").toFile()
+        File(dir, "troublesome").writeText("# old\nhelva\t-\tSwiss-language\t..\nLe mrenu.\tThe man.\n")
+        File(dir, "troublesome.state.json").writeText("{}\n")
+        val lib = Library(dir)
+        lib.splitTroublesome()
+        assertEquals(listOf("helva\t-\tSwiss-language\t.."), listLines(File(dir, "words-troublesome").readLines()))
+        assertEquals(listOf("Le mrenu.\tThe man."), listLines(File(dir, "utts-troublesome").readLines()))
+        assertTrue(lib.stateFile("words-troublesome").isFile && lib.stateFile("utts-troublesome").isFile)
+        assertFalse(File(dir, "troublesome").exists() || lib.stateFile("troublesome").exists())
+        assertTrue(File(dir, "troublesome.old").isFile)
+        assertEquals(listOf("utts-troublesome", "words-troublesome"),
+                     lib.tables().map { it.name }.filter { it.endsWith("troublesome") })
         dir.deleteRecursively()
     }
 

@@ -20,8 +20,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -74,25 +76,45 @@ fun ListsScreen(model: TeachModel, openSettings: () -> Unit) {
             }
             return@Scaffold
         }
+        val grouped = listGroups.map { g -> g to g.lists.mapNotNull { n -> lists.find { it.name == n } } }
+            .filter { (_, rows) -> rows.isNotEmpty() }
+        val rest = lists.filter { row -> listGroups.none { row.name in it.lists } }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
-            items(lists, key = { it.name }) { row ->
-                ListItem(
-                    modifier = Modifier.clickable { chosen = row.name },
-                    headlineContent = { Text(row.name) },
-                    supportingContent = {
-                        Column {
-                            listAbout[row.name]?.let { Text(it) }
-                            Text(progressLine(row), style = MaterialTheme.typography.bodySmall,
-                                 color = MaterialTheme.colorScheme.primary)
-                        }
-                    },
-                )
-                HorizontalDivider()
+            grouped.forEach { (g, rows) ->
+                item(key = "group:${g.title}") { GroupHeading(g) }
+                items(rows, key = { it.name }) { row -> ListRowItem(row) { chosen = row.name } }
             }
+            if (rest.isNotEmpty()) item(key = "rest") { Spacer(Modifier.height(16.dp)) }
+            items(rest, key = { it.name }) { row -> ListRowItem(row) { chosen = row.name } }
         }
     }
     chosen?.let { name -> StartDialog(model, name) { chosen = null } }
     if (about) AboutDialog { about = false }
+}
+
+@Composable
+private fun GroupHeading(g: ListGroup) {
+    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp)) {
+        Text(g.title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+        Text(g.about, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    HorizontalDivider()
+}
+
+@Composable
+private fun ListRowItem(row: ListRow, choose: () -> Unit) {
+    ListItem(
+        modifier = Modifier.clickable(onClick = choose),
+        headlineContent = { Text(row.name) },
+        supportingContent = {
+            Column {
+                listAbout[row.name]?.let { Text(it) }
+                Text(progressLine(row), style = MaterialTheme.typography.bodySmall,
+                     color = MaterialTheme.colorScheme.primary)
+            }
+        },
+    )
+    HorizontalDivider()
 }
 
 private fun progressLine(row: ListRow) = buildString {
@@ -114,12 +136,12 @@ private fun StartDialog(model: TeachModel, name: String, dismiss: () -> Unit) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Choice("Show the card in", listOf(Direction.RECOGNITION to "Loglan", Direction.RECALL to "English",
                                                   Direction.BOTH to "Either"), direction) { direction = it }
-                if (name.startsWith("affs")) {
+                if (name.startsWith("aff")) {
                     Choice("Answer with", listOf("gloss" to "Meaning", "affix" to "Affixes"), field) { field = it }
                 }
                 if (name == "utts") {
-                    Choice("Sentences", listOf(false to "In order", true to "At random"), random) { random = it }
-                    if (!random) Text("In order, with each lesson of MacTeach 1 before the sentences it goes with; " +
+                    Choice("Utterances", listOf(false to "In order", true to "At random"), random) { random = it }
+                    if (!random) Text("In order, with each lesson of MacTeach 1 before the utterances it goes with; " +
                                       "one you miss is asked again before the next lesson.",
                                       style = MaterialTheme.typography.bodySmall)
                 }
@@ -162,7 +184,7 @@ private fun AboutDialog(dismiss: () -> Unit) {
                      "https://github.com/mdemoulin/loglan-tools.")
                 Text("The program is free software, under the GNU General Public License, version 3 or later.  " +
                      "Copyright (C) 2026 Michael A. Demoulin.")
-                Text("The word lists, the sentences and the lessons are Loglan material: all rights are " +
+                Text("The word lists, the utterances and the lessons are Loglan material: all rights are " +
                      "reserved by The Loglan Center, Inc. (the Idaho corporation which has superseded the " +
                      "Florida corporation), which allows and encourages noncommercial use of it by others.  " +
                      "They are drawn from Lavinia Randall Holmes's Loglan-to-English dictionary, Loglan 1, " +

@@ -333,10 +333,10 @@ class Drill(
 
     private fun troublesome(r: Card): List<String> {
         val lib = library ?: return listOf("(no list directory to keep troublesome in)")
-        val t = lib.addTroublesome(r)
+        val t = lib.addTroublesome(r, name)
         return buildList {
-            if (t.added.isNotEmpty()) add("(on troublesome now: ${t.added.joinToString(" ")})")
-            if (t.already.isNotEmpty()) add("(on troublesome already: ${t.already.joinToString(" ")})")
+            if (t.added.isNotEmpty()) add("(on ${t.list} now: ${t.added.joinToString(" ")})")
+            if (t.already.isNotEmpty()) add("(on ${t.list} already: ${t.already.joinToString(" ")})")
         }
     }
 
@@ -390,7 +390,7 @@ class Drill(
         val COMMANDS = listOf(
             "  :s  status", "  :l  the lesson this card goes with",
             "  :r  ask the card before this one again", "  :r ANSWER  answer it again with ANSWER",
-            "  :t  put the card before this one on troublesome",
+            "  :t  put the card before this one on its troublesome list",
             "  :h  these commands", "  :q  quit and save)",
         )
     }

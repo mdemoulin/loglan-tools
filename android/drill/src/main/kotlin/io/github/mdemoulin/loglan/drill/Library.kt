@@ -30,8 +30,8 @@ class Library(val dir: File) {
     /**
      * What lists there are: the ones loglan-update builds first, in the order
      * one learns them; then any other auxiliary list, any other list that
-     * has progress filed here, and troublesome once :t has made it (which
-     * loglan-teach --tables leaves out until it has progress).
+     * has progress filed here, and each troublesome list once :t has made it
+     * (which loglan-teach --tables leaves out until it has progress).
      */
     fun tables(): List<Table> {
         val own = sortedSetOf<String>()
@@ -39,7 +39,7 @@ class Library(val dir: File) {
         File(dir, "aux").listFiles()?.forEach { f ->
             if (f.isFile && !f.name.startsWith(".") && !f.name.endsWith(".old")) own += f.name
         }
-        if (troublesome.isFile) own += troublesome.name
+        TROUBLESOME.filter { File(dir, it).isFile }.forEach(own::add)
         own.removeAll(KNOWN.toSet())
         return (KNOWN + own).mapNotNull { t ->
             val file = listFile(t)
@@ -57,7 +57,8 @@ class Library(val dir: File) {
 
     fun stateFile(name: String) = File(dir, "$name.state.json")
 
-    val troublesome get() = File(dir, "troublesome")
+    /** The troublesome list a list's cards go on: one each for the utts, the words and the affixes. */
+    fun troublesome(list: String) = File(dir, troublesomeFor(list))
 
     val derivs: Map<String, Derivation> by lazy {
         File(dir, "derivs").takeIf { it.isFile }?.useLines(block = ::parseDerivs) ?: emptyMap()
@@ -70,15 +71,15 @@ class Library(val dir: File) {
     fun cards(name: String, field: String = "gloss"): List<Card> =
         listFile(name)?.let { parseWords(it.readLines(), field) } ?: emptyList()
 
-    /** What :t did: the rows it put on troublesome, and the ones already there. */
-    data class Troubled(val added: List<String>, val already: List<String>)
+    /** What :t did: the list it used, the rows it put on it, and the ones already there. */
+    data class Troubled(val list: String, val added: List<String>, val already: List<String>)
 
     /**
-     * The card goes on the list troublesome, to be drilled on its own -- an
-     * animal or a people with the rest of its set (cervu cerva cervo cervi
-     * cerve), as aux/animals and aux/ethnic have it.
+     * The card, from [list], goes on that list's troublesome list, to be
+     * drilled on its own -- an animal or a people with the rest of its set
+     * (cervu cerva cervo cervi cerve), as aux/animals and aux/ethnic have it.
      */
-    fun addTroublesome(card: Card): Troubled {
+    fun addTroublesome(card: Card, list: String): Troubled {
         var rows = listOf(card.line)
         val stem = Regex("[aeiou]\\z").replaceFirst(card.loglan, "")
         val member = Regex(Regex.escape(stem) + "[aeiou]")
@@ -92,9 +93,10 @@ class Library(val dir: File) {
                 }
             }
         }
-        val added = appendRows(troublesome, rows)
+        val file = troublesome(list)
+        val added = appendRows(file, rows)
         val new = added.map(::rowKey).toSet()
-        return Troubled(added.map { it.split('\t')[0] },
+        return Troubled(file.name, added.map { it.split('\t')[0] },
                         rows.filter { rowKey(it) !in new }.map { it.split('\t')[0] })
     }
 
@@ -105,7 +107,7 @@ class Library(val dir: File) {
         if (add.isEmpty()) return add
         val text = StringBuilder()
         if (!file.exists()) {
-            text.append("# Cards that keep tripping you up, drilled on their own: loglan-teach troublesome\n")
+            text.append("# Cards that keep tripping you up, drilled on their own: ${file.name}\n")
                 .append("# Put here by :t in a drill; an animal or a people comes with its whole set.\n")
         }
         add.forEach { text.append(it).append('\n') }
@@ -113,7 +115,35 @@ class Library(val dir: File) {
         return add
     }
 
+    /**
+     * The one troublesome list there was before there were three: its
+     * utterances go to utts-troublesome and its words to words-troublesome,
+     * each with the progress it had, and it is kept as troublesome.old.
+     */
+    fun splitTroublesome() {
+        val old = File(dir, "troublesome")
+        if (!old.isFile) return
+        val (utts, words) = listLines(old.readLines()).partition { splitTabs(it).size < 3 }
+        val state = stateFile("troublesome")
+        for ((name, rows) in listOf("utts-troublesome" to utts, "words-troublesome" to words)) {
+            if (rows.isEmpty()) continue
+            appendRows(File(dir, name), rows)
+            if (state.isFile && !stateFile(name).isFile) state.copyTo(stateFile(name))
+        }
+        state.delete()
+        old.renameTo(File(dir, "troublesome.old"))
+    }
+
     companion object {
+        val TROUBLESOME = listOf("utts-troublesome", "words-troublesome", "affixes-troublesome")
+
+        /** utts-troublesome for utts, affixes-troublesome for affs and affsets, words-troublesome for the rest. */
+        fun troublesomeFor(list: String) = when {
+            list.startsWith("utts") -> "utts-troublesome"
+            list.startsWith("aff") -> "affixes-troublesome"
+            else -> "words-troublesome"
+        }
+
         val KNOWN = listOf("core", "prims", "affs", "affsets", "utts", "animals", "ethnic", "coined", "l1prims")
         private val blankOrComment = Regex("""^\s*(?:#|\z)""")
     }
