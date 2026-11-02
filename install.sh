@@ -22,11 +22,15 @@
 # it, but allows and encourages noncommercial use of it by others; it is used
 # here with its permission.  See COPYING-TLC.
 
-# install.sh -- put the loglan-teach commands somewhere on your PATH.
+# install.sh -- put the loglan-teach commands somewhere on your PATH, and the
+# Android app, Loglan Teach, on the phone plugged in over USB.
 #
 #   ./install.sh                  install where they are now, or ask where
 #   ./install.sh --ask            ask where, even if they are installed
 #   ./install.sh DIR              install into DIR without asking
+#   ./install.sh --no-app         the commands alone, not the app
+#
+# In Termux, on the phone itself, it installs the commands alone.
 #
 # Installs loglan-teach (the drill), loglan-update (keeps the Loglan sources
 # current and builds the lists), mk-utility (which loglan-update runs for the
@@ -40,6 +44,14 @@
 # (utts, and the auxiliary ethnic and animals) go into ~/.loglan/dist, and the
 # lists are built from them.  Run by hand, it then also looks online for newer
 # sources; given DIR, it does not touch the network.
+#
+# The app is built here, from android/ (it needs a JDK, 17 or later, and the
+# Android SDK), put on the phone with adb, and -- when ~/.loglan is a
+# Subversion working copy, reached by svn+ssh:// -- set up to sync with the
+# same repository: the phone's key goes into the server's authorized_keys,
+# and the server, its address and its own key into the app.  The login it
+# makes to the server for that is your own: the user and host this
+# machine's svn reaches, or LOGLAN_SERVER_LOGIN (user@host).
 
 set -eu
 
@@ -47,10 +59,18 @@ here=$(cd "$(dirname "$0")" && pwd)
 tools=(loglan-teach loglan-update mk-utility loglan-coin loglan-lookup loglan-parse new-words-html.py loglan-fetch)
 
 ask=
-if [ "${1:-}" = --ask ]; then
-    ask=1
-    shift
-fi
+app=1
+[ -n "${TERMUX_VERSION:-}" ] && app=
+args=()
+for a in "$@"; do
+    case $a in
+        --ask) ask=1 ;;
+        --no-app) app= ;;
+        -*) echo "install.sh: no such option: $a" >&2; exit 1 ;;
+        *) args+=("$a") ;;
+    esac
+done
+set -- ${args[@]+"${args[@]}"}
 
 # Already installed?  Then the same place again, unless --ask.
 prev=
@@ -217,3 +237,170 @@ Everything is kept in $data: the lists, your progress
 browser.  To add words of your own, see "Adding your own entries"
 in README.md.
 EOF
+
+[ -n "$app" ] || exit 0
+
+# ---- The Android app ----
+
+pkg=io.github.mdemoulin.loglanteach
+
+cat <<EOF
+
+The Android app
+---------------
+EOF
+
+# What building it takes: a JDK, 17 or later, and the Android SDK, with adb.
+sdk=${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}
+if [ -z "$sdk" ] && [ -f "$here/android/local.properties" ]; then
+    sdk=$(sed -n 's/^sdk\.dir=//p' "$here/android/local.properties")
+fi
+sdk=${sdk:-$HOME/Android/Sdk}
+missing=()
+jv=$(java -version 2>&1 | sed -n 's/.*version "\([0-9]*\).*/\1/p' | head -n 1) || true
+[ "${jv:-0}" -ge 17 ] || missing+=("a JDK, 17 or later${jv:+ (java here is $jv)}")
+[ -d "$sdk/platforms" ] || missing+=("the Android SDK, in ~/Android/Sdk (or say where in ANDROID_HOME)")
+adb=$(command -v adb || echo "$sdk/platform-tools/adb")
+[ -x "$adb" ] || missing+=("adb, from the SDK's platform-tools")
+if [ ${#missing[@]} -gt 0 ]; then
+    echo "Building the app needs, and this machine has not got:"
+    printf '  - %s\n' "${missing[@]}"
+    echo "Install them and run ./install.sh again -- or ./install.sh --no-app for the commands alone."
+    exit 1
+fi
+
+# The phone: plugged in, with USB debugging on, and this computer allowed.
+said= said_auth=
+while :; do
+    ready=($("$adb" devices | awk 'NR > 1 && $2 == "device" { print $1 }'))
+    [ ${#ready[@]} -gt 0 ] && break
+    if [ -z "$said" ]; then
+        cat <<EOF
+Plug the phone in over USB, with USB debugging on.  If it has never been on:
+
+  1. Settings > About phone: tap "Build number" seven times, for Developer options.
+  2. Settings > System > Developer options: turn on "USB debugging".
+  3. Plug the phone in, and on it allow USB debugging from this computer.
+
+Waiting for the phone (Ctrl-C to stop; ./install.sh --no-app for the commands alone)...
+EOF
+        said=1
+    fi
+    if [ -z "$said_auth" ] && "$adb" devices | grep -q 'unauthorized$'; then
+        echo "The phone is there, but has not allowed this computer yet: look for the prompt on it."
+        said_auth=1
+    fi
+    sleep 2
+done
+if [ -n "${ANDROID_SERIAL:-}" ]; then
+    serial=$ANDROID_SERIAL
+elif [ ${#ready[@]} -eq 1 ]; then
+    serial=${ready[0]}
+else
+    echo "Which phone?"
+    for i in "${!ready[@]}"; do
+        echo "  $((i + 1))) ${ready[i]}  $("$adb" -s "${ready[i]}" shell getprop ro.product.model | tr -d '\r')"
+    done
+    read -r -p "Choice [1]: " choice
+    serial=${ready[${choice:-1} - 1]:-}
+    [ -n "$serial" ] || { echo "install.sh: no such choice: $choice" >&2; exit 1; }
+fi
+export ANDROID_SERIAL=$serial
+phone=$("$adb" shell getprop ro.product.model | tr -d '\r')
+
+echo "Building the app..."
+(cd "$here/android" && ANDROID_HOME=$sdk ./gradlew -q :app:assembleDebug >/dev/null)
+apk=$here/android/app/build/outputs/apk/debug/app-debug.apk
+if ! out=$("$adb" install -r "$apk" 2>&1); then
+    echo "$out"
+    case $out in
+        *UPDATE_INCOMPATIBLE*|*SIGNATURES*)
+            echo
+            echo "The app on the phone was built on another computer, and signed with its key: it"
+            echo "can only be updated from there.  Uninstalling it loses the progress it holds"
+            echo "(adb uninstall $pkg), after which ./install.sh installs this one." ;;
+    esac
+    exit 1
+fi
+echo "installed Loglan Teach on the $phone"
+
+# Its sync, with the repository this machine's progress is kept in.
+sync_skip() {
+    echo "$1"
+    echo "The app's sync can be set up by hand, in its Settings > Sync."
+}
+set_up_sync() {
+    local url rest at host user port ip login key reply root hostkey
+    url=$(svn info --show-item url "$data" 2>/dev/null) || url=
+    case $url in
+        svn+ssh://*) ;;
+        "") sync_skip "Progress here is not kept in Subversion, so there is nothing to sync the app with."
+            return ;;
+        *)  sync_skip "This machine reaches the repository as $url; the app needs svn+ssh://."
+            return ;;
+    esac
+    rest=${url#svn+ssh://}
+    at=${rest%%/*}
+    local repo=/${rest#*/}
+    # The host, user and port ssh makes of it here, ssh config and all.
+    local conf
+    conf=$(ssh -G "$at" 2>/dev/null)
+    host=$(awk '$1 == "hostname" { print $2 }' <<< "$conf")
+    user=$(awk '$1 == "user" { print $2 }' <<< "$conf")
+    port=$(awk '$1 == "port" { print $2 }' <<< "$conf")
+    # The phone needs an address: it cannot look up a .local name.
+    if [[ $host =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        ip=$host
+    else
+        ip=$(getent ahostsv4 "$host" | awk 'NR == 1 { print $1 }')
+    fi
+    if [ -z "$ip" ]; then
+        sync_skip "$host cannot be looked up from here (is this machine on its network?)."
+        return
+    fi
+    key=$("$adb" shell content read --uri "content://$pkg.sync/key" | tr -d '\r')
+    case $key in
+        ssh-ed25519\ *) ;;
+        *) sync_skip "The app did not give its key: $key"; return ;;
+    esac
+    # On the server: the phone's key in authorized_keys, let do nothing but
+    # svnserve, from the root the other machines' keys use; and the server's
+    # own key, for the app to know it by.
+    login=${LOGLAN_SERVER_LOGIN:-$user@$host}
+    echo "Setting up the app's sync with $login..."
+    if ! reply=$(printf '%s\n' "$key" | ssh -T -o ConnectTimeout=5 -p "$port" "$login" '
+set -e
+read -r key
+umask 077
+mkdir -p ~/.ssh
+touch ~/.ssh/authorized_keys
+root=$(sed -n "s/.*svnserve -t -r \([^\", ]*\).*/\1/p" ~/.ssh/authorized_keys | head -n 1)
+root=${root:-/svn}
+blob=$(echo "$key" | cut -d " " -f 2)
+if grep -qF "$blob" ~/.ssh/authorized_keys; then
+    echo had
+else
+    printf "command=\"svnserve -t -r %s\",restrict %s\n" "$root" "$key" >> ~/.ssh/authorized_keys
+    echo added
+fi
+echo "root $root"
+echo "hostkey $(cut -d " " -f 2 /etc/ssh/ssh_host_ed25519_key.pub)"'); then
+        sync_skip "$login could not be reached (LOGLAN_SERVER_LOGIN=user@host to log in as someone else)."
+        return
+    fi
+    root=$(awk '$1 == "root" { print $2 }' <<< "$reply")
+    hostkey=$(awk '$1 == "hostkey" { print $2 }' <<< "$reply")
+    case $reply in
+        *had*) echo "the phone's key was already in $login's authorized_keys" ;;
+        *) echo "added the phone's key to $login's authorized_keys (svnserve -r $root)" ;;
+    esac
+    "$adb" shell content call --uri "content://$pkg.sync" --method configure \
+        --extra "host:s:$ip" --extra "port:i:$port" --extra "user:s:$user" \
+        --extra "repo:s:$repo" ${hostkey:+--extra "hostkey:s:$hostkey"} >/dev/null
+    echo "the app syncs with svn+ssh://$user@$ip$([ "$port" = 22 ] || echo ":$port")$repo"
+}
+set_up_sync
+
+"$adb" shell am start -n "$pkg/io.github.mdemoulin.loglan.teach.MainActivity" >/dev/null
+echo
+echo "Loglan Teach is open on the phone.  ./install.sh again updates it; its progress stays."

@@ -16,6 +16,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- For install.sh, over adb only: AdbProvider answers no one else. -->
+        <provider
+            android:name=".AdbProvider"
+            android:authorities="io.github.mdemoulin.loglanteach.sync"
+            android:exported="true" />
     </application>
 
 </manifest>

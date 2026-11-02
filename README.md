@@ -22,7 +22,9 @@ word climbs as you answer it correctly, and an error box it must answer its
 way out of when you miss.
 
     ./install.sh          # pick ~/.local/bin, ~/bin, /usr/local/bin or your own;
-                          # later runs reinstall there (--ask to pick again)
+                          # later runs reinstall there (--ask to pick again);
+                          # then the Android app, on the phone plugged in
+    ./install.sh --no-app # the commands alone
     loglan-teach core     # drill
 
 `install.sh` copies the Loglan sources that ship with the tools into
@@ -420,8 +422,40 @@ list's progress in a `<list>.state.json` of the same form.  The lists are
 built by `loglan-update` when the app is built, and go with it; progress
 stays on the phone (there is no syncing yet).
 
-To build it you need a JDK (17 or later) and the Android SDK; with the SDK
-in `~/Android/Sdk` (or `sdk.dir` in `android/local.properties`):
+`./install.sh` installs it, after the commands, unless given `--no-app`
+(and never in Termux).  It needs a JDK (17 or later) and the Android SDK,
+in `~/Android/Sdk` (or `ANDROID_HOME`, or `sdk.dir` in
+`android/local.properties`), with its `adb`; and the phone plugged in over
+USB, with USB debugging on -- it says how, and waits for the phone.  It
+builds the app, installs it (again, to update it: progress stays), and
+opens it.  The app is signed with this computer's own debug key, so it can
+only be updated from here; one built on another computer will not install
+over it without `adb uninstall`, which loses the progress on the phone.
+
+When `~/.loglan` is a Subversion working copy reached by `svn+ssh://` (see
+[Progress on more than one machine](#progress-on-more-than-one-machine)),
+`install.sh` sets the app up to sync with the same repository: it asks the
+app for its key (the app makes one, an ed25519 key of its own with no
+passphrase), adds it to the server's `authorized_keys` as the other
+machines' keys are, `command="svnserve -t -r /svn",restrict ...`, and gives
+the app the server's address (the phone cannot look up a `.local` name),
+user, port and repository, and the server's own ssh key, so the app knows
+it is talking to that server.  For that it logs in to the server as you
+do, as the user and host this machine's svn reaches (from `ssh -G`), or
+`LOGLAN_SERVER_LOGIN=user@host`.  All of it can be set by hand too, in the
+app's Settings > Sync, which shows the key's line to copy or share.
+
+`install.sh` reaches the app over adb only:
+
+    adb shell content read --uri content://io.github.mdemoulin.loglanteach.sync/key
+    adb shell content call --uri content://io.github.mdemoulin.loglanteach.sync \
+        --method configure --extra host:s:ADDRESS --extra port:i:22 \
+        --extra user:s:USER --extra repo:s:/loglan-state/trunk --extra hostkey:s:AAAA...
+
+The app answers these for adb's shell user alone: no other app on the
+phone can read its key or send its sync elsewhere.
+
+By hand, the build is:
 
     cd android
     ./gradlew :app:assembleDebug        # app/build/outputs/apk/debug/app-debug.apk

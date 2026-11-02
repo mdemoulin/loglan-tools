@@ -88,6 +88,36 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private val syncStore = SyncStore(app)
+    var sync by mutableStateOf(syncStore.config())
+        private set
+    var syncKey by mutableStateOf(syncStore.key())
+        private set
+    var hostKey by mutableStateOf(syncStore.hostKey(sync))
+        private set
+
+    // Changed over adb (AdbProvider) while the app is open: shown at once.
+    private val syncChanged = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+        sync = syncStore.config()
+        syncKey = syncStore.key()
+        hostKey = syncStore.hostKey(sync)
+    }.also(syncStore.prefs::registerOnSharedPreferenceChangeListener)
+
+    fun changeSync(c: SyncConfig) {
+        sync = c
+        syncStore.save(c)
+        hostKey = syncStore.hostKey(c)
+    }
+
+    fun makeSyncKey() {
+        syncKey = syncStore.newKey(sync.device)
+    }
+
+    fun forgetHostKey() {
+        syncStore.forgetHostKey()
+        hostKey = null
+    }
+
     fun changeSettings(s: Settings) {
         settings = s
         prefs.edit()
