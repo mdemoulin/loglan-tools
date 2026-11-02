@@ -30,6 +30,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
@@ -41,11 +45,17 @@ class MainActivity : ComponentActivity() {
         setContent {
             Theme {
                 val d = model.drill
-                if (d == null) {
-                    ListsScreen(model)
-                } else {
-                    BackHandler { model.quit() }
-                    DrillScreen(model, d)
+                var settings by rememberSaveable { mutableStateOf(false) }
+                when {
+                    d != null -> {
+                        BackHandler { model.quit() }
+                        DrillScreen(model, d)
+                    }
+                    settings -> {
+                        BackHandler { settings = false }
+                        SettingsScreen(model) { settings = false }
+                    }
+                    else -> ListsScreen(model) { settings = true }
                 }
             }
         }

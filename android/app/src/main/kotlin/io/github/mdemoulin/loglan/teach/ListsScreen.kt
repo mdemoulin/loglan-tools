@@ -53,14 +53,17 @@ import io.github.mdemoulin.loglan.drill.Direction
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListsScreen(model: TeachModel) {
+fun ListsScreen(model: TeachModel, openSettings: () -> Unit) {
     var chosen by rememberSaveable { mutableStateOf<String?>(null) }
     var about by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Loglan Teach") },
-                actions = { TextButton(onClick = { about = true }) { Text("About") } },
+                actions = {
+                    TextButton(onClick = openSettings) { Text("Settings") }
+                    TextButton(onClick = { about = true }) { Text("About") }
+                },
             )
         },
     ) { padding ->

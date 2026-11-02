@@ -49,11 +49,20 @@ data class DrillView(
     val lessons: List<Pair<Int, String>> = question.lessons,
 )
 
+/** What goes for every list: loglan-teach's --rungs, --escape and --no-derivs. */
+data class Settings(val rungs: Int = 5, val escape: Int = 2, val derivs: Boolean = true)
+
 class TeachModel(app: Application) : AndroidViewModel(app) {
     private var library: Library? = null
     private val prefs = app.getSharedPreferences("options", Context.MODE_PRIVATE)
 
     var lists by mutableStateOf<List<ListRow>?>(null)
+        private set
+    var settings by mutableStateOf(Settings(
+        rungs = prefs.getInt("rungs", Settings().rungs),
+        escape = prefs.getInt("escape", Settings().escape),
+        derivs = prefs.getBoolean("derivs", Settings().derivs),
+    ))
         private set
     var drill by mutableStateOf<DrillView?>(null)
         private set
@@ -63,6 +72,7 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refresh() {
+        val rungs = settings.rungs
         viewModelScope.launch {
             lists = withContext(Dispatchers.IO) {
                 val lib = library ?: installLists(getApplication()).also { library = it }
@@ -71,17 +81,31 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
                     val p = Progress.load(lib.stateFile(t.name), t.name)
                     val items = cards.mapNotNull { p.items[it.key] }
                     ListRow(t.name, cards.size, items.size,
-                            items.count { it.inError == 0 && it.rung > 5 }, items.count { it.inError != 0 })
+                            items.count { it.inError == 0 && it.rung > rungs },
+                            items.count { it.inError != 0 })
                 }.filter { it.cards > 0 }
             }
         }
     }
 
-    /** The options last used for a list. */
+    fun changeSettings(s: Settings) {
+        settings = s
+        prefs.edit()
+            .putInt("rungs", s.rungs)
+            .putInt("escape", s.escape)
+            .putBoolean("derivs", s.derivs)
+            .apply()
+        refresh()
+    }
+
+    /** The options last used for a list, with the settings. */
     fun options(name: String) = Options(
         direction = Direction.valueOf(prefs.getString("$name.direction", null) ?: Direction.RECOGNITION.name),
+        rungs = settings.rungs,
+        escape = settings.escape,
         field = prefs.getString("$name.field", null) ?: "gloss",
         random = prefs.getBoolean("$name.random", false),
+        derivs = settings.derivs,
     )
 
     fun start(name: String, options: Options) {

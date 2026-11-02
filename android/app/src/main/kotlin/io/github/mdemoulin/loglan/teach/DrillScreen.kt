@@ -109,7 +109,7 @@ fun DrillScreen(model: TeachModel, view: DrillView) {
         }
     }
     if (status) StatusDialog(drill) { status = false }
-    if (help) HelpDialog { help = false }
+    if (help) HelpDialog(drill.options.escape) { help = false }
 }
 
 /** The answer box: Enter grades what is in it; a blank Enter shows the answer. */
@@ -169,7 +169,7 @@ private fun StatusDialog(drill: Drill, dismiss: () -> Unit) {
 }
 
 @Composable
-private fun HelpDialog(dismiss: () -> Unit) {
+private fun HelpDialog(escape: Int, dismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = dismiss,
         title = { Text("Help") },
@@ -179,8 +179,9 @@ private fun HelpDialog(dismiss: () -> Unit) {
                      "(\"box/crate/carton\"), and an X-like takes \"Xish\" as well.  Send with nothing " +
                      "typed, or Show answer, to see the answer (it counts as a miss).")
                 Text("A card climbs a rung each time you have it; one you miss goes to the error box, " +
-                     "which it leaves after two right in a row, back on the first rung.  Past the top " +
-                     "rung it has graduated.")
+                     "which it leaves after ${if (escape == 1) "one right" else "$escape right in a row"}, " +
+                     "back on the first rung.  Past the top rung it has graduated.  Settings, on the " +
+                     "first screen, change how many rungs there are and how many it takes.")
                 Text("The commands of loglan-teach can be typed too:")
                 Drill.COMMANDS.dropLast(1).forEach { Text(it.trim(), fontFamily = FontFamily.Monospace) }
             }

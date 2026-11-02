@@ -71,7 +71,7 @@ class Drill(
     val name: String,
     private val cards: List<Card>,
     val progress: Progress,
-    private val options: Options = Options(),
+    val options: Options = Options(),
     private val library: Library? = null,
     private val lessonText: Map<Int, String>? = library?.lessons,
     private val random: Random = Random.Default,
