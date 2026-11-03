@@ -324,6 +324,18 @@ class Drill(
         return l.flatMap { (n, text) -> listOf("", "---- Lesson $n ----") + text.trimEnd('\n').split('\n') }
     }
 
+    /**
+     * Progress brought from elsewhere while the drill runs (by a sync):
+     * taken, merged with what has been answered here meanwhile, and saved.
+     */
+    fun adopt(theirs: Progress) {
+        val m = Progress.merge(progress, theirs)
+        progress.items = m.items
+        progress.lessonsShown = m.lessonsShown
+        progress.order = m.order
+        save(progress)
+    }
+
     /** The lessons a card goes with, with their text: none before it, or null when the list has none. */
     fun lessonsFor(r: Card): List<Pair<Int, String>>? {
         val text = lessonText?.takeIf { cards.any { it.lessons.isNotEmpty() } } ?: return null

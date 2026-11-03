@@ -39,6 +39,12 @@ import androidx.compose.ui.platform.LocalContext
 class MainActivity : ComponentActivity() {
     private val model: TeachModel by viewModels()
 
+    // Left (another app, the home screen, the phone put down): progress synced.
+    override fun onStop() {
+        super.onStop()
+        model.syncSoon()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

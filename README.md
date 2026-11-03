@@ -34,7 +34,9 @@ drill, type your answer and press Enter; a blank line shows the answer (and
 counts as a miss), `:s` shows your progress, `:r` asks the card before
 again (graded, then back to this one; `:r ANSWER` grades it on ANSWER
 without asking), `:t` puts the card before
-on your `troublesome` list (an animal or a people with its whole set),
+on its troublesome list -- `utts-troublesome`, `words-troublesome` or
+`affixes-troublesome`, one for each of the three parts MacTeach had the
+lists in (an animal or a people with its whole set),
 `:h` lists the commands, and `:q` saves and quits.  Any
 one of a gloss's alternatives ("box/crate/carton") counts as right, and
 an "X-like" -- the *-e* of an animal -- takes "Xish" as well (*kange*,
@@ -63,17 +65,24 @@ your own can be given by path.  `loglan-fetch`, the old name of
 If `~/.loglan` is a Subversion working copy -- has a `.svn` directory of its
 own, checked out from a repository of yours, with the built files in
 `svn:ignore` -- `loglan-teach` keeps the list's progress in step: it runs `svn update` on the state file before the
-drill and commits it when you quit.  Progress made on two machines before
+drill and commits it when you quit, and every 5 minutes of the drill
+(`--sync-every MIN`, or `LOGLAN_SYNC_EVERY`; 0 for only before and after)
+it commits what you have done and merges in what has been committed
+elsewhere meanwhile, so that two drills of one list, on two machines,
+keep each other up to date as they run.  Progress made on two machines before
 either was synced is merged word by word, each word as the copy that has
 seen it more often has it.  When the repository cannot be reached it says
-so once, drills from the copy here, and commits it the next time.  ssh is
+so once, drills from the copy here, and commits it the next time it can.  ssh is
 never asked for a passphrase, so the key must be in your agent, or have
 none (see below).
 A list of your own kept there -- committed from one machine, say -- is
 brought up to date too, before it is read, and fetched if it is not here
 yet; one you have changed here and not committed is left as it is.
-What `:t` adds to `troublesome` is committed when the drill ends, and
-merged with whatever another machine has added to it meanwhile.
+What `:t` adds to a troublesome list is committed when the drill ends, and
+merged with whatever another machine has added to it meanwhile.  The one
+`troublesome` list of before is split into them the first time: its
+sentences to `utts-troublesome`, its words to `words-troublesome`, and it
+is taken out of the repository.
 `--no-sync` or `LOGLAN_NO_SYNC=1` turns this off.  Your other files there
 (`new-words.json`, `*.added`, a new list) are left for you to commit.
 
@@ -419,8 +428,17 @@ type the answers.  It drills as `loglan-teach` does -- the same rungs and
 error box, the same answers taken, `utts` in order with its lessons, `:r`
 and `:t` as buttons (the commands can be typed too) -- and keeps each
 list's progress in a `<list>.state.json` of the same form.  The lists are
-built by `loglan-update` when the app is built, and go with it; progress
-stays on the phone (there is no syncing yet).
+built by `loglan-update` when the app is built, and go with it.
+
+Set up as below, it keeps the progress in step with the repository
+`loglan-teach` syncs with, as `loglan-teach` does -- and so with
+`loglan-teach` in Termux on the same phone, which it cannot otherwise
+reach -- when it opens, when a drill starts and ends, every 5 minutes of a
+drill (Settings > Sync), and when you leave it: each list's progress and
+the troublesome lists, merged as `loglan-teach` merges them.  It speaks
+svnserve's own protocol, over ssh, with a key of its own.  Away from the
+server's network it says so in Settings > Sync, drills from what it has,
+and syncs the next time.
 
 `./install.sh` installs it, after the commands, unless given `--no-app`
 (and never in Termux).  It needs a JDK (17 or later) and the Android SDK,

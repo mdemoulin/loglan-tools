@@ -15,6 +15,7 @@ kotlin {
 
 dependencies {
     implementation(libs.bouncycastle)
+    implementation(libs.jsch)
     testImplementation(kotlin("test"))
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)

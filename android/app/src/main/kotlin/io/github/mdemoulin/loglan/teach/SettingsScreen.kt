@@ -148,10 +148,24 @@ private fun SyncSection(model: TeachModel) {
         }
     }
     HorizontalDivider()
+    ListItem(
+        headlineContent = { Text("During a drill") },
+        supportingContent = {
+            Text(if (c.every == 0) "Synced only when it starts and ends."
+                 else "Synced every ${c.every} minute${if (c.every == 1) "" else "s"}, as well as when it " +
+                      "starts and ends, when the app opens, and when you leave it.")
+        },
+        trailingContent = { Stepper(c.every, 0..60) { model.changeSync(c.copy(every = it)) } },
+    )
+    HorizontalDivider()
     KeyItem(model)
     HorizontalDivider()
     HostKeyItem(model)
     HorizontalDivider()
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(model.syncStatus ?: "Not synced yet.", style = MaterialTheme.typography.bodyMedium)
+        OutlinedButton(onClick = model::syncSoon, enabled = c.complete && model.syncKey != null) { Text("Sync now") }
+    }
 }
 
 @Composable

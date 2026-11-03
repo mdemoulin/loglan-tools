@@ -45,6 +45,7 @@ my %opt = (
     escape => 2,
     field  => 'gloss',
     dir    => 'recognition',
+    'sync-every' => $ENV{LOGLAN_SYNC_EVERY} // 5,
 );
 
 GetOptions(
@@ -62,6 +63,7 @@ GetOptions(
     'random',
     'reset',
     'no-sync'    => sub { $opt{nosync} = 1 },
+    'sync-every=f',
     'status',
     'tables',
     'help|h',
@@ -115,14 +117,20 @@ my $state_file = $opt{state}
 # brought up to date before it is read (list_in).
 my $sync = $svn_dir && dirname($state_file) eq $state_dir;
 my $state_saved = 0;
+# The troublesome lists, one for each of the three parts MacTeach had the
+# lists in: the utts, the words, the affixes (affs and affsets).
+use constant TROUBLESOME => qw(utts-troublesome words-troublesome affixes-troublesome);
 my $sync_unreachable = 0;
-my $troublesome_added = 0;
+my $sync_said = 0;
+my $last_sync = time;
+my %troublesome_added;
 sync_in($state_file) if $sync;
 list_in($data_file) if $sync && !$sync_unreachable && dirname($data_file) eq $state_dir;
+split_troublesome() if defined $state_dir;
 END {
     local $?;           # the exit status is the drill's, not svn's
     sync_out($state_file) if $sync && $state_saved;
-    troublesome_out("$state_dir/troublesome") if $svn_dir && !$sync_unreachable;
+    troublesome_out("$state_dir/$_") for $svn_dir && !$sync_unreachable ? TROUBLESOME : ();
 }
 
 # The derivs table normally sits beside the data file; fall back to the state
@@ -485,9 +493,28 @@ sub svn (@args) {
     return ($? == 0, $out);
 }
 
+# Said once a drill: the sync during it (periodic_sync) tries again quietly.
 sub sync_note ($what, $out) {
     $sync_unreachable = 1;
+    return if $sync_said++;
     warn "(progress not $what -- ", svn_why($out), "; the copy here is kept, and committed next time)\n";
+}
+
+# Every --sync-every minutes of a drill (5; 0 for only before and after),
+# the progress is committed and what has been committed elsewhere merged
+# in -- from another machine, or from the app on this one -- and the drill
+# goes on with that.  So two drills of one list, here and there, keep each
+# other up to date while they run.
+sub periodic_sync ($state) {
+    return unless $sync && $opt{'sync-every'} > 0 && time - $last_sync >= $opt{'sync-every'} * 60;
+    $last_sync = time;
+    save_state($state_file, $state);
+    $sync_unreachable = 0;
+    sync_out($state_file);
+    sync_in($state_file) unless $sync_unreachable;
+    return if $sync_unreachable;
+    troublesome_out("$state_dir/$_") for TROUBLESOME;
+    %$state = %{ load_state($state_file, $data_file) };
 }
 
 # The line of what svn said that says why it failed.
@@ -552,20 +579,22 @@ sub sync_out ($file) {
     }
 }
 
-# The list troublesome, changed here (by :t, now or in a drill that could
+# A troublesome list, changed here (by :t, now or in a drill that could
 # not reach the repository), is committed when the drill ends.  Added to
 # from somewhere else meanwhile, it is brought up to date and what was
 # added here goes on the end again.
 sub troublesome_out ($file) {
     for my $try (1, 2) {
         my ($ok, $st) = svn('status', $file);
-        return unless $ok && ($st =~ /^[MA]/m || ($troublesome_added && $st =~ /^\?/m));
+        return unless $ok && ($st =~ /^[MA]/m || ($troublesome_added{$file} && $st =~ /^\?/m));
         svn('add', '-q', $file) if $st =~ /^\?/m;
         my $host = (POSIX::uname())[1];
-        my ($done, $out) = svn('commit', '-q', '-m', "troublesome from $host", $file);
+        my ($done, $out) = svn('commit', '-q', '-m', basename($file) . " from $host", $file);
         return if $done;
-        return warn "(troublesome not committed -- ", svn_why($out), "; committed next time)\n"
-            unless $try == 1 && $out =~ /out of date|E155011|E160028|E170004/i;
+        # Committed from somewhere else meanwhile -- added there too, even:
+        # theirs, and what was added here on the end.
+        return warn "(", basename($file), " not committed -- ", svn_why($out), "; committed next time)\n"
+            unless $try == 1 && $out =~ /out of date|already exists|E155011|E160028|E160020|E170004/i;
         my @mine = read_lines($file);
         svn('revert', '-q', $file);
         unlink $file if $st =~ /^[A?]/m;
@@ -639,7 +668,7 @@ sub drill_loop ($state, $records) {
     # What ':h', or a command mistyped, shows.
     my @drill_commands = ('  :s  status', '  :l  the lesson this card goes with',
                           '  :r  ask the card before this one again', '  :r ANSWER  answer it again with ANSWER',
-                          '  :t  put the card before this one on troublesome',
+                          '  :t  put the card before this one on its troublesome list',
                           '  :h  these commands', '  :q  quit and save)');
     my $asked = 0;
     local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
@@ -755,17 +784,26 @@ sub drill_loop ($state, $records) {
         }
 
         save_state($state_file, $state) if $asked % 5 == 0;
+        periodic_sync($state);
     }
     save_state($state_file, $state);
     say "\nSaved.";
 }
 
-# ':t': the card before goes on the list troublesome, in the list directory,
-# to be drilled on its own -- an animal or a people with the rest of its set
-# (cervu cerva cervo cervi cerve), as aux/animals and aux/ethnic have it.
+sub troublesome_for ($list) {
+    return $list =~ /\Autts/ ? 'utts-troublesome'
+         : $list =~ /\Aaff/  ? 'affixes-troublesome'
+         :                     'words-troublesome';
+}
+
+# ':t': the card before goes on its list's troublesome list, in the list
+# directory, to be drilled on its own -- an animal or a people with the rest
+# of its set (cervu cerva cervo cervi cerve), as aux/animals and aux/ethnic
+# have it.
 sub add_troublesome ($r) {
     return say "  (no list directory to keep troublesome in)" unless defined $state_dir;
-    my $file = "$state_dir/troublesome";
+    my $name = troublesome_for(basename($data_file));
+    my $file = "$state_dir/$name";
     # Brought up to date first -- fetched, if it is not here yet -- so what
     # is added goes after what is there.
     list_in($file) if $svn_dir;
@@ -777,11 +815,50 @@ sub add_troublesome ($r) {
         if (grep { (split /\t/)[0] eq $r->{loglan} } @set) { @rows = @set; last }
     }
     my @added = append_rows($file, @rows);
-    $troublesome_added ||= @added > 0;
+    $troublesome_added{$file} ||= @added > 0;
     my %new = map { row_key($_) => 1 } @added;
     my @old = grep { !$new{ row_key($_) } } @rows;
-    say "  (on troublesome now: ", join(' ', map { (split /\t/)[0] } @added), ")" if @added;
-    say "  (on troublesome already: ", join(' ', map { (split /\t/)[0] } @old), ")" if @old;
+    say "  (on $name now: ", join(' ', map { (split /\t/)[0] } @added), ")" if @added;
+    say "  (on $name already: ", join(' ', map { (split /\t/)[0] } @old), ")" if @old;
+}
+
+# The one list troublesome there was before there were three is split into
+# them, once: its sentences to utts-troublesome, its words to
+# words-troublesome.  Kept in Subversion, it is brought up to date first --
+# split and taken out on another machine, that is all there is to do -- and
+# what is split here is taken out of the repository (the three lists are
+# committed when the drill ends); not kept there, it is kept as
+# troublesome.old.
+sub split_troublesome () {
+    my $old = "$state_dir/troublesome";
+    return unless -f $old;
+    my $versioned = 0;
+    if ($svn_dir) {
+        my ($ok, $st) = svn('status', $old);
+        $versioned = $ok && $st !~ /^[?I]/m;
+        if ($versioned && $st !~ /^[MAC]/m && !$sync_unreachable) {
+            svn('update', '-q', '--accept', 'theirs-full', $old);
+            return unless -f $old;
+        }
+    }
+    # Into what the repository has of them already (from the app, say).
+    list_in("$state_dir/$_") for $svn_dir && !$sync_unreachable ? qw(utts-troublesome words-troublesome) : ();
+    for my $row (read_lines($old)) {
+        my $file = "$state_dir/" . (split(/\t/, $row) < 3 ? 'utts-troublesome' : 'words-troublesome');
+        $troublesome_added{$file} = 1 if append_rows($file, $row);
+    }
+    if (!$versioned) {
+        rename $old, "$old.old";
+        return;
+    }
+    my $host = (POSIX::uname())[1];
+    svn('rm', '-q', '--force', $old);
+    my ($done) = svn('commit', '-q', '-m', "troublesome split into utts-, words- and affixes-troublesome, from $host", $old);
+    return if $done;
+    # Not reachable, or split elsewhere meanwhile: as the repository has it
+    # (taken out, or here again, to be split next time).
+    svn('revert', '-q', $old);
+    svn('update', '-q', '--accept', 'theirs-full', $old) unless $sync_unreachable;
 }
 
 # A list's lines, without line ends, the comments and blank ones left out.
@@ -804,7 +881,7 @@ sub append_rows ($file, @rows) {
     return () unless @add;
     my $new = !-e $file;
     open my $fh, '>>:encoding(UTF-8)', $file or do { warn "  (cannot write $file: $!)\n"; return () };
-    print $fh "# Cards that keep tripping you up, drilled on their own: loglan-teach troublesome\n",
+    print $fh "# Cards that keep tripping you up, drilled on their own: loglan-teach ", basename($file), "\n",
               "# Put here by :t in a drill; an animal or a people comes with its whole set.\n" if $new;
     print $fh "$_\n" for @add;
     close $fh;
@@ -1058,6 +1135,9 @@ State:
   --no-sync        when the state file is in a Subversion working copy, do
                      not update it (or a list of your own there) first or
                      commit it after (as LOGLAN_NO_SYNC=1)
+  --sync-every MIN during a drill, commit the progress and merge in what has
+                     been committed elsewhere every MIN minutes [default 5,
+                     or LOGLAN_SYNC_EVERY; 0 for only before and after]
   --status         print progress histogram and exit
   --tables         list the lists in \$LOGLAN_STATE_DIR, their sizes, and
                      which have progress saved (no data-file needed)
@@ -1067,8 +1147,10 @@ In-drill commands:
   Enter alone      give up on this card (counts as a miss)
   :s               status
   :l               show the lesson this card goes with (:1 works too)
-  :t               put the card before this one on the list troublesome,
-                     an animal or a people with its whole set
+  :t               put the card before this one on its troublesome list --
+                     utts-troublesome, words-troublesome or
+                     affixes-troublesome -- an animal or a people with its
+                     whole set
   :h               list these commands
   :r               ask the card before this one again, graded, then this one
   :r ANSWER        grade the card before this one again on ANSWER, then

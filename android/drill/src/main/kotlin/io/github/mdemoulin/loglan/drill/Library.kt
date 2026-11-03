@@ -107,7 +107,7 @@ class Library(val dir: File) {
         if (add.isEmpty()) return add
         val text = StringBuilder()
         if (!file.exists()) {
-            text.append("# Cards that keep tripping you up, drilled on their own: ${file.name}\n")
+            text.append("# Cards that keep tripping you up, drilled on their own: loglan-teach ${file.name}\n")
                 .append("# Put here by :t in a drill; an animal or a people comes with its whole set.\n")
         }
         add.forEach { text.append(it).append('\n') }
@@ -136,6 +136,21 @@ class Library(val dir: File) {
 
     companion object {
         val TROUBLESOME = listOf("utts-troublesome", "words-troublesome", "affixes-troublesome")
+
+        /**
+         * Two copies of a list, as one: theirs, with the rows mine has that
+         * it has not on the end -- as loglan-teach merges a troublesome list
+         * added to on two machines.
+         */
+        fun mergeLists(mine: String, theirs: String): String {
+            val have = listLines(theirs.lines()).map(::rowKey).toMutableSet()
+            val add = listLines(mine.lines()).filter { have.add(rowKey(it)) }
+            if (add.isEmpty()) return theirs
+            val text = StringBuilder(theirs)
+            if (text.isNotEmpty() && !text.endsWith("\n")) text.append('\n')
+            add.forEach { text.append(it).append('\n') }
+            return text.toString()
+        }
 
         /** utts-troublesome for utts, affixes-troublesome for affs and affsets, words-troublesome for the rest. */
         fun troublesomeFor(list: String) = when {

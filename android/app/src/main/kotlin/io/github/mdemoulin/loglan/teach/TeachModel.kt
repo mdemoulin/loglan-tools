@@ -30,8 +30,19 @@ import io.github.mdemoulin.loglan.drill.Options
 import io.github.mdemoulin.loglan.drill.Outcome
 import io.github.mdemoulin.loglan.drill.Progress
 import io.github.mdemoulin.loglan.drill.Question
+import io.github.mdemoulin.loglan.sync.Remote
+import io.github.mdemoulin.loglan.sync.SvnOverSsh
+import io.github.mdemoulin.loglan.sync.SyncException
+import io.github.mdemoulin.loglan.sync.Synced
+import io.github.mdemoulin.loglan.sync.Syncer
+import java.text.DateFormat
+import java.util.Date
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 
 /** A list on the first screen: how big it is and how far along. */
@@ -67,24 +78,22 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
     var drill by mutableStateOf<DrillView?>(null)
         private set
 
-    init {
-        refresh()
+    fun refresh() {
+        viewModelScope.launch { loadLists() }
     }
 
-    fun refresh() {
+    private suspend fun loadLists() {
         val rungs = settings.rungs
-        viewModelScope.launch {
-            lists = withContext(Dispatchers.IO) {
-                val lib = library ?: installLists(getApplication()).also { library = it }
-                lib.tables().filter { it.entries != null }.map { t ->
-                    val cards = lib.cards(t.name)
-                    val p = Progress.load(lib.stateFile(t.name), t.name)
-                    val items = cards.mapNotNull { p.items[it.key] }
-                    ListRow(t.name, cards.size, items.size,
-                            items.count { it.inError == 0 && it.rung > rungs },
-                            items.count { it.inError != 0 })
-                }.filter { it.cards > 0 }
-            }
+        lists = withContext(Dispatchers.IO) {
+            val lib = library ?: installLists(getApplication()).also { library = it }
+            lib.tables().filter { it.entries != null }.map { t ->
+                val cards = lib.cards(t.name)
+                val p = Progress.load(lib.stateFile(t.name), t.name)
+                val items = cards.mapNotNull { p.items[it.key] }
+                ListRow(t.name, cards.size, items.size,
+                        items.count { it.inError == 0 && it.rung > rungs },
+                        items.count { it.inError != 0 })
+            }.filter { it.cards > 0 }
         }
     }
 
@@ -102,6 +111,79 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
         syncKey = syncStore.key()
         hostKey = syncStore.hostKey(sync)
     }.also(syncStore.prefs::registerOnSharedPreferenceChangeListener)
+
+    /** How the last sync went, in a line; null before the first. */
+    var syncStatus by mutableStateOf<String?>(null)
+        private set
+    private val syncing = Mutex()
+    private var ticker: Job? = null
+
+    init {
+        viewModelScope.launch {
+            loadLists()
+            syncNow()
+        }
+    }
+
+    /** Syncs now, if there is a repository to sync with, and no sync is under way already. */
+    fun syncSoon() {
+        viewModelScope.launch { syncNow() }
+    }
+
+    /**
+     * Keeps the progress -- every list's <list>.state.json, and the
+     * troublesome lists -- in step with the repository loglan-teach syncs
+     * with, as it does: changed only there, brought here; only here,
+     * committed; in both, merged (each card as the copy that has seen it
+     * more has it; a troublesome list's rows, all of them) and committed.
+     * A drill under way takes what came, with what has been answered since.
+     */
+    private suspend fun syncNow() {
+        val c = sync
+        val key = syncKey ?: return
+        val lib = library ?: return
+        if (!c.complete || !syncing.tryLock()) return
+        try {
+            val known = syncStore.hostKey(c)
+            val result = withContext(Dispatchers.IO) {
+                SvnOverSsh.connect(Remote(c.host, c.port, c.user, c.repo), key, known).use { conn ->
+                    if (known == null) syncStore.saveHostKey(c, conn.seenHostKey)
+                    Syncer(lib.dir).sync(conn.svn, synced(lib)) { names ->
+                        "${names.joinToString(", ")} from ${c.device}"
+                    }
+                }
+            }
+            drill?.drill?.let { d ->
+                if ("${d.name}.state.json" in result.fetched) d.adopt(Progress.load(lib.stateFile(d.name), d.name))
+            }
+            val what = listOfNotNull(
+                result.fetched.takeIf { it.isNotEmpty() }?.let { "brought ${it.joinToString(", ")}" },
+                result.committed.takeIf { it.isNotEmpty() }?.let { "committed ${it.joinToString(", ")}" },
+            ).ifEmpty { listOf("all in step") }
+            syncStatus = "Synced at ${now()}: ${what.joinToString("; ")}."
+            if (result.fetched.isNotEmpty() && drill == null) loadLists()
+        } catch (e: SyncException) {
+            syncStatus = "Not synced at ${now()}: ${e.message}."
+        } catch (e: Exception) {
+            syncStatus = "Not synced at ${now()}: ${e.message ?: e.javaClass.simpleName}."
+        } finally {
+            syncing.unlock()
+        }
+    }
+
+    private fun now() = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date())
+
+    /** What is kept in step: each list's progress, and the troublesome lists. */
+    private fun synced(lib: Library): List<Synced> {
+        val lists = (lib.tables().map { it.name } + Library.TROUBLESOME).distinct()
+        return lists.map { name ->
+            Synced("$name.state.json") { mine, theirs ->
+                Progress.merge(Progress.decode(String(mine)), Progress.decode(String(theirs))).encode().toByteArray()
+            }
+        } + Library.TROUBLESOME.map { name ->
+            Synced(name) { mine, theirs -> Library.mergeLists(String(mine), String(theirs)).toByteArray() }
+        }
+    }
 
     fun changeSync(c: SyncConfig) {
         sync = c
@@ -152,6 +234,16 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
                               save = { it.save(file) })
                 DrillView(d, d.question)
             }
+            // In step at the start, and every so often while it runs.
+            syncNow()
+            ticker?.cancel()
+            val every = sync.every
+            if (every > 0) ticker = viewModelScope.launch {
+                while (isActive) {
+                    delay(every * 60_000L)
+                    syncNow()
+                }
+            }
         }
     }
 
@@ -185,6 +277,10 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
     fun quit() {
         drill?.drill?.reply(":q")
         drill = null
-        refresh()
+        ticker?.cancel()
+        viewModelScope.launch {
+            loadLists()
+            syncNow()
+        }
     }
 }

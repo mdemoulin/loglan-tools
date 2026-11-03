@@ -34,6 +34,8 @@ data class SyncConfig(
     val user: String = "",
     val repo: String = "",
     val device: String = "",
+    /** Minutes between syncs while a drill runs; 0 for only at its start and end. */
+    val every: Int = 5,
 ) {
     val url: String get() = "svn+ssh://$user@$host${if (port == 22) "" else ":$port"}$repo"
     val complete: Boolean get() = host.isNotBlank() && user.isNotBlank() && repo.startsWith("/")
@@ -55,6 +57,7 @@ class SyncStore(private val context: Context) {
         user = prefs.getString("user", null) ?: "",
         repo = prefs.getString("repo", null) ?: "",
         device = prefs.getString("device", null) ?: defaultDevice(),
+        every = prefs.getInt("every", 5),
     )
 
     fun save(c: SyncConfig) {
@@ -64,6 +67,7 @@ class SyncStore(private val context: Context) {
             .putString("user", c.user.trim())
             .putString("repo", c.repo.trim())
             .putString("device", c.device)
+            .putInt("every", c.every)
             .apply()
     }
 

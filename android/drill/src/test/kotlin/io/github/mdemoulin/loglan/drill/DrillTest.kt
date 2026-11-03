@@ -205,6 +205,31 @@ class DrillTest {
     }
 
     @Test
+    fun troublesomeListsMergeAsLoglanTeachMergesThem() {
+        val theirs = "# header\nhelva\t-\tSwiss\t..\nLe mrenu.\tThe man.\n"
+        val mine = "# header\nhelva\t-\tSwiss\t..\nbanse\t-\tbasket\t..\n"
+        assertEquals(theirs + "banse\t-\tbasket\t..\n", Library.mergeLists(mine, theirs))
+        assertEquals(theirs, Library.mergeLists(theirs, theirs))
+        assertEquals("x\t-\ty\t..\nbanse\t-\tbasket\t..\n", Library.mergeLists("banse\t-\tbasket\t..\n", "x\t-\ty\t.."))
+    }
+
+    @Test
+    fun aDrillTakesProgressFromElsewhereWithWhatItHasAnsweredSince() {
+        var saved: Progress? = null
+        val d = Drill("t", words, Progress(dataFile = "t"), save = { saved = it })
+        d.answerRight()
+        val mine = d.progress.items.toMap()
+        val theirs = Progress(dataFile = "t", items = mutableMapOf(
+            mine.keys.first() to Item(seen = 0, rung = 1),
+            "elsewhere" to Item(seen = 3, rung = 4),
+        ))
+        d.adopt(theirs)
+        assertEquals(mine.getValue(mine.keys.first()), d.progress.items[mine.keys.first()])
+        assertEquals(4, d.progress.items.getValue("elsewhere").rung)
+        assertEquals(d.progress, saved)
+    }
+
+    @Test
     fun eachPartHasItsOwnTroublesome() {
         assertEquals("utts-troublesome", Library.troublesomeFor("utts"))
         assertEquals("utts-troublesome", Library.troublesomeFor("utts-troublesome"))
