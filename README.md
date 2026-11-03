@@ -31,9 +31,9 @@ way out of when you miss.
 `~/.loglan` and builds the lists from them (see [Sources and
 updates](#sources-and-updates)); nothing has to be downloaded.  In a
 drill, type your answer and press Enter; a blank line shows the answer (and
-counts as a miss), `:s` shows your progress, `:r` asks the card before
-again (graded, then back to this one; `:r ANSWER` grades it on ANSWER
-without asking), `:t` puts the card before
+counts as a miss), `:s` shows your progress, `:r` takes back the grade of
+the card before and asks it again (then back to this one; `:r ANSWER` grades
+it on ANSWER without asking), `:t` puts the card before
 on its troublesome list -- `utts-troublesome`, `words-troublesome` or
 `affixes-troublesome`, one for each of the three parts MacTeach had the
 lists in (an animal or a people with its whole set),

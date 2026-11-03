@@ -108,8 +108,29 @@ class DrillTest {
         val g = assertIs<Outcome.Graded>(d.reply(":r " + acceptedAnswers(first.card.answer).last()))
         assertEquals(first.card, g.question.card)
         assertEquals(true, g.right)
-        assertEquals("error-box 1/2", g.ladder)
+        assertEquals("rung 1->2", g.ladder)
         assertEquals(second, d.question.card)
+    }
+
+    @Test
+    fun colonRTakesTheLastGradeBack() {
+        val d = drill()
+        val first = d.question.card
+        d.answerRight()
+        d.reply(":r")                       // right, then asked again: not counted twice
+        assertEquals(first, d.question.card)
+        d.answerRight()
+        val rung2 = Item(correct = 1, rung = 2, seen = 2)
+        assertEquals(rung2, d.progress.items[first.key])
+        d.reply(":r")
+        assertEquals(first, d.question.card)
+        d.reply("wrong")
+        assertEquals(1, d.progress.items[first.key]!!.inError)
+        d.reply(":r")                       // wrong, then right: never in the error box
+        assertEquals(first, d.question.card)
+        assertEquals(Item(rung = 1, seen = 3), d.progress.items[first.key])
+        d.answerRight()
+        assertEquals(Item(correct = 1, rung = 2, seen = 4), d.progress.items[first.key])
     }
 
     @Test

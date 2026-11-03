@@ -88,7 +88,10 @@ class Drill(
      */
     val inOrder = !options.random && lessonText != null && cards.any { it.lessons.isNotEmpty() }
 
-    private data class Entry(val card: Card, val kind: String, val recognition: Boolean, val given: String? = null)
+    // [before]: where the card stood before it was last graded, for ':r'.
+    private data class Entry(
+        val card: Card, val kind: String, val recognition: Boolean, val given: String? = null, val before: Item? = null,
+    )
 
     // ':r' asks the card before this one again, then this one: both wait
     // here, each as it was asked.
@@ -135,8 +138,12 @@ class Drill(
     private fun nothingBefore() = Outcome.Said(listOf("(nothing asked before this one yet)"))
 
     // The card before is asked again (graded at once on [given], when there
-    // is one), then this one.
+    // is one), then this one.  Its last grade is taken back: it goes back to
+    // where it stood, to be graded from there.  That it was seen stands, so
+    // a copy synced in between does not outrank this one.
     private fun askAgain(p: Entry, given: String?): Outcome {
+        progress.items[p.card.key] = p.before!!.copy(seen = progress.items.getValue(p.card.key).seen)
+        save(progress)
         ahead.addFirst(current!!.copy(given = null))
         ahead.addFirst(p.copy(given = given))
         prev = null
@@ -150,6 +157,7 @@ class Drill(
         val r = e.card
         val expected = if (e.recognition) r.answer else r.loglan
         val s = progress.items.getOrPut(r.key) { Item() }
+        val before = s.copy()
         s.seen++
 
         // A sentence with no translation -- ungrammatical, its English just
@@ -174,7 +182,7 @@ class Drill(
         if (inOrder) afterInOrder(r, e.kind, right && reply.isNotEmpty())
         // Asked again, it is graded again, as one gone over: right takes it
         // off the in-order retry list, wrong puts it at the back.
-        prev = e.copy(kind = if (e.kind == "new") "retry" else e.kind, given = null)
+        prev = e.copy(kind = if (e.kind == "new") "retry" else e.kind, given = null, before = before)
 
         val answer = mutableListOf<String>()
         if (none) {

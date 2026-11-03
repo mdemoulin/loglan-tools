@@ -675,8 +675,9 @@ sub drill_loop ($state, $records) {
 
     # ':r' asks the card before this one again, then this one: both wait
     # here, each as it was asked.  With ':r ANSWER' the card before is
-    # graded on ANSWER instead of waiting for one.
-    my (@ahead, $prev);
+    # graded on ANSWER instead of waiting for one.  $before is where the card
+    # before stood before it was graded.
+    my (@ahead, $prev, $before);
     while (1) {
         my ($r, $kind, $direction, $given);
         if (@ahead) { ($r, $kind, $direction, $given) = @{ shift @ahead } }
@@ -734,12 +735,18 @@ sub drill_loop ($state, $records) {
 
         if ($reply eq ':q') { last }
         if ($reply eq ':r') {
+            # Its last grade is taken back: it goes back to where it stood,
+            # to be graded from there.  That it was seen stands, so a copy
+            # synced in between does not outrank this one.
+            my $k = $prev->[0]{key};
+            $state->{items}{$k} = { %$before, seen => item_state($state, $k)->{seen} };
             unshift @ahead, [ @$prev, $again ], [ $r, $kind, $direction ];
             undef $prev;
             next;
         }
 
         my $s = item_state($state, $r->{key});
+        $before = { %$s };
         $s->{seen}++;
         $asked++;
 
@@ -1152,9 +1159,10 @@ In-drill commands:
                      affixes-troublesome -- an animal or a people with its
                      whole set
   :h               list these commands
-  :r               ask the card before this one again, graded, then this one
-  :r ANSWER        grade the card before this one again on ANSWER, then
-                     ask this one
+  :r               take back the grade of the card before this one and ask
+                     it again, then this one
+  :r ANSWER        take that grade back and grade it on ANSWER instead,
+                     then ask this one
   -                for a sentence with no translation (ungrammatical), the
                      answer
   :q               quit and save
