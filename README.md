@@ -24,7 +24,7 @@ way out of when you miss.
     ./install.sh          # pick ~/.local/bin, ~/bin, /usr/local/bin or your own;
                           # later runs reinstall there (--ask to pick again);
                           # then the Android app, on the phone plugged in
-    ./install.sh --no-app # the commands alone
+    ./install.sh --no-app # the command-line tools alone
     loglan-teach core     # drill
 
 `install.sh` copies the Loglan sources that ship with the tools into
