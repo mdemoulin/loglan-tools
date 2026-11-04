@@ -64,7 +64,7 @@ data class ListGroup(val title: String, val about: String, val lists: List<Strin
 val listGroups = listOf(
     ListGroup("Utterances", "MacTeach 1: utterances, and the lessons that go with them",
               listOf("utts", "utts-troublesome")),
-    ListGroup("Words", "MacTeach 2: the primitives, alongside the utterances",
+    ListGroup("Predicates", "MacTeach 2: the primitives, alongside the utterances",
               listOf("core", "prims", "l1prims", "animals", "ethnic", "coined", "words-troublesome")),
     ListGroup("Affixes", "MacTeach 3: best begun once the primitives are known",
               listOf("affs", "affsets", "affixes-troublesome")),
