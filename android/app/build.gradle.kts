@@ -88,7 +88,7 @@ abstract class BuildLoglanLists @Inject constructor(
     }
 
     companion object {
-        val LISTS = listOf("core", "prims", "affs", "affsets", "utts", "l1prims", "m1-text", "derivs",
+        val LISTS = listOf("core", "prims", "affs", "affsets", "utts", "lws", "l1prims", "m1-text", "derivs",
                            "aux/animals", "aux/ethnic")
     }
 }

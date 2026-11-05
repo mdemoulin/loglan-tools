@@ -59,7 +59,8 @@ data class ListGroup(val title: String, val about: String, val lists: List<Strin
 /**
  * The lists in the three parts MacTeach had them in: MacTeach 1 drilled the
  * utterances, MacTeach 2 the words, MacTeach 3 the affixes; each has its
- * own troublesome list.  A list in none of them comes after.
+ * own troublesome list.  The little words follow, with theirs, and a list
+ * in none of them comes after.
  */
 val listGroups = listOf(
     ListGroup("Utterances", "MacTeach 1: utterances, and the lessons that go with them",
@@ -68,6 +69,8 @@ val listGroups = listOf(
               listOf("core", "prims", "l1prims", "animals", "ethnic", "coined", "words-troublesome")),
     ListGroup("Affixes", "MacTeach 3: best begun once the primitives are known",
               listOf("affs", "affsets", "affixes-troublesome")),
+    ListGroup("Little Words", "Every V, CV, CVV and VV, and the members of the paradigms",
+              listOf("lws", "lws-troublesome")),
 )
 
 /** What each list is, as the README has it. */
@@ -77,10 +80,12 @@ val listAbout = mapOf(
     "affs" to "every primitive or little word with affixes",
     "affsets" to "prims and affs together",
     "utts" to "utterances from the Institute's LoglanTeach and MacTeach, with lessons",
+    "lws" to "every V, CV, CVV and VV little word, and the members of the paradigms",
     "animals" to "the animal declension: -u generic, -a female, -o male, -i young, -e -like",
     "ethnic" to "the ethnic declension: -a language, -e territory, -i person, -o culture",
     "l1prims" to "the primitives of Loglan 1, chapters 1-7",
     "utts-troublesome" to "the utterances you have put aside to work on",
     "words-troublesome" to "the words you have put aside to work on",
     "affixes-troublesome" to "the affixes you have put aside to work on",
+    "lws-troublesome" to "the little words you have put aside to work on",
 )

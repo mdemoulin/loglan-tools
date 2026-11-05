@@ -135,7 +135,7 @@ class Library(val dir: File) {
     }
 
     companion object {
-        val TROUBLESOME = listOf("utts-troublesome", "words-troublesome", "affixes-troublesome")
+        val TROUBLESOME = listOf("utts-troublesome", "words-troublesome", "affixes-troublesome", "lws-troublesome")
 
         /**
          * Two copies of a list, as one: theirs, with the rows mine has that
@@ -152,14 +152,15 @@ class Library(val dir: File) {
             return text.toString()
         }
 
-        /** utts-troublesome for utts, affixes-troublesome for affs and affsets, words-troublesome for the rest. */
+        /** utts-troublesome for utts, affixes-troublesome for affs and affsets, lws-troublesome for lws, words-troublesome for the rest. */
         fun troublesomeFor(list: String) = when {
             list.startsWith("utts") -> "utts-troublesome"
             list.startsWith("aff") -> "affixes-troublesome"
+            list.startsWith("lws") -> "lws-troublesome"
             else -> "words-troublesome"
         }
 
-        val KNOWN = listOf("core", "prims", "affs", "affsets", "utts", "animals", "ethnic", "coined", "l1prims")
+        val KNOWN = listOf("core", "prims", "affs", "affsets", "utts", "lws", "animals", "ethnic", "coined", "l1prims")
         private val blankOrComment = Regex("""^\s*(?:#|\z)""")
     }
 }

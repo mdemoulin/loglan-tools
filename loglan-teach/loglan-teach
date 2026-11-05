@@ -118,8 +118,9 @@ my $state_file = $opt{state}
 my $sync = $svn_dir && dirname($state_file) eq $state_dir;
 my $state_saved = 0;
 # The troublesome lists, one for each of the three parts MacTeach had the
-# lists in: the utts, the words, the affixes (affs and affsets).
-use constant TROUBLESOME => qw(utts-troublesome words-troublesome affixes-troublesome);
+# lists in -- the utts, the words, the affixes (affs and affsets) -- and one
+# for the little words.
+use constant TROUBLESOME => qw(utts-troublesome words-troublesome affixes-troublesome lws-troublesome);
 my $sync_unreachable = 0;
 my $sync_said = 0;
 my $last_sync = time;
@@ -190,7 +191,7 @@ drill_loop($state, \@records);
 # your own, kept wherever it is.
 sub show_tables ($dir) {
     die "No list directory: set LOGLAN_STATE_DIR or run loglan-update\n" unless defined $dir;
-    my @known = qw(core prims affs affsets utts animals ethnic coined l1prims);
+    my @known = qw(core prims affs affsets utts lws animals ethnic coined l1prims);
     my %known = map { $_ => 1 } @known;
     opendir my $dh, $dir or die "opendir $dir: $!";
     my @own = grep { !$known{$_} } map { /^(.+)\.state\.json\z/ ? $1 : () } readdir $dh;
@@ -800,6 +801,7 @@ sub drill_loop ($state, $records) {
 sub troublesome_for ($list) {
     return $list =~ /\Autts/ ? 'utts-troublesome'
          : $list =~ /\Aaff/  ? 'affixes-troublesome'
+         : $list =~ /\Alws/  ? 'lws-troublesome'
          :                     'words-troublesome';
 }
 
@@ -1101,7 +1103,7 @@ Usage: $me [options] <data-file>
 
   Ladder + error-box drill for Loglan vocabulary and utterances.  Reads
   tab-separated files: <loglan>\t<affix>\t<gloss>\t<notes> (core, prims, affs,
-  affsets, ethnic, animals, l1prims) or <loglan>\t<answer> (utts or your own
+  affsets, lws, ethnic, animals, l1prims) or <loglan>\t<answer> (utts or your own
   lists).  A bare name such as 'prims' is looked for in \$LOGLAN_STATE_DIR
   (default ~/.loglan), where loglan-update puts the lists, and then among
   the auxiliary lists in its aux/ (ethnic, animals, and any of your own).
@@ -1155,8 +1157,8 @@ In-drill commands:
   :s               status
   :l               show the lesson this card goes with (:1 works too)
   :t               put the card before this one on its troublesome list --
-                     utts-troublesome, words-troublesome or
-                     affixes-troublesome -- an animal or a people with its
+                     utts-troublesome, words-troublesome,
+                     affixes-troublesome or lws-troublesome -- an animal or a people with its
                      whole set
   :h               list these commands
   :r               take back the grade of the card before this one and ask

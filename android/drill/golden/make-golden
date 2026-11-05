@@ -48,7 +48,7 @@ for my $name (@subs) {
 }
 eval "$src; 1" or die "loading the subs of $teach: $@";
 
-my @files = (map({ [$_, "$lists/$_"] } qw(core prims affs affsets utts l1prims)),
+my @files = (map({ [$_, "$lists/$_"] } qw(core prims affs affsets utts lws l1prims)),
              map({ [$_, "$lists/aux/$_"] } qw(animals ethnic)));
 
 my (%records, %answers, %sentences);

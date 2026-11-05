@@ -402,6 +402,47 @@ write_list("$dir/core",    \@core);
 write_list("$dir/affs",    \@affs);
 write_list("$dir/affsets", \@affsets);
 
+# ---- lws, the little words ----
+# Every V, CV, CVV and VV the dictionary has as a little word, the rest of the
+# paradigms' members, and glosses to answer with (sources/paradigm-words).  A
+# word can have a second entry under its head, after the first's </p>: soa is
+# a combining form of sonda, and a little word too, so these are looked for
+# here.  A sense marked
+# (af) is a piece of a word, not a word: a head with no other sense (-fi, -za)
+# is left out, as is ma until it is known to stand alone.
+my %lw;
+while ($html =~ m{<b><a name="([^"]+)">[^<]*</a></b>,\s*<br>\s*(.*?)(?=<b><a name=|\z)}sg) {
+    my ($word, $body) = ($1, $2);
+    for my $entry (split m{</p>}, $body) {
+        my ($head, @lines) = split /<br>/, $entry;
+        next unless ($head // '') =~ /\bLW\b/;
+        # A suffix or prefix has its form before the sense: "-za (af) ...".
+        my ($sense) = grep { /^\s*\((?!af\))\w+\)/ }
+                      map { s{</?b>}{}gr =~ s/^\s*(?:&nbsp;)*\s*(?:-?\w+(?:&mdash;)?\s*(?=\())?//r } @lines;
+        $lw{$word} //= $sense if defined $sense;
+    }
+}
+# With no key word marked in its sense, a little word is answered with the
+# start of the sense.
+sub lw_row ($w, $sense) {
+    my ($gloss, $notes) = gloss_notes($sense);
+    ($gloss) = $notes =~ /\A(.*?)(?:\.\.|[.,:;]|\z)/ if $gloss eq '-';
+    return join "\t", $w, '-', $gloss, $notes;
+}
+
+my %lws;
+for my $w (keys %lw) {
+    $lws{$w} = lw_row($w, $lw{$w}) if $w =~ /\A[b-df-hj-np-tvz]?[aeiou]{1,2}\z/i && $w ne 'ma';
+}
+for my $row (read_rows("$dist/sources/paradigm-words")) {
+    my ($w, $gloss) = split /\t/, $row;
+    my $sense = $lw{$w} // ($e{$w} && $e{$w}{type} ne 'Afx' ? $e{$w}{sense} : undef);
+    warn "paradigm-words: $w: no gloss\n" unless defined $gloss || defined $sense;
+    my $row = defined $sense ? lw_row($w, $sense) : join "\t", $w, '-', '-', '';
+    $lws{$w} = defined $gloss ? $row =~ s/\A[^\t]*\t-\t\K[^\t]*/$gloss/r : $row;
+}
+write_list("$dir/lws", [merge_added('lws', [values %lws])]);
+
 # ---- the lists shipped as they are (utts) ----
 # Never over a list that is already there: it may be your own copy, or a
 # symlink to one.

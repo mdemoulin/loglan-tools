@@ -1,0 +1,412 @@
+# For the list lws.  loglan-update takes every V, CV, CVV and VV little word
+# from the dictionary; here are the other members of the Loglan paradigms, one
+# to a line, and after a tab the gloss of any word the dictionary does not
+# have, or whose first sense there does not serve as an answer.
+kinoi	and-not
+ica	or
+ice	and
+ico	if-and-only-if/means
+icu
+nuku	whether-first
+nucu	whether-first
+inucu	whether-first
+noca	implies/only-if
+inoca
+kanoi	if
+noce	not-but
+inoce	not-but
+kenoi	both-and-not
+noco	exclusive-or
+inoco	exclusive-or/unless
+nukonoi	exclusive-or
+nocu	not-whether
+inocu	not-whether
+nukunoi	whether-then-not
+nonuu	whether-not-first
+nocnuu	whether-then-not
+inocnuu	whether-then-not
+nuknuunoi	whether-then-not
+anoi
+canoi
+icanoi	if
+enoi	and-not
+cenoi	and-not
+icenoi	and-not
+onoi	exclusive-or
+conoi	exclusive-or
+iconoi	exclusive-or
+unoi
+cunoi	whether-not
+icunoi
+nuunoi	whether-then-not
+nucunoi	whether-then-not
+inucunoi	whether-then-not
+noanoi
+nocanoi	not-both
+inocanoi	not-both
+noenoi	neither
+nocenoi	neither
+inocenoi	neither
+noonoi	not-means-not
+noconoi	not-means-not
+inoconoi	not-means-not
+konoi
+nounoi	not-whether-not
+nocunoi	not-whether-not
+inocunoi	not-whether-not
+kunoi	not-whether-not
+nonuunoi	whether-not-then-not
+nonucunoi	whether-not-then-not
+inonucunoi	whether-not-then-not
+ikou
+imoi	in-order-that
+irau
+isoa
+numoiki
+nurauki
+nusoaki
+numoi
+nurau
+nusoa
+inukou
+inumoi
+inurau
+inusoa
+moiki
+rauki
+soaki
+nomoi
+norau
+nosoa
+inokou
+inomoi
+inorau
+inosoa
+nunomoiki
+nunorauki
+nunosoaki
+nunomoi
+nunorau
+nunosoa
+inunokou	even-so
+inunomoi	even-so
+inunorau	even-so
+inunosoa
+nomoiki
+norauki
+nosoaki
+papa
+pana	was-then
+pafa	was-going-to
+napa	has
+nana	is-just-now
+nafa	is-now-going-to
+fapa	will-have
+fana	will-then-be
+fafa	will-be-going-to
+pazi	just-now/just-before
+fazi	immediately/right-away
+piazi	continuously-and-briefly-before
+paza	recently
+faza	soon/shortly
+piaza	continuously-for-a-short-time-before
+pazu	long-ago
+fazu
+piazu	continuously-for-a-long-time-before
+pacenoina	no-longer
+vivi	around
+vavi	into-from-nearby
+vuvi	into-from-afar
+viva	out-of-a-short-way
+vava	past-nearby
+vuva	toward
+vivu	out-of-a-long-way
+vavu	away-from
+vuvu	past-at-a-distance
+vizi	at-a-spot
+vazi	near-a-spot
+vuzi	far-from-a-spot
+viza	in-a-small-place
+vaza	near-a-small-place
+vuza	far-from-a-small-place
+dacine	x-sub-1
+levi	this/these
+leva	that-nearby/those-nearby
+levu	that-distant/those-distant
+lepa	the-former
+lena	the-present
+lefa	the-future
+levina	the-here-and-now
+lemi
+letu
+lemu
+leda	his/her/its/their/x's
+leba	someone's/something's/x's
+sara
+sine
+sune
+sasi
+sasine
+sasu	barely-one
+sasune
+nemoato	1,000,000
+neni
+nema	one-hundred
+nene
+toma
+neto
+tema	three-hundred
+toni
+nemoa	1,000
+teni
+nenimoa	10,000
+foni
+nemamoa	100,000
+feni
+pine
+nepife	1.5
+pira
+pito
+topiso	2.6
+pire
+pite	.3
+tepise	3.7
+piri
+piso	.4
+piro
+piru
+pinine
+pisa
+pinimane	.0001
+pisi	at-most-a-tenth
+pinimoane	.00001
+pisu	at-least-a-tenth
+nociu	not equal to
+nomou	not greater than
+numou	less than
+nunomou	greater than or equal to
+Ama
+asi	a
+Ema
+esi	e
+Ima
+isi	i
+Oma
+osi	o
+Qai	Q
+qei	q
+Uma
+usi	u
+Wma	W
+wsi	w
+Xai	X
+xei	x
+Yma	Y
+ysi	y
+gao,azi	Greek capital alpha
+azi
+gaobeo	Greek capital beta
+gaoceo	Greek capital chi
+gaodeo	Greek capital delta
+gao,ezi	Greek capital epsilon
+ezi
+gaogeo	Greek capital gamma
+gao,izi	Greek capital iota
+izi
+gaojeo	Greek capital xi
+gaokeo	Greek capital kappa
+gaoleo	Greek capital lambda
+gaomeo	Greek capital mu
+gaoneo	Greek capital nu
+gao,ozi	Greek capital omega
+ozi
+gaopeo	Greek capital pi
+gaoqeo	Greek capital theta
+qeo	Greek lower case theta
+gaoreo	Greek capital rho
+gaoseo	Greek capital sigma
+gaoteo	Greek capital tau
+gao,uzi	Greek capital upsilon
+uzi
+gaoveo	Greek capital psi
+gaozeo	Greek capital zeta
+a	or
+ae	I-hope-to/I-hope
+ai	yes-I-will/I-will
+ao	I-want-to
+au	I-don't-care/I-don't-care-whether
+ba	someone-x/something-x
+be	someone-y/something-y
+bo	someone-h/something-h
+bu	someone-q/something-q
+bea	for-example/for-instance
+beu	patient/part/property
+bi	is/is-identical-to
+bie	is-a-member-of/member
+bii	is-equal-to/is-the-same-as
+bua	first-bound-predicate-variable
+bui	second-bound-predicate-variable
+ca	or
+ce	and
+cii	quotation-component-separator
+co	if-and-only-if/means
+coa	in-short/in-sum
+cui	left-mark-of-a-left-connectand
+da	x/he/she/it/they
+de	y/he/she/it/they
+di	w/he/she/it/they
+dio	recipient/beneficiary/destination
+do	h/he/she/it/they
+du	q/he/she/it/they
+dua	is-the-former/does-the-former
+dui	is-the-latter/does-the-latter
+e	and
+ea	let's/I-suggest-that
+ei	is-that-so/is-it-true-that
+eu	let-us-suppose/supposition
+fa	will/after/afterwards
+fae	and-vice-versa
+feu	in-fact/actually
+foa	whole/set/collectivity
+fu	second-conversion/swap-1st-and-3rd-places
+fua	will-be-habitually
+fuo	third-reflexive
+ga	is-a/timeless-tense
+gau	can/strong-potentiality
+geu	end-of-a-ge-group
+gi	right-mark-of-displaced-objects
+gia	continuous-timeless
+gie	left-close-bracket
+gio	subject-separator
+giu	right-close-bracket
+go	inversion-operator/of/who/which
+goa	greater
+goi	right-mark-of-a-sentence-quantifier
+gu	comma/right-boundary-mark
+gua	timeless-habitually
+gue	end-of-a-je-phrase/end-of-a-jue-phrase
+gui	end-of-a-ji-clause/end-of-a-ja-clause
+guo	end-of-a-lepo-clause
+guu	end-of-a-barepred
+hie	left-close-parenthesis
+hiu	right-close-parenthesis
+ho	how-many
+hue	addressor
+ia	yes/certainly
+ie	which/what/what-did-you-say
+io	probably
+iu	I-don't-know
+ja	who-incidentally/which-incidentally
+jao	such-that-incidentally
+ji	who-is/which-is
+jio	such-that
+ju	third-conversion/swap-1st-and-4th-places
+jue	second-descriptive-link
+jui	lesser
+juo	fourth-reflexive
+ka	either/and-or
+kao	actor/agent/doer
+ke	both
+kia	delete-the-previous-word
+kie	left-open-parenthesis
+kio	delete-this-utterance
+kiu	right-open-parenthesis
+koo	command-marker
+kue	under/dividing
+la	the-one-named
+laa	the-unique
+lae	the-addressee-of
+lao	the-foreign-name
+lau	left-mark-of-a-set
+lee	an-arbitrary
+li	left-quote/quote
+lie	strong-quotation-mark
+lio	the-number
+lo	the-mass-of
+loo	the-specific-part-of
+lou	left-mark-of-an-ordered-list
+lu	right-quote
+lua	right-mark-of-a-set
+lue	the-sign-of/the-address-of
+lui	for/in-order-to-please
+luo	right-mark-of-an-ordered-list
+me	name-to-predicate
+mea	argument-to-predicate
+mio	we-I-and-others-independently
+miu	we-I-and-others-jointly
+mo	we-you-and-I-independently
+mu	we-you-and-I-jointly
+mue	acronym-marker
+muo	we-all-independently
+muu	we-all-jointly
+na	is/now/at/during
+nia	meanwhile/while
+niu	incorrect-Loglan-marker
+noe	not-but
+nou	not-whether
+nu	first-conversion/passive/swap-1st-and-2nd-places
+nua	is-habitually
+nuo	second-reflexive
+nuu	whether-first
+oa	must
+oe	should/prefer-that
+oi	may
+ou	doesn't-matter-whether
+pa	was/before/then/formerly
+pia	until
+piu	in-particular
+po	that/event-operator
+poi	short-scope-event
+pou	product/output/purpose
+pua	was-habitually
+pui	short-scope-quality
+rie	sir/madam/sire/ma'am
+sa	almost-all
+sao	foreign-word-to-predicate
+sau	source/origin/reason/cause
+seu	answer-marker
+si	at-most-one
+siu	you're-welcome
+soi	imagined-act-marker
+su	at-least-one/some/any
+sua	to-the-power
+sue	sound-to-predicate
+taa	in-turn
+tao	that-second-situation
+tio	this-situation
+toa	this-remark
+toe	respectively
+toi	that-remark
+too	you-all-individually
+tou	you-all-jointly
+tuo	you-and-others-individually
+tuu	you-and-others-jointly
+ua	there/satisfaction
+ue	well/indeed/surprise
+ui	how-nice/good/fine
+uo	what/angry
+uu	what-a-shame/sad
+va	near/nearby
+veu	event/state/deed/means/route/effect
+via	throughout-a-medium-place
+vie	would-objectively/should-objectively/could-objectively
+vii	throughout-a-small-place
+viu	throughout-a-large-place
+voi	skipping-details
+vu	far/far-away
+zao	compound-builder
+ze	jointly/and-jointly
+zia	the-letter-a
+zie	the-letter-e
+zii	the-letter-i
+zio	the-letter-o
+ziu	the-letter-u
+zoi	short-scope-quantity
+zua	sign-of-the-1st-argument
+zue	sign-of-the-2nd-argument
+zui	sign-of-the-3rd-argument
+zuo	sign-of-the-4th-argument
+zuu	sign-of-the-5th-argument
+vizu	in-a-large-region
+vazu	near-a-region
+vuzu	far-from-a-region

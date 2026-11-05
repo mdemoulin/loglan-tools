@@ -36,7 +36,7 @@ the card before and asks it again (then back to this one; `:r ANSWER` grades
 it on ANSWER without asking), `:t` puts the card before
 on its troublesome list -- `utts-troublesome`, `words-troublesome` or
 `affixes-troublesome`, one for each of the three parts MacTeach had the
-lists in (an animal or a people with its whole set),
+lists in, or `lws-troublesome` (an animal or a people with its whole set),
 `:h` lists the commands, and `:q` saves and quits.  Any
 one of a gloss's alternatives ("box/crate/carton") counts as right, and
 an "X-like" -- the *-e* of an animal -- takes "Xish" as well (*kange*,
@@ -102,7 +102,7 @@ the repository.  Have svn ignore what `install.sh` and `loglan-update`
 build, so that only your own files are kept:
 
     cd ~/.loglan
-    printf '%s\n' src dist cache aux core prims affs affsets animals ethnic \
+    printf '%s\n' src dist cache aux core prims affs affsets lws animals ethnic \
         l1prims derivs utts parse coined m1-text vocab-cheatsheet.html \
         update.log UPDATED .update.lock > /tmp/ignore
     svn propset svn:ignore -F /tmp/ignore . && svn commit -m 'ignore built files' .
@@ -146,6 +146,7 @@ NEW-URL ~/.loglan`.
 | `prims` | every primitive in the dictionary, plus every word of the auxiliary lists it does not already have |
 | `affs` | every primitive or little word with affixes; drill with `--field affix` |
 | `affsets` | `prims` and `affs` together, likewise |
+| `lws` | the little words: every V, CV, CVV and VV in the dictionary, and the other members of the paradigms (`sources/paradigm-words`) |
 | `ethnic` | auxiliary: the ethnic declension, *-a* language, *-e* territory, *-i* person, *-o* culture |
 | `animals` | auxiliary: the animal declension, *-u* generic, *-a* female, *-o* male, *-i* young, *-e* -like |
 | `coined` | your own words, from `~/.loglan/new-words.json` (see [Your own words](#your-own-words)); kept out of the other lists |
