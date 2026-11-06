@@ -293,10 +293,10 @@ lui	for/in-order-to-please
 luo	right-mark-of-an-ordered-list
 me	name-to-predicate
 mea	argument-to-predicate
-mio	we-I-and-others-independently
-miu	we-I-and-others-jointly
-mo	we-you-and-I-independently
-mu	we-you-and-I-jointly
+mio	we-I-and-others-independently/we-me-and-others-independently/I-and-others-independently/me-and-others-independently
+miu	we-I-and-others-jointly/we-me-and-others-jointly/I-and-others-jointly/me-and-others-jointly
+mo	we-you-and-I-independently/we-you-and-me-independently/you-and-I-independently/you-and-me-independently
+mu	we-you-and-I-jointly/we-you-and-me-jointly/you-and-I-jointly/you-and-me-jointly
 mue	acronym-marker
 muo	we-all-independently
 muu	we-all-jointly
