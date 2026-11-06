@@ -20,6 +20,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -81,8 +82,9 @@ fun ListsScreen(model: TeachModel, openSettings: () -> Unit) {
         val rest = lists.filter { row -> listGroups.none { row.name in it.lists } }
         LazyColumn(Modifier.fillMaxSize(), contentPadding = padding) {
             grouped.forEach { (g, rows) ->
-                item(key = "group:${g.title}") { GroupHeading(g) }
-                items(rows, key = { it.name }) { row -> ListRowItem(row) { chosen = row.name } }
+                val open = g.title !in model.collapsed
+                item(key = "group:${g.title}") { GroupHeading(g, open) { model.toggleGroup(g.title) } }
+                if (open) items(rows, key = { it.name }) { row -> ListRowItem(row) { chosen = row.name } }
             }
             if (rest.isNotEmpty()) item(key = "rest") { Spacer(Modifier.height(16.dp)) }
             items(rest, key = { it.name }) { row -> ListRowItem(row) { chosen = row.name } }
@@ -93,9 +95,15 @@ fun ListsScreen(model: TeachModel, openSettings: () -> Unit) {
 }
 
 @Composable
-private fun GroupHeading(g: ListGroup) {
-    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp)) {
-        Text(g.title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+private fun GroupHeading(g: ListGroup, open: Boolean, toggle: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = toggle)
+                   .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(g.title, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge,
+                 color = MaterialTheme.colorScheme.primary)
+            Text(if (open) "\u25BE" else "\u25B8", style = MaterialTheme.typography.titleLarge,
+                 color = MaterialTheme.colorScheme.primary)
+        }
         Text(g.about, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
     HorizontalDivider()

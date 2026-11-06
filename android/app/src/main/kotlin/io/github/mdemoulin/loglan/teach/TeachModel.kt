@@ -78,6 +78,15 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
     var drill by mutableStateOf<DrillView?>(null)
         private set
 
+    /** The headings on the first screen folded shut, kept from one run to the next. */
+    var collapsed by mutableStateOf(prefs.getStringSet("collapsed", null).orEmpty().toSet())
+        private set
+
+    fun toggleGroup(title: String) {
+        collapsed = if (title in collapsed) collapsed - title else collapsed + title
+        prefs.edit().putStringSet("collapsed", collapsed).apply()
+    }
+
     fun refresh() {
         viewModelScope.launch { loadLists() }
     }
