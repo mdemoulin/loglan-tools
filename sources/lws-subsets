@@ -2,7 +2,8 @@
 # makes them from the rows of lws, which has the gloss of every word here; a
 # line is a name, a tab and words, and a name can have as many lines as it
 # needs.  A word can be in more than one.  The words given only as examples
-# of a form (nefi, zipazu) are left out, and any that lws does not have.
+# of a form (nefi, zipazu) are left out, as are the decimals (pine, nepife), the
+# compound numbers (neni, nema), and any that lws does not have.
 
 # Left out for now, to be sorted later: the 79 words of lws in none of these.
 # bia bii cao cii cui fau fu fuo gao gau ge geu gi gio go goi gu gue gui
@@ -40,10 +41,7 @@ descriptors	la laa le lea lee leu lo loe li lii liu lie lao lae lue lau lou
 descriptors	lio lu lua luo levi leva levu lepa lena lefa levina lemi letu
 descriptors	lemu leda leba
 quantifiers	ni ne to te fo fe so se vo ve ra re ri ro ru sa sara si sine su
-quantifiers	sune sasi sasine sasu sasune neni nene neto toni teni foni feni
-quantifiers	nema toma tema nemoa nenimoa nemamoa nemoato pi pine nepife pira
-quantifiers	pito topiso pire pite tepise piri piso piro piru pinine pisa
-quantifiers	pinimane pisi pinimoane pisu
+quantifiers	sune sasi sasine sasu sasune pi pisa pisi pisu
 modals	ciu coi dii duo hea kii lia lui mou peu sea tie nociu nomou
 modals	numou nunomou
 case-tags	zua zue zui zuo zuu beu cau dio foa jui kao neu pou goa sau veu
