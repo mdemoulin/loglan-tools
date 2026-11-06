@@ -1,0 +1,58 @@
+# The lists lws-<name>: the little words of a paradigm or a small set.  loglan-update
+# makes them from the rows of lws, which has the gloss of every word here; a
+# line is a name, a tab and words, and a name can have as many lines as it
+# needs.  A word can be in more than one.  The words given only as examples
+# of a form (nefi, zipazu) are left out, and any that lws does not have.
+
+# Left out for now, to be sorted later: the 82 words of lws in none of these.
+# bia bii cao cii cui fau fu fuo gao gau ge geu gi gio go goi gu gue gui
+# guo guu ha he ho hoi hu hue i ja jae jao je ji jie jio jo ju jue juo kia
+# kio koo loa loi loo me mea mia mue no nu nuo pau pe po poi pu pui sao
+# seu sia sie sio siu soi sua sue suo suu tau vau vie zao ze zea zia zie
+# zii zio ziu zo zoi
+
+variables	mi tu mu mo tou too miu mio muu muo tuu tuo da de di do du ba be
+variables	bo bu ti ta toa toi tio tao dua dui bua bui dacine
+discursives	bea biu buo cea ceu cia coa dau dou fae fao feu gea kuo kuu nao
+discursives	nie pae piu rea saa sii sui taa toe voi zou
+indicators	ia io ii iu oa oe oi ou ai ao ae au ua ue ui uo uu aa ee oo ie
+indicators	eo ea eu ei
+punctuation	bi bie cie cio ci gie giu hie hi hiu kie kiu kua kue li lu nea
+punctuation	nio niu pea pio pi tia zoa zoo
+connectives	a e o u ca ce co cu ica ice ico icu ka ke ko ku ki kinoi nuku
+connectives	nuu nucu inucu noa noca inoca kanoi noe noce inoce kenoi noo
+connectives	noco inoco nukonoi nou nocu inocu nukunoi nonuu nocnuu inocnuu
+connectives	nuknuunoi anoi canoi icanoi enoi cenoi icenoi onoi conoi iconoi
+connectives	unoi cunoi icunoi nuunoi nucunoi inucunoi noanoi nocanoi
+connectives	inocanoi noenoi nocenoi inocenoi noonoi noconoi inoconoi konoi
+connectives	nounoi nocunoi inocunoi kunoi nonuunoi nonucunoi inonucunoi
+causal	kou moi rau soa ikou imoi irau isoa numoi nurau nusoa inukou
+causal	inumoi inurau inusoa numoiki nurauki nusoaki moiki rauki soaki
+causal	nomoi norau nosoa inokou inomoi inorau inosoa nomoiki norauki
+causal	nosoaki nunomoi nunorau nunosoa inunokou inunomoi inunorau
+causal	inunosoa nunomoiki nunorauki nunosoaki
+tense	pa na fa ga gia gua pia nia fia pua nua fua papa pana pafa napa
+tense	nana nafa fapa fana fafa pazi fazi piazi paza faza piaza pazu
+tense	fazu piazu pacenoina
+location	vi va vu vii via viu vivi vavi vuvi viva vava vuva vivu vavu
+location	vuvu vizi vazi vuzi viza vaza vuza vizu vazu vuzu
+descriptors	la laa le lea lee leu lo loe li lii liu lie lao lae lue lau lou
+descriptors	lio lu lua luo levi leva levu lepa lena lefa levina lemi letu
+descriptors	lemu leda leba
+quantifiers	ni ne to te fo fe so se vo ve ra re ri ro ru sa sara si sine su
+quantifiers	sune sasi sasine sasu sasune neni nene neto toni teni foni feni
+quantifiers	nema toma tema nemoa nenimoa nemamoa nemoato pi pine nepife pira
+quantifiers	pito topiso pire pite tepise piri piso piro piru pinine pisa
+quantifiers	pinimane pisi pinimoane pisu
+modals	ciu coi dii duo hea kii lia lui mou peu sea tie nociu nomou
+modals	numou nunomou
+case-tags	zua zue zui zuo zuu beu cau dio foa jui kao neu pou goa sau veu
+alphabet	Ama asi Bai bei Cai cei Dai dei Ema esi Fai fei Gai gei Hai hei
+alphabet	Ima isi Jai jei Kai kei Lai lei Mai mei Nai nei Oma osi Pai pei
+alphabet	Qai qei Rai rei Sai sei Tai tei Uma usi Vai vei Wma wsi Xai xei
+alphabet	Yma ysi Zai zei azi ezi izi ozi uzi beo ceo deo geo jeo keo leo
+alphabet	meo neo peo qeo reo seo teo veo zeo gao,azi gao,ezi gao,izi
+alphabet	gao,ozi gao,uzi gaobeo gaoceo gaodeo gaogeo gaojeo gaokeo gaoleo
+alphabet	gaomeo gaoneo gaopeo gaoqeo gaoreo gaoseo gaoteo gaoveo gaozeo
+register-markers	rie kae nue fie die
+aux-verbs	kau fui foi roi nui

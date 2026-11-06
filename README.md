@@ -103,6 +103,9 @@ build, so that only your own files are kept:
 
     cd ~/.loglan
     printf '%s\n' src dist cache aux core prims affs affsets lws animals ethnic \
+        lws-variables lws-discursives lws-indicators lws-punctuation lws-connectives \
+        lws-causal lws-tense lws-location lws-descriptors lws-quantifiers \
+        lws-modals lws-case-tags lws-alphabet lws-register-markers lws-aux-verbs \
         l1prims derivs utts parse coined m1-text vocab-cheatsheet.html \
         update.log UPDATED .update.lock > /tmp/ignore
     svn propset svn:ignore -F /tmp/ignore . && svn commit -m 'ignore built files' .
@@ -147,6 +150,21 @@ NEW-URL ~/.loglan`.
 | `affs` | every primitive or little word with affixes; drill with `--field affix` |
 | `affsets` | `prims` and `affs` together, likewise |
 | `lws` | the little words: every V, CV, CVV and VV in the dictionary, and the other members of the paradigms (`sources/paradigm-words`) |
+| `lws-variables` | Paradigm F: the variables, personal, demonstrative and predicate |
+| `lws-discursives` | Paradigm J: the discursives, which tie a remark to what came before |
+| `lws-indicators` | Paradigm I: the attitudinal indicators |
+| `lws-punctuation` | Paradigm A: the signs and punctuation marks |
+| `lws-connectives` | Paradigm B: the logical connectives |
+| `lws-causal` | Paradigm C: the causal connectives |
+| `lws-tense` | Paradigm D: the tense operators |
+| `lws-location` | Paradigm E: the location operators |
+| `lws-descriptors` | Paradigm G: the descriptors |
+| `lws-quantifiers` | Paradigm H: the quantifiers |
+| `lws-modals` | Paradigm K: the modal operators |
+| `lws-case-tags` | Paradigm N: the optional case tags |
+| `lws-alphabet` | Paradigm M: the alphabet words, Latin and Greek |
+| `lws-register-markers` | the register markers, from Lognet 90/1 and the dictionary: *rie*, *kae*, *nue*, *fie*, *die* |
+| `lws-aux-verbs` | the auxiliary verbs, from Lognet 97/1: *kau*, *fui*, *foi*, *roi*, *nui* |
 | `ethnic` | auxiliary: the ethnic declension, *-a* language, *-e* territory, *-i* person, *-o* culture |
 | `animals` | auxiliary: the animal declension, *-u* generic, *-a* female, *-o* male, *-i* young, *-e* -like |
 | `coined` | your own words, from `~/.loglan/new-words.json` (see [Your own words](#your-own-words)); kept out of the other lists |

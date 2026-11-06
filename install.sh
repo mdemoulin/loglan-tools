@@ -200,7 +200,8 @@ Drill a list:
 
 Lists: core (the everyday primitives: no native or scientific ones), prims
 (all primitives), affs (words with affixes; try --field affix),
-affsets, lws (the little words), l1prims (the primitives used in Loglan 1),
+affsets, lws (the little words) and lws-variables and the rest, one to a
+paradigm, l1prims (the primitives used in Loglan 1),
 utts (whole sentences),
 the auxiliary lists animals and ethnic, whose words are in prims too, and
 coined (your own words, from $data/new-words.json, if you keep one).

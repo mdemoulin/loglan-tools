@@ -160,7 +160,8 @@ class Library(val dir: File) {
             else -> "words-troublesome"
         }
 
-        val KNOWN = listOf("core", "prims", "affs", "affsets", "utts", "lws", "animals", "ethnic", "coined", "l1prims")
+        val KNOWN = listOf("core", "prims", "affs", "affsets", "utts", "lws", "animals", "ethnic", "coined", "l1prims",
+                         "lws-variables", "lws-discursives", "lws-indicators", "lws-punctuation", "lws-connectives", "lws-causal", "lws-tense", "lws-location", "lws-descriptors", "lws-quantifiers", "lws-modals", "lws-case-tags", "lws-alphabet", "lws-register-markers", "lws-aux-verbs")
         private val blankOrComment = Regex("""^\s*(?:#|\z)""")
     }
 }

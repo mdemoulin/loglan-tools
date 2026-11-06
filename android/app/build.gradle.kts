@@ -89,6 +89,7 @@ abstract class BuildLoglanLists @Inject constructor(
 
     companion object {
         val LISTS = listOf("core", "prims", "affs", "affsets", "utts", "lws", "l1prims", "m1-text", "derivs",
+                           "lws-variables", "lws-discursives", "lws-indicators", "lws-punctuation", "lws-connectives", "lws-causal", "lws-tense", "lws-location", "lws-descriptors", "lws-quantifiers", "lws-modals", "lws-case-tags", "lws-alphabet", "lws-register-markers", "lws-aux-verbs",
                            "aux/animals", "aux/ethnic")
     }
 }

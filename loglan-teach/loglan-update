@@ -443,6 +443,18 @@ for my $row (read_rows("$dist/sources/paradigm-words")) {
 }
 write_list("$dir/lws", [merge_added('lws', [values %lws])]);
 
+# ---- lws-variables and the rest, a paradigm each (sources/lws-subsets) ----
+my %subset;
+for my $row (read_rows("$dist/sources/lws-subsets")) {
+    my ($name, $words) = split /\t/, $row;
+    push @{ $subset{$name} }, split ' ', $words;
+}
+for my $name (sort keys %subset) {
+    warn "lws-subsets: $_: not in lws\n" for grep { !$lws{$_} } @{ $subset{$name} };
+    my @rows = map { $lws{$_} // () } @{ $subset{$name} };
+    write_list("$dir/lws-$name", [merge_added("lws-$name", \@rows)]);
+}
+
 # ---- the lists shipped as they are (utts) ----
 # Never over a list that is already there: it may be your own copy, or a
 # symlink to one.
@@ -671,8 +683,8 @@ Usage: loglan-update [--dir DIR] [--offline] [--replace-links]
 Brings the Loglan sources in DIR/src up to date -- from the copies shipped
 with the tools and, if the copy online has changed, from
 randall-holmes.github.io -- and builds the lists in DIR from them: prims,
-core, affs, affsets, the auxiliary lists in DIR/aux (ethnic, animals),
-l1prims, derivs and vocab-cheatsheet.html; and coined, from your own words
+core, affs, affsets, lws and lws-variables and the rest, the auxiliary lists
+in DIR/aux (ethnic, animals), l1prims, derivs and vocab-cheatsheet.html; and coined, from your own words
 in DIR/new-words.json.
 
   --dir DIR         the data directory (default \$LOGLAN_STATE_DIR, else ~/.loglan)
