@@ -432,7 +432,7 @@ sub lw_row ($w, $sense) {
 
 my %lws;
 for my $w (keys %lw) {
-    $lws{$w} = lw_row($w, $lw{$w}) if $w =~ /\A[b-df-hj-np-tvz]?[aeiou]{1,2}\z/i && $w ne 'ma';
+    $lws{$w} = lw_row($w, $lw{$w}) if $w =~ /\A[b-df-hj-np-tvz]?[aeiou]{1,2}\z/i && $w !~ /\A(?:ma|kio|loo|zea)\z/;
 }
 for my $row (read_rows("$dist/sources/paradigm-words")) {
     my ($w, $gloss) = split /\t/, $row;

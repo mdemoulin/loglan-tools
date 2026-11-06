@@ -4,11 +4,11 @@
 # needs.  A word can be in more than one.  The words given only as examples
 # of a form (nefi, zipazu) are left out, and any that lws does not have.
 
-# Left out for now, to be sorted later: the 82 words of lws in none of these.
+# Left out for now, to be sorted later: the 79 words of lws in none of these.
 # bia bii cao cii cui fau fu fuo gao gau ge geu gi gio go goi gu gue gui
 # guo guu ha he ho hoi hu hue i ja jae jao je ji jie jio jo ju jue juo kia
-# kio koo loa loi loo me mea mia mue no nu nuo pau pe po poi pu pui sao
-# seu sia sie sio siu soi sua sue suo suu tau vau vie zao ze zea zia zie
+# koo loa loi me mea mia mue no nu nuo pau pe po poi pu pui sao
+# seu sia sie sio siu soi sua sue suo suu tau vau vie zao ze zia zie
 # zii zio ziu zo zoi
 
 variables	mi tu mu mo tou too miu mio muu muo tuu tuo da de di do du ba be
@@ -47,12 +47,12 @@ quantifiers	pinimane pisi pinimoane pisu
 modals	ciu coi dii duo hea kii lia lui mou peu sea tie nociu nomou
 modals	numou nunomou
 case-tags	zua zue zui zuo zuu beu cau dio foa jui kao neu pou goa sau veu
-alphabet	Ama asi Bai bei Cai cei Dai dei Ema esi Fai fei Gai gei Hai hei
-alphabet	Ima isi Jai jei Kai kei Lai lei Mai mei Nai nei Oma osi Pai pei
-alphabet	Qai qei Rai rei Sai sei Tai tei Uma usi Vai vei Wma wsi Xai xei
-alphabet	Yma ysi Zai zei azi ezi izi ozi uzi beo ceo deo geo jeo keo leo
-alphabet	meo neo peo qeo reo seo teo veo zeo gao,azi gao,ezi gao,izi
+alphabet	Ama afi Bai bei Cai cei Dai dei Ema efi Fai fei Gai gei Hai hei
+alphabet	Ima ifi Jai jei Kai kei Lai lei Mai mei Nai nei Oma ofi Pai pei
+alphabet	Rai rei Sai sei Tai tei Uma ufi Vai vei
+alphabet	Yma yfi Zai zei azi ezi izi ozi uzi beo ceo deo geo jeo keo leo
+alphabet	meo neo peo reo seo teo veo zeo gao,azi gao,ezi gao,izi
 alphabet	gao,ozi gao,uzi gaobeo gaoceo gaodeo gaogeo gaojeo gaokeo gaoleo
-alphabet	gaomeo gaoneo gaopeo gaoqeo gaoreo gaoseo gaoteo gaoveo gaozeo
+alphabet	gaomeo gaoneo gaopeo gaoreo gaoseo gaoteo gaoveo gaozeo
 register-markers	rie kae nue fie die
 aux-verbs	kau fui foi roi nui

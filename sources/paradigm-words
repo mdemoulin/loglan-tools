@@ -186,23 +186,17 @@ nomou	not greater than
 numou	less than
 nunomou	greater than or equal to
 Ama
-asi	a
+afi	a
 Ema
-esi	e
+efi	e
 Ima
-isi	i
+ifi	i
 Oma
-osi	o
-Qai	Q
-qei	q
+ofi	o
 Uma
-usi	u
-Wma	W
-wsi	w
-Xai	X
-xei	x
+ufi	u
 Yma	Y
-ysi	y
+yfi	y
 gao,azi	Greek capital alpha
 azi
 gaobeo	Greek capital beta
@@ -221,8 +215,6 @@ gaoneo	Greek capital nu
 gao,ozi	Greek capital omega
 ozi
 gaopeo	Greek capital pi
-gaoqeo	Greek capital theta
-qeo	Greek lower case theta
 gaoreo	Greek capital rho
 gaoseo	Greek capital sigma
 gaoteo	Greek capital tau
@@ -309,7 +301,6 @@ kao	actor/agent/doer
 ke	both
 kia	delete-the-previous-word
 kie	left-open-parenthesis
-kio	delete-this-utterance
 kiu	right-open-parenthesis
 koo	command-marker
 kue	under/dividing
@@ -323,7 +314,6 @@ li	left-quote/quote
 lie	strong-quotation-mark
 lio	the-number
 lo	the-mass-of
-loo	the-specific-part-of
 lou	left-mark-of-an-ordered-list
 lu	right-quote
 lua	right-mark-of-a-set
