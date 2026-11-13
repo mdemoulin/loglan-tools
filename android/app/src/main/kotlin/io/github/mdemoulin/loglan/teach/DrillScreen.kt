@@ -95,7 +95,8 @@ fun DrillScreen(model: TeachModel, view: DrillView) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { model.reply("") }) { Text("Show answer") }
                 OutlinedButton(onClick = { model.reply(":r") }, enabled = drill.hasPrevious) { Text("Ask the last again") }
-                OutlinedButton(onClick = { model.reply(":t") }, enabled = drill.hasPrevious) { Text("Last is troublesome") }
+                if (!drill.isTroublesome)
+                    OutlinedButton(onClick = { model.reply(":t") }, enabled = drill.hasPrevious) { Text("Last is troublesome") }
                 if (drill.inOrder) OutlinedButton(onClick = { model.reply(":l") }) { Text("Lesson") }
             }
             if (view.said.isNotEmpty()) {
@@ -109,7 +110,7 @@ fun DrillScreen(model: TeachModel, view: DrillView) {
         }
     }
     if (status) StatusDialog(drill) { status = false }
-    if (help) HelpDialog(drill.options.escape) { help = false }
+    if (help) HelpDialog(drill.options.escape, drill.commands) { help = false }
 }
 
 /** The answer box: Enter grades what is in it; a blank Enter shows the answer. */
@@ -169,7 +170,7 @@ private fun StatusDialog(drill: Drill, dismiss: () -> Unit) {
 }
 
 @Composable
-private fun HelpDialog(escape: Int, dismiss: () -> Unit) {
+private fun HelpDialog(escape: Int, commands: List<String>, dismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = dismiss,
         title = { Text("Help") },
@@ -183,7 +184,7 @@ private fun HelpDialog(escape: Int, dismiss: () -> Unit) {
                      "back on the first rung.  Past the top rung it has graduated.  Settings, on the " +
                      "first screen, change how many rungs there are and how many it takes.")
                 Text("The commands of loglan-teach can be typed too:")
-                Drill.COMMANDS.dropLast(1).forEach { Text(it.trim(), fontFamily = FontFamily.Monospace) }
+                commands.dropLast(1).forEach { Text(it.trim(), fontFamily = FontFamily.Monospace) }
             }
         },
         confirmButton = { TextButton(onClick = dismiss) { Text("OK") } },

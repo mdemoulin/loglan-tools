@@ -226,6 +226,20 @@ class DrillTest {
     }
 
     @Test
+    fun colonTDoesNothingOnATroublesomeList() {
+        val dir = Files.createTempDirectory("loglan").toFile()
+        val d = Drill("words-troublesome", words, Progress(dataFile = "words-troublesome"), Options(),
+                      Library(dir), null, Random(1))
+        assertTrue(d.isTroublesome)
+        assertTrue(d.commands.none { it.startsWith("  :t ") })
+        d.answerRight()
+        assertEquals(listOf("(this is a troublesome list already)"), assertIs<Outcome.Said>(d.reply(":t")).lines)
+        assertFalse(File(dir, "words-troublesome").exists())
+        assertFalse(drill().isTroublesome)
+        dir.deleteRecursively()
+    }
+
+    @Test
     fun troublesomeListsMergeAsLoglanTeachMergesThem() {
         val theirs = "# header\nhelva\t-\tSwiss\t..\nLe mrenu.\tThe man.\n"
         val mine = "# header\nhelva\t-\tSwiss\t..\nbanse\t-\tbasket\t..\n"

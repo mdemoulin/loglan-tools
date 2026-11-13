@@ -125,12 +125,20 @@ class Drill(
             ":r" -> if (p == null) nothingBefore() else askAgain(p, again)
             ":l", ":1" -> Outcome.Said(cardLessons(current!!.card))
             ":s" -> Outcome.Said(statusLines())
-            ":t" -> if (p == null) nothingBefore() else Outcome.Said(troublesome(p.card))
-            ":h" -> Outcome.Said(listOf("(commands:") + COMMANDS)
+            // A troublesome list's cards are on it already.
+            ":t" -> if (isTroublesome) Outcome.Said(listOf("(this is a troublesome list already)"))
+                    else if (p == null) nothingBefore() else Outcome.Said(troublesome(p.card))
+            ":h" -> Outcome.Said(listOf("(commands:") + commands)
             // Anything else after a ':' is a slip, not an answer.
-            else -> Outcome.Said(listOf("(not a command:") + COMMANDS)
+            else -> Outcome.Said(listOf("(not a command:") + commands)
         }
     }
+
+    /** Is this a troublesome list, where :t has nowhere to put a card? */
+    val isTroublesome get() = name in Library.TROUBLESOME
+
+    /** The commands, as :h lists them: all but :t on a troublesome list. */
+    val commands get() = if (isTroublesome) COMMANDS.filterNot { it.startsWith("  :t ") } else COMMANDS
 
     /** Is there a card before this one, for :r and :t? */
     val hasPrevious get() = prev != null

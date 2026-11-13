@@ -674,6 +674,9 @@ sub drill_loop ($state, $records) {
                           '  :r  ask the card before this one again', '  :r ANSWER  answer it again with ANSWER',
                           '  :t  put the card before this one on its troublesome list',
                           '  :h  these commands', '  :q  quit and save)');
+    # A troublesome list's cards are on it already: no ':t' there.
+    my $on_troublesome = grep { $_ eq basename($data_file) } TROUBLESOME;
+    @drill_commands = grep { !/\A  :t / } @drill_commands if $on_troublesome;
     my $asked = 0;
     local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
 
@@ -729,6 +732,7 @@ sub drill_loop ($state, $records) {
             if ($reply eq ':l' || $reply eq ':1') { show_card_lessons($records, $r) }
             elsif ($reply eq ':s') { show_status($state, $records) }
             elsif ($reply eq ':r') { say "  (nothing asked before this one yet)" }
+            elsif ($reply eq ':t' && $on_troublesome) { say "  (this is a troublesome list already)" }
             elsif ($reply eq ':t') { $prev ? add_troublesome($prev->[0]) : say "  (nothing asked before this one yet)" }
             # ':h' lists the commands, then the same card.
             elsif ($reply eq ':h') { say "  $_" for '(commands:', @drill_commands }
@@ -1162,7 +1166,7 @@ In-drill commands:
   :t               put the card before this one on its troublesome list --
                      utts-troublesome, words-troublesome,
                      affixes-troublesome or lws-troublesome -- an animal or a people with its
-                     whole set
+                     whole set; not on a troublesome list itself
   :h               list these commands
   :r               take back the grade of the card before this one and ask
                      it again, then this one
