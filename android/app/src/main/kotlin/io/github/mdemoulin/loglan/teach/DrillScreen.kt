@@ -184,6 +184,9 @@ private fun HelpDialog(escape: Int, commands: List<String>, dismiss: () -> Unit)
                      "which it leaves after ${if (escape == 1) "one right" else "$escape right in a row"}, " +
                      "back on the first rung.  Past the top rung it has graduated.  Settings, on the " +
                      "first screen, change how many rungs there are and how many it takes.")
+                Text("Once every card has graduated, Brush up puts them all back on the first rung of a " +
+                     "shorter ladder (2 rungs, escape 1), asked at random, and is offered again each time " +
+                     "every card has graduated.")
                 Text("The commands of loglan-teach can be typed too:")
                 commands.dropLast(1).forEach { Text(it.trim(), fontFamily = FontFamily.Monospace) }
             }

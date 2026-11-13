@@ -36,13 +36,22 @@ the card before and asks it again (then back to this one; `:r ANSWER` grades
 it on ANSWER without asking), `:t` puts the card before
 on its troublesome list -- `utts-troublesome`, `words-troublesome` or
 `affixes-troublesome`, one for each of the three parts MacTeach had the
-lists in, or `lws-troublesome` (an animal or a people with its whole set),
+lists in, or `lws-troublesome` (an animal or a people with its whole set;
+not offered on a troublesome list itself),
 `:h` lists the commands, and `:q` saves and quits.  Any
 one of a gloss's alternatives ("box/crate/carton") counts as right, and
 an "X-like" -- the *-e* of an animal -- takes "Xish" as well (*kange*,
 "dog-like", takes "doggish").  On
 Android, see [On Android](#on-android).  Open
 `~/.loglan/vocab-cheatsheet.html` in a browser for the declension tables.
+
+Once every card on a list has graduated, the drill says so and offers `:b`
+to brush the list up: every card goes back to the first rung of a shorter
+ladder -- 2 rungs, out of the error box after 1 right (`:b RUNGS ESCAPE`
+for another) -- asked at random, even in a list taught in order.  A miss
+goes to the brush-up's own error box.  When every card has graduated
+again, `:b` is offered again.  Any list can be brushed up, the troublesome
+ones too, and the app has a Brush up button for it.
 
 | Command | What it does |
 |---|---|
@@ -71,7 +80,9 @@ it commits what you have done and merges in what has been committed
 elsewhere meanwhile, so that two drills of one list, on two machines,
 keep each other up to date as they run.  Progress made on two machines before
 either was synced is merged word by word, each word as the copy that has
-seen it more often has it.  When the repository cannot be reached it says
+seen it more often has it -- unless one copy has been wiped more often
+(by `--reset`, or a brush-up begun), when that copy is taken whole, so the
+cards the other still has do not come back.  When the repository cannot be reached it says
 so once, drills from the copy here, and commits it the next time it can.  ssh is
 never asked for a passphrase, so the key must be in your agent, or have
 none (see below).
