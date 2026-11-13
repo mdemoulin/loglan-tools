@@ -84,9 +84,22 @@ class Drill(
     /**
      * A list with lessons marked in it is taught as MacTeach 1 taught it: the
      * new sentences in order, each lesson shown before the first new sentence
-     * it goes with.
+     * it goes with -- until it is brushed up, which goes at random.
      */
-    val inOrder = !options.random && lessonText != null && cards.any { it.lessons.isNotEmpty() }
+    val inOrder get() = ordered && progress.brushup == null
+    private val ordered = !options.random && lessonText != null && cards.any { it.lessons.isNotEmpty() }
+
+    /** The ladder: the settings' rungs and escape, or the shorter ones of a brush-up. */
+    val rungs get() = progress.brushup?.rungs ?: rungs0
+    val escape get() = progress.brushup?.escape ?: escape0
+    private val rungs0 = options.rungs
+    private val escape0 = options.escape
+
+    /** Has every card graduated, so that the list can be brushed up? */
+    val allGraduated get() = cards.all { c -> progress.items[c.key]?.let { it.inError == 0 && it.rung > rungs } == true }
+
+    /** Has it been said that every card has graduated (in a question's notice)? */
+    private var graduatedSaid = false
 
     // [before]: where the card stood before it was last graded, for ':r'.
     private data class Entry(
@@ -116,6 +129,9 @@ class Drill(
         val again = Regex("""\A:r\s+([^:].*)\z""").find(reply)?.groupValues?.get(1)
         if (again != null) reply = ":r"
         if (!reply.startsWith(":")) return grade(current!!, reply)
+        Regex("""\A:b(?:\s+(\d+)(?:\s+(\d+))?)?\z""").find(reply)?.let { m ->
+            return brushUp(m.groupValues[1].toIntOrNull() ?: 2, m.groupValues[2].toIntOrNull() ?: 1)
+        }
         val p = prev
         return when (reply) {
             ":q" -> {
@@ -137,13 +153,35 @@ class Drill(
     /** Is this a troublesome list, where :t has nowhere to put a card? */
     val isTroublesome get() = name in Library.TROUBLESOME
 
-    /** The commands, as :h lists them: all but :t on a troublesome list. */
-    val commands get() = if (isTroublesome) COMMANDS.filterNot { it.startsWith("  :t ") } else COMMANDS
+    /** The commands, as :h lists them: :b once every card has graduated, and all but :t on a troublesome list. */
+    val commands get() = COMMANDS.filterNot { isTroublesome && it.startsWith("  :t ") }
+        .let { if (allGraduated) it.dropLast(2) + BRUSH_UP + it.takeLast(2) else it }
 
     /** Is there a card before this one, for :r and :t? */
     val hasPrevious get() = prev != null
 
     private fun nothingBefore() = Outcome.Said(listOf("(nothing asked before this one yet)"))
+
+    /**
+     * ':b': once every card has graduated, the list is brushed up -- every
+     * card back on the first rung of a shorter ladder ([rungs], [escape]),
+     * at random.  The wipe is counted, so that a merge with a copy from
+     * before it does not bring the cards back.
+     */
+    fun brushUp(rungs: Int = 2, escape: Int = 1): Outcome {
+        if (!allGraduated) return Outcome.Said(listOf("(not every card has graduated yet)"))
+        if (rungs < 1 || escape < 1) return Outcome.Said(listOf("(the rungs and the escape are 1 or more)"))
+        progress.items.clear()
+        progress.order = null
+        progress.resets = (progress.resets ?: 0) + 1
+        progress.brushup = Brushup(rungs, escape)
+        save(progress)
+        ahead.clear()
+        prev = null
+        graduatedSaid = false
+        question = next()
+        return Outcome.Said(listOf("(brushing up: every card back on rung 1 of $rungs, escape $escape)"))
+    }
 
     // The card before is asked again (graded at once on [given], when there
     // is one), then this one.  Its last grade is taken back: it goes back to
@@ -180,7 +218,7 @@ class Drill(
         when {
             reply.isEmpty() -> demote(s)
             right -> {
-                ladder = if (s.inError != 0) "error-box ${s.streak + 1}/${options.escape}"
+                ladder = if (s.inError != 0) "error-box ${s.streak + 1}/${escape}"
                          else "rung ${s.rung}->${s.rung + 1}"
                 s.correct++
                 promote(s)
@@ -229,6 +267,10 @@ class Drill(
                 Direction.BOTH -> random.nextDouble() < 0.5
             })
         }
+        if (allGraduated && !graduatedSaid) {
+            graduatedSaid = true
+            notice = listOfNotNull(notice, "(every card has graduated: :b to brush up)").joinToString("\n")
+        }
         current = e
         val r = e.card
         var prompt = if (e.recognition) r.loglan else r.answer
@@ -248,10 +290,10 @@ class Drill(
         val weights = cards.map { c ->
             val s = progress.items[c.key]
             when {
-                s == null -> options.rungs + 1
-                s.inError != 0 -> options.rungs + 2
-                s.rung > options.rungs -> 0
-                else -> options.rungs - s.rung + 2
+                s == null -> rungs + 1
+                s.inError != 0 -> rungs + 2
+                s.rung > rungs -> 0
+                else -> rungs - s.rung + 2
             }
         }.let { w -> if (w.sum() == 0) w.map { 1 } else w }
         val roll = random.nextDouble() * weights.sum()
@@ -266,7 +308,7 @@ class Drill(
     private fun promote(s: Item) {
         if (s.inError != 0) {
             s.streak++
-            if (s.streak >= options.escape) {
+            if (s.streak >= escape) {
                 s.inError = 0
                 s.streak = 0
                 s.rung = 1
@@ -349,6 +391,14 @@ class Drill(
         progress.items = m.items
         progress.lessonsShown = m.lessonsShown
         progress.order = m.order
+        if (m.resets != progress.resets) {
+            // Wiped there: what was waiting here is gone.
+            ahead.clear()
+            prev = null
+            graduatedSaid = false
+        }
+        progress.resets = m.resets
+        progress.brushup = m.brushup
         save(progress)
     }
 
@@ -383,13 +433,13 @@ class Drill(
         var new = 0
         var err = 0
         var grad = 0
-        val hist = IntArray(options.rungs + 1)
+        val hist = IntArray(rungs + 1)
         for (r in cards) {
             val s = progress.items[r.key]
             when {
                 s == null -> new++
                 s.inError != 0 -> err++
-                s.rung > options.rungs -> grad++
+                s.rung > rungs -> grad++
                 else -> if (s.rung in hist.indices) hist[s.rung]++
             }
         }
@@ -421,5 +471,6 @@ class Drill(
             "  :t  put the card before this one on its troublesome list",
             "  :h  these commands", "  :q  quit and save)",
         )
+        val BRUSH_UP = "  :b  brush up: every card back on rung 1, 2 rungs, escape 1 (:b RUNGS ESCAPE for others)"
     }
 }

@@ -46,7 +46,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 
 /** A list on the first screen: how big it is and how far along. */
-data class ListRow(val name: String, val cards: Int, val seen: Int, val graduated: Int, val errorBox: Int)
+data class ListRow(val name: String, val cards: Int, val seen: Int, val graduated: Int, val errorBox: Int,
+                   val brushup: Boolean = false)
 
 /** A drill under way, as the screen shows it. */
 data class DrillView(
@@ -99,9 +100,10 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
                 val cards = lib.cards(t.name)
                 val p = Progress.load(lib.stateFile(t.name), t.name)
                 val items = cards.mapNotNull { p.items[it.key] }
+                val top = p.brushup?.rungs ?: rungs
                 ListRow(t.name, cards.size, items.size,
-                        items.count { it.inError == 0 && it.rung > rungs },
-                        items.count { it.inError != 0 })
+                        items.count { it.inError == 0 && it.rung > top },
+                        items.count { it.inError != 0 }, p.brushup != null)
             }.filter { it.cards > 0 }
         }
     }
@@ -229,7 +231,8 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
         derivs = settings.derivs,
     )
 
-    fun start(name: String, options: Options) {
+    /** [brushUp]: a list every card of which has graduated is brushed up first (:b). */
+    fun start(name: String, options: Options, brushUp: Boolean = false) {
         prefs.edit()
             .putString("$name.direction", options.direction.name)
             .putString("$name.field", options.field)
@@ -241,6 +244,7 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
                 val file = lib.stateFile(name)
                 val d = Drill(name, lib.cards(name, options.field), Progress.load(file, name), options, lib,
                               save = { it.save(file) })
+                if (brushUp) d.brushUp()
                 DrillView(d, d.question)
             }
             // In step at the start, and every so often while it runs.
@@ -270,7 +274,7 @@ class TeachModel(app: Application) : AndroidViewModel(app) {
             // :r (no answer) says nothing, and asks the card before: shown as
             // a new card, with the one graded before it as it was.
             is Outcome.Said -> drill = if (o.lines.isEmpty()) DrillView(v.drill, v.drill.question, v.last)
-                                       else v.copy(said = o.lines)
+                                       else v.copy(question = v.drill.question, said = o.lines)   // :b asks anew
             Outcome.Quit -> quit()
         }
     }

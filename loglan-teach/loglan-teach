@@ -166,18 +166,32 @@ if (!$opt{random} && grep { $_->{lessons} } @records) {
 
 my $state = load_state($state_file, $data_file);
 if ($opt{reset}) {
+    # Counted, so that a merge with a copy from before the reset does not
+    # bring the cards back (see merge_states).
     $state->{items} = {};
+    $state->{resets} = ($state->{resets} // 0) + 1;
+    delete $state->{brushup};
     save_state($state_file, $state);
     say "State reset.";
     exit 0;
 }
+
+# The ladder: --rungs and --escape, or the shorter ones of a list being
+# brushed up (:b), which also goes at random.
+my ($rungs, $escape, $ordered);
+sub set_ladder ($state) {
+    my $b = $state->{brushup};
+    ($rungs, $escape) = $b ? ($b->{rungs}, $b->{escape}) : ($opt{rungs}, $opt{escape});
+    $ordered = $in_order && !$b;
+}
+set_ladder($state);
 
 show_status($state, \@records) if $opt{status};
 exit 0 if $opt{status};
 
 say "Loglan drill: ", basename($data_file),
     "  (", scalar(@records), " items, ",
-    "$opt{rungs} rungs, escape=$opt{escape}, dir=$opt{dir})";
+    "$rungs rungs, escape=$escape, dir=$opt{dir}", ($state->{brushup} ? ', brushing up' : ''), ")";
 say "Type the answer and press Enter.  Blank line = show answer.  :q = quit.  :s = status.  :r = ask the last one again (:r ANSWER = answer it again).  :h = help.";
 say "";
 
@@ -519,6 +533,7 @@ sub periodic_sync ($state) {
     return if $sync_unreachable;
     troublesome_out("$state_dir/$_") for TROUBLESOME;
     %$state = %{ load_state($state_file, $data_file) };
+    set_ladder($state);
 }
 
 # The line of what svn said that says why it failed.
@@ -609,8 +624,19 @@ sub troublesome_out ($file) {
 
 # Two copies of one list's progress, as one: each word as the copy that has
 # seen it more often has it (this one's, on a tie); the lessons either has
-# shown; and the place in an in-order list that is further on.
+# shown; and the place in an in-order list that is further on.  A copy
+# wiped more often than the other (--reset, :b) is taken whole, with the
+# lessons either has shown, so the cards the other still has do not come
+# back.
 sub merge_states ($mine, $theirs) {
+    my ($rm, $rt) = map { $_->{resets} // 0 } $mine, $theirs;
+    if ($rm != $rt) {
+        my ($new, $old) = $rm > $rt ? ($mine, $theirs) : ($theirs, $mine);
+        my %m = %$new;
+        $m{lessons_shown} = { %{ $old->{lessons_shown} // {} }, %{ $new->{lessons_shown} // {} } }
+            if $new->{lessons_shown} || $old->{lessons_shown};
+        return \%m;
+    }
     my %m = %$theirs;
     $m{$_} = $mine->{$_} for grep { $_ ne 'items' } keys %$mine;
     my ($a, $b) = ($mine->{items} // {}, $theirs->{items} // {});
@@ -641,10 +667,10 @@ sub pick_record ($state, $records) {
         my $rung   = $s ? $s->{rung}     : 1;
         my $in_err = $s ? $s->{in_error} : 0;
         # Error-box items get top weight; ladder items weighted toward
-        # low rungs. Rung > $opt{rungs} means graduated (weight 0).
-        my $w = $in_err                ? $opt{rungs} + 2
-              : $rung > $opt{rungs}    ? 0
-              :                          $opt{rungs} - $rung + 2;
+        # low rungs. Rung > $rungs means graduated (weight 0).
+        my $w = $in_err                ? $rungs + 2
+              : $rung > $rungs         ? 0
+              :                          $rungs - $rung + 2;
         push @weights, $w;
     }
     my $total = sum0 @weights;
@@ -677,6 +703,20 @@ sub drill_loop ($state, $records) {
     # A troublesome list's cards are on it already: no ':t' there.
     my $on_troublesome = grep { $_ eq basename($data_file) } TROUBLESOME;
     @drill_commands = grep { !/\A  :t / } @drill_commands if $on_troublesome;
+    # ':b' only once every card has graduated.
+    my $commands = sub {
+        my @c = @drill_commands;
+        splice @c, -2, 0, '  :b  brush up: every card back on rung 1, 2 rungs, escape 1 (:b RUNGS ESCAPE for others)'
+            if all_graduated($state, $records);
+        return @c;
+    };
+    my $graduated_said = 0;
+    my $say_graduated = sub {
+        return if $graduated_said || !all_graduated($state, $records);
+        $graduated_said = 1;
+        say "  (every card has graduated: :b to brush up)";
+    };
+    $say_graduated->();
     my $asked = 0;
     local $SIG{INT} = sub { save_state($state_file, $state); say "\nSaved."; exit 0 };
 
@@ -689,7 +729,7 @@ sub drill_loop ($state, $records) {
         my ($r, $kind, $direction, $given);
         if (@ahead) { ($r, $kind, $direction, $given) = @{ shift @ahead } }
         else {
-            ($r, $kind) = $in_order ? next_in_order($state, $records)
+            ($r, $kind) = $ordered ? next_in_order($state, $records)
                                     : (pick_record($state, $records), '');
             show_lessons($state, $records, $r) if $kind eq 'new';
             $direction = choose_direction();
@@ -735,9 +775,15 @@ sub drill_loop ($state, $records) {
             elsif ($reply eq ':t' && $on_troublesome) { say "  (this is a troublesome list already)" }
             elsif ($reply eq ':t') { $prev ? add_troublesome($prev->[0]) : say "  (nothing asked before this one yet)" }
             # ':h' lists the commands, then the same card.
-            elsif ($reply eq ':h') { say "  $_" for '(commands:', @drill_commands }
+            elsif ($reply =~ /\A:b(?:\s+(\d+)(?:\s+(\d+))?)?\z/) {
+                if (brush_up($state, $records, $1 // 2, $2 // 1)) {
+                    # What was waiting is gone with the progress it stood on.
+                    (@ahead, $prev, $graduated_said) = ();
+                }
+            }
+            elsif ($reply eq ':h') { say "  $_" for '(commands:', $commands->() }
             # Anything else after a ':' is a slip, not an answer.
-            else { say "  $_" for '(not a command:', @drill_commands }
+            else { say "  $_" for '(not a command:', $commands->() }
         }
         last unless defined $reply;
 
@@ -768,7 +814,7 @@ sub drill_loop ($state, $records) {
             demote($s);
         }
         elsif ($right) {
-            say "     ok" . ($s->{in_error} ? "  [error-box ${\ ($s->{streak}+1) }/$opt{escape}]" : "  [rung ${\ ($s->{rung}) }->${\ ($s->{rung}+1) }]");
+            say "     ok" . ($s->{in_error} ? "  [error-box ${\ ($s->{streak}+1) }/$escape]" : "  [rung ${\ ($s->{rung}) }->${\ ($s->{rung}+1) }]");
             $s->{correct}++;
             promote($s);
         }
@@ -777,7 +823,7 @@ sub drill_loop ($state, $records) {
             say -t STDOUT && ($ENV{TERM} // 'dumb') ne 'dumb' ? "    \e[7m no \e[m" : "     no";
             demote($s);
         }
-        after_in_order($state, $r, $kind, $right && $reply ne '') if $in_order;
+        after_in_order($state, $r, $kind, $right && $reply ne '') if $ordered;
         # Asked again, it is graded again, as one gone over: right takes it
         # off the in-order retry list, wrong puts it at the back.
         $prev = [ $r, $kind eq 'new' ? 'retry' : $kind, $direction ];
@@ -799,10 +845,38 @@ sub drill_loop ($state, $records) {
         }
 
         save_state($state_file, $state) if $asked % 5 == 0;
+        my $resets = $state->{resets} // 0;
         periodic_sync($state);
+        # Wiped elsewhere (brushed up, reset): what was waiting here is gone.
+        (@ahead, $prev, $graduated_said) = () if ($state->{resets} // 0) != $resets;
+        $say_graduated->();
     }
     save_state($state_file, $state);
     say "\nSaved.";
+}
+
+# Has every card graduated, so that the list can be brushed up?
+sub all_graduated ($state, $records) {
+    return !grep { my $s = $state->{items}{ $_->{key} }; !$s || $s->{in_error} || $s->{rung} <= $rungs } @$records;
+}
+
+# ':b': once every card has graduated, the list is brushed up -- every card
+# back on the first rung of a shorter ladder, at random.  The wipe is
+# counted, so that a merge with a copy from before it does not bring the
+# cards back (see merge_states).
+sub brush_up ($state, $records, $r, $e) {
+    my $no = !all_graduated($state, $records)   ? 'not every card has graduated yet'
+           : !($r >= 1 && $e >= 1)               ? 'the rungs and the escape are 1 or more'
+           :                                       undef;
+    if (defined $no) { say "  ($no)"; return 0 }
+    $state->{items} = {};
+    delete $state->{order};
+    $state->{resets} = ($state->{resets} // 0) + 1;
+    $state->{brushup} = { rungs => 0 + $r, escape => 0 + $e };
+    set_ladder($state);
+    save_state($state_file, $state);
+    say "  (brushing up: every card back on rung 1 of $r, escape $e)";
+    return 1;
 }
 
 sub troublesome_for ($list) {
@@ -987,7 +1061,7 @@ sub show_derivation ($loglan) {
 sub promote ($s) {
     if ($s->{in_error}) {
         $s->{streak}++;
-        if ($s->{streak} >= $opt{escape}) {
+        if ($s->{streak} >= $escape) {
             $s->{in_error} = 0;
             $s->{streak}   = 0;
             $s->{rung}     = 1;
@@ -1084,19 +1158,19 @@ sub show_status ($state, $records) {
         my $s = $state->{items}{$r->{key}};
         if (!$s)                 { $hist{new}++; next }
         if ($s->{in_error})      { $err++;  next }
-        if ($s->{rung} > $opt{rungs}) { $grad++; next }
+        if ($s->{rung} > $rungs) { $grad++; next }
         $hist{ $s->{rung} }++;
     }
     say "";
     say "  status:";
     say sprintf("    new       %5d", $hist{new} // 0);
     say sprintf("    error-box %5d", $err);
-    for my $r (1 .. $opt{rungs}) {
+    for my $r (1 .. $rungs) {
         say sprintf("    rung %d    %5d", $r, $hist{$r} // 0);
     }
     say sprintf("    graduated %5d", $grad);
     say sprintf("    total     %5d", scalar @$records);
-    if ($in_order) {
+    if ($ordered) {
         my $q = $state->{order} // { next => 0, retry => [], pass => 1 };
         say sprintf("    in order: next is %d of %d (time %d through); %d to go over again",
                     $q->{next} + 1, scalar @$records, $q->{pass}, scalar @{ $q->{retry} });
@@ -1167,6 +1241,10 @@ In-drill commands:
                      utts-troublesome, words-troublesome,
                      affixes-troublesome or lws-troublesome -- an animal or a people with its
                      whole set; not on a troublesome list itself
+  :b               once every card has graduated, brush the list up: every
+                     card back on rung 1 of a shorter ladder, 2 rungs and
+                     escape 1, at random, until every card has graduated
+                     again (:b RUNGS ESCAPE for another ladder)
   :h               list these commands
   :r               take back the grade of the card before this one and ask
                      it again, then this one

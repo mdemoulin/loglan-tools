@@ -226,6 +226,49 @@ class DrillTest {
     }
 
     @Test
+    fun colonBBrushesUpAListEveryCardOfWhichHasGraduated() {
+        val d = drill(options = Options(rungs = 1))
+        assertEquals(listOf("(not every card has graduated yet)"), assertIs<Outcome.Said>(d.reply(":b")).lines)
+        assertTrue(d.commands.none { it.startsWith("  :b ") })
+        while (!d.allGraduated) d.answerRight()
+        assertEquals("(every card has graduated: :b to brush up)", d.question.notice)
+        assertTrue(d.commands.any { it.startsWith("  :b ") })
+        assertEquals(listOf("(brushing up: every card back on rung 1 of 3, escape 1)"),
+                     assertIs<Outcome.Said>(d.reply(":B 3")).lines)
+        assertTrue(d.progress.items.isEmpty())
+        assertEquals(Brushup(3, 1), d.progress.brushup)
+        assertEquals(1, d.progress.resets)
+        assertEquals(3, d.rungs)
+        assertFalse(d.hasPrevious)
+        // Graduated again, on the shorter ladder: brushed up again.
+        repeat(3 * words.size) { d.answerRight() }
+        assertTrue(d.allGraduated)
+        assertIs<Outcome.Said>(d.reply(":b"))
+        assertEquals(2, d.progress.resets)
+        assertEquals(2, d.rungs)
+    }
+
+    @Test
+    fun aListBrushedUpGoesAtRandom() {
+        val p = Progress(dataFile = "utts", brushup = Brushup())
+        assertFalse(drill(utts, progress = p, lessons = lessonText).inOrder)
+    }
+
+    @Test
+    fun theCopyWipedMoreOftenWinsAMergeWhole() {
+        val old = Progress(items = mutableMapOf("a" to Item(seen = 9, rung = 6)), lessonsShown = mutableMapOf("1" to 1))
+        val new = Progress(items = mutableMapOf("a" to Item(seen = 1)), resets = 1, brushup = Brushup())
+        for (m in listOf(Progress.merge(old, new), Progress.merge(new, old))) {
+            assertEquals<Map<String, Item>>(mapOf("a" to Item(seen = 1)), m.items)
+            assertEquals(1, m.resets)
+            assertEquals(Brushup(), m.brushup)
+            assertEquals<Map<String, Int>?>(mapOf("1" to 1), m.lessonsShown)
+        }
+        assertEquals(new, Progress.decode(new.encode()))
+        assertFalse("resets" in old.encode(), "nothing new in a file never wiped")
+    }
+
+    @Test
     fun colonTDoesNothingOnATroublesomeList() {
         val dir = Files.createTempDirectory("loglan").toFile()
         val d = Drill("words-troublesome", words, Progress(dataFile = "words-troublesome"), Options(),

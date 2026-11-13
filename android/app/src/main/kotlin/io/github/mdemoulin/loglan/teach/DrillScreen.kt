@@ -98,6 +98,7 @@ fun DrillScreen(model: TeachModel, view: DrillView) {
                 if (!drill.isTroublesome)
                     OutlinedButton(onClick = { model.reply(":t") }, enabled = drill.hasPrevious) { Text("Last is troublesome") }
                 if (drill.inOrder) OutlinedButton(onClick = { model.reply(":l") }) { Text("Lesson") }
+                if (drill.allGraduated) OutlinedButton(onClick = { model.reply(":b") }) { Text("Brush up") }
             }
             if (view.said.isNotEmpty()) {
                 Card(Modifier.fillMaxWidth()) {

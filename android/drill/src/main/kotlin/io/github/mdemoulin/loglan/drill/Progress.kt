@@ -44,12 +44,19 @@ data class Order(
     var retrying: Int? = null,
 )
 
+/** The shorter ladder of a list being brushed up, once every card has graduated. */
+@Serializable
+data class Brushup(val rungs: Int = 2, val escape: Int = 1)
+
 @Serializable
 data class Progress(
     @SerialName("data_file") var dataFile: String? = null,
     var items: MutableMap<String, Item> = mutableMapOf(),
     @SerialName("lessons_shown") var lessonsShown: MutableMap<String, Int>? = null,
     var order: Order? = null,
+    /** How many times the cards have been wiped (a reset, a brush-up begun): the copy wiped more often wins a merge. */
+    var resets: Int? = null,
+    var brushup: Brushup? = null,
     var version: Int = 1,
 ) {
     fun encode(): String = json.encodeToString(
@@ -88,8 +95,19 @@ data class Progress(
          * Two copies of one list's progress, as one: each card as the copy that
          * has seen it more often has it ([mine], on a tie); the lessons either
          * has shown; and the place in an in-order list that is further on.
+         * A copy wiped more often than the other is taken whole, with the
+         * lessons either has shown, so the cards the other still has do not
+         * come back.
          */
         fun merge(mine: Progress, theirs: Progress): Progress {
+            val (rm, rt) = (mine.resets ?: 0) to (theirs.resets ?: 0)
+            if (rm != rt) {
+                val (newer, older) = if (rm > rt) mine to theirs else theirs to mine
+                val shown = if (newer.lessonsShown == null && older.lessonsShown == null) null
+                            else ((older.lessonsShown ?: emptyMap()) + (newer.lessonsShown ?: emptyMap())).toMutableMap()
+                return newer.copy(dataFile = mine.dataFile ?: theirs.dataFile, items = newer.items.toMutableMap(),
+                                  lessonsShown = shown, version = mine.version)
+            }
             val items = theirs.items.toMutableMap()
             for ((k, a) in mine.items) {
                 val t = theirs.items[k]
@@ -106,6 +124,8 @@ data class Progress(
                 items = items,
                 lessonsShown = shown,
                 order = if (further) ot else om ?: ot,
+                resets = mine.resets,
+                brushup = mine.brushup ?: theirs.brushup,
                 version = mine.version,
             )
         }

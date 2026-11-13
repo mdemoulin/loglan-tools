@@ -128,6 +128,7 @@ private fun ListRowItem(row: ListRow, choose: () -> Unit) {
 private fun progressLine(row: ListRow) = buildString {
     append("${row.cards} cards")
     if (row.seen > 0) append(" · ${row.seen} seen, ${row.graduated} graduated, ${row.errorBox} in the error box")
+    if (row.brushup) append(" · brushing up")
 }
 
 /** How to drill the list: which way, and for some lists what. */
@@ -137,6 +138,8 @@ private fun StartDialog(model: TeachModel, name: String, dismiss: () -> Unit) {
     var direction by remember(name) { mutableStateOf(last.direction) }
     var field by remember(name) { mutableStateOf(last.field) }
     var random by remember(name) { mutableStateOf(last.random) }
+    // Every card graduated: it can be brushed up, on a shorter ladder.
+    val done = model.lists?.find { it.name == name }?.let { it.graduated == it.cards } == true
     AlertDialog(
         onDismissRequest = dismiss,
         title = { Text(name) },
@@ -147,7 +150,10 @@ private fun StartDialog(model: TeachModel, name: String, dismiss: () -> Unit) {
                 if (name.startsWith("aff")) {
                     Choice("Answer with", listOf("gloss" to "Meaning", "affix" to "Affixes"), field) { field = it }
                 }
-                if (name == "utts") {
+                if (done) Text("Every card has graduated.  Brush up puts every card back on the first rung of " +
+                               "a ladder of 2 rungs, escape 1, at random.",
+                               style = MaterialTheme.typography.bodySmall)
+                if (name == "utts" && !done) {
                     Choice("Utterances", listOf(false to "In order", true to "At random"), random) { random = it }
                     if (!random) Text("In order, with each lesson of MacTeach 1 before the utterances it goes with; " +
                                       "one you miss is asked again before the next lesson.",
@@ -156,10 +162,16 @@ private fun StartDialog(model: TeachModel, name: String, dismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                dismiss()
-                model.start(name, last.copy(direction = direction, field = field, random = random))
-            }) { Text("Start") }
+            Row {
+                if (done) TextButton(onClick = {
+                    dismiss()
+                    model.start(name, last.copy(direction = direction, field = field, random = random), brushUp = true)
+                }) { Text("Brush up") }
+                TextButton(onClick = {
+                    dismiss()
+                    model.start(name, last.copy(direction = direction, field = field, random = random))
+                }) { Text("Start") }
+            }
         },
         dismissButton = { TextButton(onClick = dismiss) { Text("Cancel") } },
     )
