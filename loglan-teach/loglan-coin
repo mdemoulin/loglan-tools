@@ -591,11 +591,16 @@ def make(g, lex, args):
                  % (t, hint))
     if len(tokens) < 2:
         fail('a complex needs at least two pieces')
-    mine = [lex.source(w) for w in tokens]
+    # A piece may stand for the word its affix does or for itself: bia is
+    # bitsa's affix and a little word as well, and the dictionary takes it as
+    # the first (biarskapi) or the second (geo, gamma, in geoykre).
+    readings = [set(sources_of(lex, t)) | {lex.source(t)} for t in tokens]
     for other in lex.words:
         m = lex.metaphor_of(other)
-        if m and [lex.source(p) for p in m] == mine:
-            print('\n! %s already says %s: %s' % (describe(lex, other), '+'.join(mine),
+        if (m and len(m) == len(readings)
+                and all(lex.source(p) in r for p, r in zip(m, readings))):
+            print('\n! %s already says %s: %s' % (describe(lex, other),
+                                                  '+'.join(lex.source(p) for p in m),
                                                   lex.words[other]['defs'][0]
                                                   if lex.words[other]['defs'] else ''))
     found, tried, valid = [], 0, {}
