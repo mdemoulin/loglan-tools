@@ -62,7 +62,8 @@ NEW_WORDS = os.path.join(STATE, 'new-words.json')
 
 # An entry runs to the next paragraph or heading, not its first </p>: a word that
 # is both an affix and a little word (bia, tao) has a block for each, the second
-# opened by its own head line straight after the first's </p>.
+# opened by its own head line straight after the first's </p>.  Each block is
+# shown as an entry of its own, the word before the affix.
 ENTRY = re.compile(r'<b><a name="([^"]+)">([^<]*)</a></b>,\s*<br>\s*(.*?)(?=<p>|<h\d|</div>|\Z)', re.S)
 KEY = re.compile(r'<em class="key">(.*?)</em>', re.S)
 
@@ -122,13 +123,12 @@ def load_dictionary(path):
     out = []
     for m in ENTRY.finditer(src):
         word, shown, body = m.groups()
-        head, senses, used = None, [], []
+        blocks = []
         for block in body.split('</p>'):
-            first, *lines = block.split('<br>')
-            if head is None:
-                head = first
-            elif text(first):
-                senses.append((text(first), []))    # a later block's head line
+            if not text(block):
+                continue
+            head, *lines = block.split('<br>')
+            senses, used = [], []
             for line in lines:
                 t = text(line)
                 if not t:
@@ -137,7 +137,8 @@ def load_dictionary(path):
                     used = [u.strip() for u in t[len('Used In:'):].split(';') if u.strip()]
                     continue
                 senses.append((t, [text(k) for k in KEY.findall(line)]))
-        out.append(Entry(text(shown) or word, text(head), senses, used))
+            blocks.append(Entry(text(shown) or word, text(head), senses, used))
+        out += sorted(blocks, key=lambda e: bool(re.search(r'\bAfx\b', e.head)))
     if len(out) < 5000:
         fail('could not read the dictionary at %s' % path)
     return out
