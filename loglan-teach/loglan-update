@@ -228,6 +228,11 @@ sub text ($s) {
 #   <em class="origin">bao</em> <em class="origin">&lt;4/4E box; ...&gt;</em>&nbsp;42% C-Prim L4 1975 2.3<br>
 #   &nbsp;&nbsp;&nbsp;(2n) D is a <em class="key">box</em>/<em class="key">crate</em> of/containing B. [D-B]<br>
 #   ...</p>
+# Only an entry's first block is read here, though a word that is both a little
+# word and an affix has a block for each, the second straight after the first's
+# </p> (bia, tao).  Nothing is lost by it: the word an affix stands for lists it
+# among its own affixes, no such little word has affixes of its own, and the
+# little words are read, every block, in lws below.
 my (@order, %e);
 while ($html =~ m{<b><a name="([^"]+)">[^<]*</a></b>,\s*<br>\s*(.*?)</p>}sg) {
     my ($word, $body) = ($1, $2);
