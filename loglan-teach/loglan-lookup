@@ -60,7 +60,10 @@ DICTIONARY = os.path.join(STATE, 'src', 'Dictionary', 'L-to-E-TDR.html')
 AUX = os.path.join(STATE, 'aux')
 NEW_WORDS = os.path.join(STATE, 'new-words.json')
 
-ENTRY = re.compile(r'<b><a name="([^"]+)">([^<]*)</a></b>,\s*<br>\s*(.*?)</p>', re.S)
+# An entry runs to the next paragraph or heading, not its first </p>: a word that
+# is both an affix and a little word (bia, tao) has a block for each, the second
+# opened by its own head line straight after the first's </p>.
+ENTRY = re.compile(r'<b><a name="([^"]+)">([^<]*)</a></b>,\s*<br>\s*(.*?)(?=<p>|<h\d|</div>|\Z)', re.S)
 KEY = re.compile(r'<em class="key">(.*?)</em>', re.S)
 
 
@@ -119,16 +122,21 @@ def load_dictionary(path):
     out = []
     for m in ENTRY.finditer(src):
         word, shown, body = m.groups()
-        head, *lines = body.split('<br>')
-        senses, used = [], []
-        for line in lines:
-            t = text(line)
-            if not t:
-                continue
-            if t.startswith('Used In:'):
-                used = [u.strip() for u in t[len('Used In:'):].split(';') if u.strip()]
-                continue
-            senses.append((t, [text(k) for k in KEY.findall(line)]))
+        head, senses, used = None, [], []
+        for block in body.split('</p>'):
+            first, *lines = block.split('<br>')
+            if head is None:
+                head = first
+            elif text(first):
+                senses.append((text(first), []))    # a later block's head line
+            for line in lines:
+                t = text(line)
+                if not t:
+                    continue
+                if t.startswith('Used In:'):
+                    used = [u.strip() for u in t[len('Used In:'):].split(';') if u.strip()]
+                    continue
+                senses.append((t, [text(k) for k in KEY.findall(line)]))
         out.append(Entry(text(shown) or word, text(head), senses, used))
     if len(out) < 5000:
         fail('could not read the dictionary at %s' % path)
