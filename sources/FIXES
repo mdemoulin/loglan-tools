@@ -25,10 +25,11 @@ Dictionary/L-to-E-TDR.html	&lt;0/0C ya si ya;	&lt;0/0C ya syi ya;
 # little words (loglan.org, Misc/loglan-lw-by-word.html) agrees: toi "the latter
 # remark", toa "the former", tio "the latter situation", tao "the former".  The
 # dictionary had toi and toa the other way round, with toa a remark about to be
-# made, and tao a second situation rather than an earlier one; and tio's and
-# tao's little-word blocks had each other's origin, tao's <ta(rg)o> under tio and
-# tio's <ti(dj)o> under tao (Loglan 4 and 5 has <tidjo> for tio, <targo> for tao).
-Dictionary/L-to-E-TDR.html	<em class="origin">&lt;ti(dj)o&gt;</em>&nbsp;LW L4 1975 1.0<br>\n&nbsp;&nbsp;&nbsp;(p) <em class="key">that</em>,  a second <em class="key">situation</em> <em class="key">referred to</em> (when tio is already assigned a referent) DA.	<em class="origin">&lt;ta(rg)o&gt;</em>&nbsp;LW L4 1975 1.0<br>\n&nbsp;&nbsp;&nbsp;(p) <em class="key">that</em> <em class="key">situation</em> (DA).
-Dictionary/L-to-E-TDR.html	<em class="origin">&lt;ta(rg)o&gt;</em>&nbsp;LW L4 1975 1.0<br>\n&nbsp;&nbsp;&nbsp;(p) <em class="key">this</em>, the <em class="key">situation</em> we are taking about (DA).	<em class="origin">&lt;ti(dj)o&gt;</em>&nbsp;LW L4 1975 1.0<br>\n&nbsp;&nbsp;&nbsp;(p) <em class="key">this</em> <em class="key">situation</em> (DA).
+# made, and tao a second situation rather than an earlier one.  tio's and tao's
+# little-word blocks had each other's affix's origin, <ta(rg)o> and <ti(dj)o>;
+# they lose it, as loglan-update drops a little word's origin that only repeats
+# its affix's.
+Dictionary/L-to-E-TDR.html	<em class="origin">&lt;ti(dj)o&gt;</em>&nbsp;LW L4 1975 1.0<br>\n&nbsp;&nbsp;&nbsp;(p) <em class="key">that</em>,  a second <em class="key">situation</em> <em class="key">referred to</em> (when tio is already assigned a referent) DA.	LW L4 1975 1.0<br>\n&nbsp;&nbsp;&nbsp;(p) <em class="key">that</em> <em class="key">situation</em> (DA).
+Dictionary/L-to-E-TDR.html	<em class="origin">&lt;ta(rg)o&gt;</em>&nbsp;LW L4 1975 1.0<br>\n&nbsp;&nbsp;&nbsp;(p) <em class="key">this</em>, the <em class="key">situation</em> we are taking about (DA).	LW L4 1975 1.0<br>\n&nbsp;&nbsp;&nbsp;(p) <em class="key">this</em> <em class="key">situation</em> (DA).
 Dictionary/L-to-E-TDR.html	(p) <em class="key">this</em>, the about to be mentioned <em class="key">remark</em>/<em class="key">utterance</em>/<em class="key">textual item</em>. (DA).	(p) <em class="key">that</em> <em class="key">remark</em> (DA).
 Dictionary/L-to-E-TDR.html	(p) <em class="key">that</em>, the last mentioned <em class="key">remark</em>/<em class="key">utterance</em>/<em class="key">textual item</em> (DA).	(p) <em class="key">this</em> <em class="key">remark</em> (DA).

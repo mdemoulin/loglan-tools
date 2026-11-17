@@ -172,7 +172,10 @@ write_versions(\%version);
 
 # ---- 2. the working copies, corrected ----
 my @fixes   = read_fixes("$dist/sources/FIXES");
-my $fix_sha = sha256_hex(join "\n", map { join "\t", @$_ } @fixes);
+# The rule in drop_borrowed_origins, as well as FIXES: a change to either is a
+# rebuild.
+my $RULES   = 'borrowed-origins 1';
+my $fix_sha = sha256_hex(join "\n", $RULES, map { join "\t", @$_ } @fixes);
 my $refix   = ($version{FIXES}{sha} // '') ne $fix_sha;
 for my $m (@manifest) {
     my $out = "$src/$m->{path}";
@@ -186,6 +189,7 @@ for my $m (@manifest) {
             say "FIXES: '$f->[1]' is no longer in $m->{path}; skipped";
         }
     }
+    $text = drop_borrowed_origins($text) if $m->{path} eq 'Dictionary/L-to-E-TDR.html';
     make_path(dirname $out);
     write_bytes($out, $text);
 }
@@ -520,6 +524,22 @@ sub write_versions ($v) {
     print $fh join("\t", $_, $v->{$_}{sha}, $v->{$_}{date}), "\n" for sort keys %$v;
     close $fh;
     rename "$orig/VERSIONS.tmp", "$orig/VERSIONS" or die "rename $orig/VERSIONS: $!";
+}
+
+# A word that is both a little word and an affix has a block for each, and the
+# little word's often repeats the affix's origin -- toi's <to(gr)i>, from togri,
+# "agree", which the little word has nothing to do with (52 words).  That origin
+# is dropped from the little word's head; one of its own (kou's <(c)ko(z)u>)
+# stays.
+sub drop_borrowed_origins ($text) {
+    my $ORIGIN = qr{<em class="origin">(&lt;[^&]*&gt;)</em>&nbsp;};
+    $text =~ s{(<b><a name="[^"]+">[^<]*</a></b>,\s*<br>)(.*?)(?=<p>|<h\d|</div>|\z)}{
+        my ($lead, $body) = ($1, $2);
+        my %afx = map { $_ => 1 } $body =~ m{$ORIGIN(?=Afx\b)}g;
+        $body =~ s{$ORIGIN(?=LW\b)}{$afx{$1} ? '' : $&}ge if %afx;
+        $lead . $body
+    }gse;
+    return $text;
 }
 
 sub read_fixes ($file) {
