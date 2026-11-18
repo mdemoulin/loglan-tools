@@ -396,7 +396,10 @@ my $animal_html = '';
 for my $st (sort keys %animal_stem) {
     my $u     = $animal_word{"${st}u"};
     my $label = notable($u->{gloss});
-    my $affix = $u->{affix};
+    # The affix is the original word's, whichever member that is: kangu's
+    # kau, but hitli's hit and sekta's sek.
+    my ($affix) = ((grep { $_ ne '-' } map { $_->{affix} // '-' }
+                    grep { defined } map { $animal_word{"$st$_"} } qw(u a o i e)), '-');
     my @cells;
     for my $v (qw(u a o i e)) {
         my $w = "$st$v";

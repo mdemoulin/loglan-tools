@@ -296,13 +296,16 @@ tags it lacks (`B is pink/rosy, a whitened red` becomes `(1a) B is
 commonest author initials (`--author` to say otherwise) and the year.
 
 `--set=animal` or `--set=ethnic` adds every member of the declension set
-the word belongs to that is missing, each marked with `set`.  In an animal
-set the `-u` word (any) is the borrowing (`Bor.`) the others derive from --
-or an N-Prim, if it has a primitive's five letters -- and `-a` (female),
-`-o` (male), `-i` (baby) and `-e` (-like) are D-Prims with it as their
-origin; in an ethnic set the `-a` word (the language) is the N-Prim,
-and `-e` (territory), `-i` (person) and `-o` (culture) are D-Prims sharing
-its origin.
+the word belongs to that is missing, each marked with `set`.  The others
+derive from the word you give, whatever its vowel, as the dictionary's sets
+derive from the member coined first (`kangu`, but `kurma`, `hitli`,
+`spani`); if a member that is not itself derived is already there, they
+derive from that.  In an animal set it is the borrowing (`Bor.`) -- or an
+N-Prim, if it has a primitive's five letters -- and the rest of `-u` (any),
+`-a` (female), `-o` (male), `-i` (baby) and `-e` (-like) are D-Prims with
+it as their origin; in an ethnic set it is the N-Prim, and the rest of
+`-a` (the language), `-e` (territory), `-i` (person) and `-o` (culture)
+are D-Prims sharing its origin.
 
 A word is not added, and the reasons are given, if it is already in the
 dictionary or your file; if the dictionary already has a word for the
