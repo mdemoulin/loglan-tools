@@ -849,11 +849,13 @@ def add(g, lex, args):
         if word in mine:
             problems.append('%s is already in %s' % (word, os.path.basename(NEW_WORDS)))
         if kind in (None, 'little word', 'name'):
-            problems.append('%s reads as %s; only complexes and borrowings can be added this way'
+            problems.append('%s reads as %s; only complexes, borrowings and primitives can be added this way'
                             % (word, 'nothing at all' if kind is None else 'a ' + kind))
-        elif kind == 'primitive':
-            problems.append('%s has the shape of a primitive: a new primitive is made by the '
-                            'procedure of Loglan 1 section 6.3 (a declension set: use --set)' % word)
+        elif kind == 'primitive' and not args.origin:
+            problems.append('%s has the shape of a primitive: a single-source primitive needs '
+                            'its source as --origin (Loglan 1 section 6.12); a composite one is '
+                            'made by the procedure of section 6.3; a declension set: use --set'
+                            % word)
         definition = make_def(args.english)
         readings = None
         if kind == 'complex':
@@ -863,6 +865,8 @@ def add(g, lex, args):
                 readings = None
             origin, terms = complex_origin(lex, parts)
             tec = '%d-Cpx %s %s 7+' % (terms, author, year)
+        elif kind == 'primitive':
+            origin, tec = args.origin or '?', '%s %s %s 7+' % (args.type, author, year)
         else:
             origin, tec = args.origin or '?', 'Bor. %s %s 7+' % (author, year)
         if args.origin:
@@ -938,6 +942,9 @@ def main():
     ap.add_argument('--origin', metavar='TEXT',
                     help='the origin to record (default: worked out for a complex, '
                          'else ?)')
+    ap.add_argument('--type', choices=('N-Prim', 'S-Prim', 'I-Prim'), default='N-Prim',
+                    help='the type of a single-source primitive: native (local), '
+                         'scientific or international (default: N-Prim)')
     ap.add_argument('--author', metavar='INITIALS',
                     help='the author for the tec line (default: your commonest)')
     ap.add_argument('--force', action='store_true',

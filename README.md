@@ -284,11 +284,16 @@ short of a member is reported by `loglan-update`, and nothing fills it in:
 
     loglan-coin --add --loglan=kaurhafbao --english='B is a doghouse for dog D'
     loglan-coin --add --loglan=brokolie --english=broccoli --origin='It. broccoli'
+    loglan-coin --add --loglan=karma --english='V is a/the karma of B' --origin='Skt. karma'
     loglan-coin --add --set=animal --loglan=hamsiteru --english=hamster --origin='Ger. Hamster'
 
 A complex gets its origin worked out from its pieces
 (`ka(ng)u+r+ha(s)f(a)+ba(ks)o=dog house box`) and its type (`3-Cpx`); a
-borrowing gets `Bor.` and the `--origin` you give (else `?`).  `--english`
+borrowing gets `Bor.` and the `--origin` you give (else `?`); a word with
+a primitive's shape is a single-source primitive (*Loglan 1* section
+6.12), which must be given its `--origin`, and is an `N-Prim` (a local
+word) unless `--type` says `S-Prim` (scientific) or `I-Prim`
+(international).  `--english`
 is either a word (`broccoli` becomes `(1n) B is a {broccoli}. [B-]`) or a
 definition with its places, which gets the grammar code, braces and case
 tags it lacks (`B is pink/rosy, a whitened red` becomes `(1a) B is
@@ -312,8 +317,8 @@ A word is not added, and the reasons are given, if it is already in the
 dictionary or your file; if the dictionary already has a word for the
 meaning you give (`gofru` for gopher) -- the commonest reason a coined word
 is later withdrawn; if it clashes with another (as `check` finds); or if it
-is not a complex or borrowing (a set's members must be borrowings or
-primitives).  `--force` adds it anyway.
+is not a complex, borrowing or primitive (a set's members must be
+borrowings or primitives), or is a primitive without an `--origin`.  `--force` adds it anyway.
 
 `~/.loglan/dropped-new-words.json`, in the same form, is a record of words
 withdrawn because the dictionary already had them; no tool reads it.
