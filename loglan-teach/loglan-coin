@@ -485,8 +485,11 @@ def check(g, lex, args):
             if not all(readings):
                 readings = None
         if kind == 'primitive':
-            notes.append('primitive-shaped: a new primitive has to be made by the procedure '
-                         'of Loglan 1 section 6.3, from the eight source languages')
+            notes.append('primitive-shaped: a composite primitive, scored from the eight source '
+                         'languages, is only for a concept of truly general human significance '
+                         '(Loglan 1 section 6.3); a local, scientific or other international word '
+                         'is a single-source primitive, kept close to the natural word, with its '
+                         'origin given (section 6.12)')
         if kind == 'borrowing':
             notes.append('a borrowing ends in -e for foods, plants and animals, -i for '
                          'sciences and medicine, -u for anything else (Loglan 1 section 6.7)')
